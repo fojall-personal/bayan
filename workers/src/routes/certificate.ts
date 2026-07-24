@@ -2,6 +2,14 @@ import { Hono } from 'hono';
 import { Database } from '../lib/db';
 import { getCurrentUser } from '../index';
 
+function getDB(c: any) {
+  const raw = c.env.DB;
+  if (raw && typeof raw.prepare === 'function') {
+    return new Database(raw);
+  }
+  return raw;
+}
+
 export const certificateRoutes = new Hono<{ Bindings: { DB: Database } }>();
 
 // GET /api/certificate/export — Generate memorization certificate data
