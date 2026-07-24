@@ -8,6 +8,8 @@ import { memorizationRoutes } from './routes/memorization';
 import { progressRoutes } from './routes/progress';
 import { tajweedRoutes } from './routes/tajweed';
 import { grammarRoutes } from './routes/grammar';
+import { tutorRoutes } from './routes/tutor';
+import { certificateRoutes } from './routes/certificate';
 
 interface Env {
   DB: Database;
@@ -39,5 +41,7 @@ app.route('/api/memorization', memorizationRoutes);
 app.route('/api/progress', progressRoutes);
 app.route('/api/tajweed', tajweedRoutes);
 app.route('/api/grammar', grammarRoutes);
+app.route('/api/tutor', tutorRoutes);
+app.route('/api/certificate', certificateRoutes);
 
 export default app;

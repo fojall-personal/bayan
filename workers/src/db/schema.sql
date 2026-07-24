@@ -163,3 +163,22 @@ CREATE TABLE IF NOT EXISTS grammar_exercises (
   correct INTEGER NOT NULL DEFAULT 0,
   answered_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- AI tutor conversations
+CREATE TABLE IF NOT EXISTS tutor_conversations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  user_message TEXT NOT NULL,
+  assistant_message TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_tutor_conv_user ON tutor_conversations(user_id);
+
+-- Tutor topic tracking
+CREATE TABLE IF NOT EXISTS tutor_topic_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  topic TEXT NOT NULL,
+  discussed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
