@@ -55,10 +55,21 @@ app.use('/api/*', async (c, next) => {
     
     // For single-user app, always use the same user ID
     setCurrentUser({ id: 'test-user-1' });
+    console.log('Middleware: currentUser set to', getCurrentUser());
     await next();
   } catch (error) {
     console.error('Middleware error:', error);
     return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Debug endpoint to test getCurrentUser
+app.get('/api/debug/user', (c) => {
+  try {
+    const user = getCurrentUser();
+    return c.json({ success: true, user });
+  } catch (error) {
+    return c.json({ success: false, error: (error as Error).message }, 500);
   }
 });
 
