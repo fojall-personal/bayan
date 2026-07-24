@@ -178,7 +178,7 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           literacy_score: moduleScores.literacy || 0,
@@ -246,14 +246,22 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
 
       {/* Question */}
       <Card>
-        <h2 className="text-xl font-semibold mb-4">{currentQuestion.text}</h2>
+        <h2 className={`text-xl font-semibold mb-4 ${
+          /[\u0600-\u06FF]/.test(currentQuestion.text) ? 'text-right arabic-text' : ''
+        }`}>{currentQuestion.text}</h2>
 
         <div className="space-y-3">
           {currentQuestion.options?.map((option, i) => (
             <button
               key={i}
               onClick={() => handleAnswer(option)}
-              className="w-full p-4 text-left rounded-lg border border-gray-700 hover:border-arabic-green transition-all"
+              className={`w-full p-4 text-left rounded-lg border ${
+                answers[currentQuestion.id] === option 
+                  ? 'border-primary-500 bg-primary-500/10' 
+                  : 'border-gray-700 hover:border-primary-500'
+              } transition-all ${
+                /[\u0600-\u06FF]/.test(option) ? 'text-right' : ''
+              }`}
             >
               {option}
             </button>

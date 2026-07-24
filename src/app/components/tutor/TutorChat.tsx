@@ -108,7 +108,9 @@ export function TutorChat() {
                   : 'bg-gray-700 text-gray-100'
               }`}
             >
-              <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
+              <p className={`whitespace-pre-wrap text-sm ${
+              /[\u0600-\u06FF]/.test(msg.content) ? 'text-right arabic-text' : ''
+            }`}>{msg.content}</p>
               {msg.topics && msg.topics.length > 0 && (
                 <div className="mt-2 flex gap-1">
                   {msg.topics.map((topic) => (
@@ -147,6 +149,7 @@ export function TutorChat() {
       <div className="flex gap-2">
         <input
           type="text"
+          dir="rtl"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}

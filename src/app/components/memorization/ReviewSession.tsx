@@ -41,7 +41,7 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token'}`,
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token'}`
       },
       body: JSON.stringify({ quality }),
     })
@@ -56,7 +56,7 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Ayah display */}
       <Card className="text-center py-8">
-        <div className="text-3xl text-green-500 mb-4" dir="rtl">
+        <div className="text-3xl text-green-500 mb-4 arabic-text" dir="rtl">
           {entry.ayah_text || `Surah ${entry.surah_id}, Ayahs ${entry.ayah_from}-${entry.ayah_to}`}
         </div>
         <p className="text-gray-400">

@@ -55,7 +55,7 @@ export function Flashcards({ userId }: FlashcardsProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           word: card.word,

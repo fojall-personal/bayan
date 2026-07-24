@@ -84,7 +84,7 @@ export function SurahProgress({ surahId, surahName, totalAyahs }: SurahProgressP
           <span>{masteredCount} / {totalAyahs} ayahs memorized</span>
           <span>{Math.round(percentage)}%</span>
         </div>
-        <ProgressBar progress={percentage} color="arabic-green" />
+        <ProgressBar progress={percentage} color="primary" />
       </div>
 
       {/* Status breakdown */}
