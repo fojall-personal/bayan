@@ -43,7 +43,8 @@ app.use('/api/*', async (c, next) => {
   if (!valid) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
-  setCurrentUser({ id: userId });
+  // For single-user app, always use the same user ID
+  setCurrentUser({ id: 'test-user-1' });
   await next();
 });
 
