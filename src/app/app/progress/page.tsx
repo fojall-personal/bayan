@@ -23,7 +23,7 @@ export default function ProgressPage() {
   const fetchScores = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production';
       const res = await fetch('/api/progress/scores', {
         headers: { Authorization: `Bearer ${token}` },
       });

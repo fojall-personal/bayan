@@ -173,7 +173,7 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
 
     // Submit to backend
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production';
       const res = await fetch('/api/assessment/submit', {
         method: 'POST',
         headers: {

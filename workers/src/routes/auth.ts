@@ -4,14 +4,24 @@ import { getCurrentUser } from '../index';
 
 export const authRoutes = new Hono<{ Bindings: { DB: any } }>();
 
+function getDB(c: any) {
+  // Accept either a raw D1 binding or a wrapped Database instance
+  const raw = c.env.DB;
+  if (raw && typeof raw.prepare === 'function') {
+    return new Database(raw);
+  }
+  // Already wrapped
+  return raw;
+}
+
 // GET /api/auth/profile — Return user profile
 authRoutes.get('/profile', async (c) => {
   try {
     const { id: userId } = getCurrentUser();
-    const dbWrapper = new Database(c.env.DB);
+    const db = getDB(c);
 
     try {
-      const user = await dbWrapper.get<Record<string, unknown>>(
+      const user = await db.get<Record<string, unknown>>(
         `SELECT id, goal, onboarding_completed, current_path, created_at FROM users WHERE id = ?`,
         [userId]
       );
@@ -34,7 +44,7 @@ authRoutes.get('/profile', async (c) => {
 // POST /api/auth/onboarding — Complete onboarding and save preferences
 authRoutes.post('/onboarding', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
   const { goal, readingAbility, memorizedSurahs, challenge } = await c.req.json();
 
   try {

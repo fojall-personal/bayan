@@ -7,7 +7,7 @@ export const learningRoutes = new Hono<{ Bindings: { DB: Database } }>();
 // GET /api/learning/next — Get next available lesson based on learning path
 learningRoutes.get('/next', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     // Get user's current path
@@ -93,7 +93,7 @@ learningRoutes.get('/next', async (c) => {
 
 // GET /api/learning/lessons — Get all lessons (or filtered by module/level)
 learningRoutes.get('/lessons', async (c) => {
-  const db = c.env.DB;
+  const db = getDB(c);
   const { module: mod, level } = c.req.query();
 
   try {
@@ -129,7 +129,7 @@ learningRoutes.get('/lessons', async (c) => {
 learningRoutes.get('/lessons/:id', async (c) => {
   const { id: userId } = getCurrentUser();
   const lessonId = c.req.param('id');
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const lesson = await db.get<Record<string, unknown>>(
@@ -172,7 +172,7 @@ learningRoutes.get('/lessons/:id', async (c) => {
 learningRoutes.post('/lessons/:id/submit', async (c) => {
   const { id: userId } = getCurrentUser();
   const lessonId = c.req.param('id');
-  const db = c.env.DB;
+  const db = getDB(c);
   const { answers, score, exerciseIndex } = await c.req.json();
 
   try {
@@ -272,7 +272,7 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
 // GET /api/learning/flashcards — Get vocabulary flashcards for review
 learningRoutes.get('/flashcards', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const dueCards = await db.query<Record<string, unknown>>(
@@ -302,7 +302,7 @@ learningRoutes.get('/flashcards', async (c) => {
 // POST /api/learning/flashcards/review — Submit flashcard review
 learningRoutes.post('/flashcards/review', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
   const { word, quality } = await c.req.json();
 
   try {

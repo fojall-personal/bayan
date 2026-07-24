@@ -3,9 +3,9 @@
 
 export async function GET() {
   try {
-    const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+    const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production';
 
-    const res = await fetch('http://localhost:8787/health', {
+    const res = await fetch('https://languagebuilder.fojall.workers.dev/health', {
       headers: {
         Authorization: `Bearer ${token}`
       },

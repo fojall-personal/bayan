@@ -34,7 +34,7 @@ export function TutorChat() {
     setLoading(true);
 
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production';
       const res = await fetch('/api/tutor/chat', {
         method: 'POST',
         headers: {

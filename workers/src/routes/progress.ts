@@ -7,7 +7,7 @@ export const progressRoutes = new Hono<{ Bindings: { DB: Database } }>();
 // GET /api/progress/dashboard — Complete dashboard data
 progressRoutes.get('/dashboard', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     // Fetch all dashboard data
@@ -91,7 +91,7 @@ progressRoutes.get('/dashboard', async (c) => {
 // GET /api/progress/scores — Score history for charts
 progressRoutes.get('/scores', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const history = await db.query<Record<string, unknown>>(

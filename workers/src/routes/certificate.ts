@@ -7,7 +7,7 @@ export const certificateRoutes = new Hono<{ Bindings: { DB: Database } }>();
 // GET /api/certificate/export — Generate memorization certificate data
 certificateRoutes.get('/export', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     // Get user info

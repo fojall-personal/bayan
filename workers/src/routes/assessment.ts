@@ -20,7 +20,7 @@ assessmentRoutes.get('/start', async (c) => {
 // POST /api/assessment/submit — Submit assessment answers
 assessmentRoutes.post('/submit', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
   const { literacy_score, comprehension_score, grammar_score, memorization_score } =
     await c.req.json();
 
@@ -77,7 +77,7 @@ assessmentRoutes.post('/submit', async (c) => {
 // GET /api/assessment/results — Get latest assessment results
 assessmentRoutes.get('/results', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const result = await db.get<Record<string, unknown>>(

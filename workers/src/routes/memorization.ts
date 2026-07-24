@@ -9,7 +9,7 @@ export const memorizationRoutes = new Hono<{ Bindings: { DB: Database } }>();
 memorizationRoutes.get('/surah/:surahId', async (c) => {
   const { surahId } = c.req.param();
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const entries = await db.query<Record<string, unknown>>(
@@ -27,7 +27,7 @@ memorizationRoutes.get('/surah/:surahId', async (c) => {
 // GET /api/memorization/all — Get all memorization entries for user
 memorizationRoutes.get('/all', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const all = await db.query<Record<string, unknown>>(
@@ -46,7 +46,7 @@ memorizationRoutes.get('/all', async (c) => {
 // POST /api/memorization/add — Add a new memorization entry
 memorizationRoutes.post('/add', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
   const { surahId, ayahFrom, ayahTo } = await c.req.json();
 
   try {
@@ -80,7 +80,7 @@ memorizationRoutes.post('/add', async (c) => {
 memorizationRoutes.post('/:id/review', async (c) => {
   const { id } = c.req.param();
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
   const { quality } = await c.req.json();
 
   try {
@@ -144,7 +144,7 @@ memorizationRoutes.post('/:id/review', async (c) => {
 memorizationRoutes.post('/:id/recall', async (c) => {
   const { id } = c.req.param();
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
   const { recalledAyah } = await c.req.json();
 
   try {
@@ -209,7 +209,7 @@ memorizationRoutes.post('/:id/recall', async (c) => {
 // GET /api/memorization/review/today — Get today's review targets
 memorizationRoutes.get('/review/today', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const due = await db.query<Record<string, unknown>>(
@@ -233,7 +233,7 @@ memorizationRoutes.get('/review/today', async (c) => {
 // GET /api/memorization/surahs — Get all surahs with memorization status
 memorizationRoutes.get('/surahs', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const surahs = await db.query<Record<string, unknown>>(

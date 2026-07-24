@@ -6,7 +6,7 @@ export const tajweedRoutes = new Hono<{ Bindings: { DB: Database } }>();
 
 // GET /api/tajweed/rules — Get all tajweed rules with examples
 tajweedRoutes.get('/rules', async (c) => {
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const rules = await db.query<Record<string, unknown>>(
@@ -31,7 +31,7 @@ tajweedRoutes.get('/rules', async (c) => {
 // GET /api/tajweed/verses/:surahId — Get verses with tajweed tags for a surah
 tajweedRoutes.get('/verses/:surahId', async (c) => {
   const { surahId } = c.req.param();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const verses = await db.query<Record<string, unknown>>(
@@ -61,7 +61,7 @@ tajweedRoutes.get('/verses/:surahId', async (c) => {
 // GET /api/tajweed/mastery — Get user's tajweed mastery by rule
 tajweedRoutes.get('/mastery', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const mastery = await db.query<Record<string, unknown>>(
@@ -99,7 +99,7 @@ tajweedRoutes.get('/mastery', async (c) => {
 tajweedRoutes.post('/practice/:ruleId/submit', async (c) => {
   const { ruleId } = c.req.param();
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
   const { wordId, correct, timeSpent } = await c.req.json();
 
   try {

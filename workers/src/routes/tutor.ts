@@ -7,7 +7,7 @@ export const tutorRoutes = new Hono<{ Bindings: { DB: Database } }>();
 // POST /api/tutor/chat — Chat with AI tutor (context-aware)
 tutorRoutes.post('/chat', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
   const { message, conversationHistory } = await c.req.json();
 
   try {
@@ -95,7 +95,7 @@ tutorRoutes.post('/chat', async (c) => {
 // GET /api/tutor/suggested-exercises — Get exercise recommendations based on error patterns
 tutorRoutes.get('/suggested-exercises', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const errors = await db.query<Record<string, unknown>>(
@@ -152,7 +152,7 @@ tutorRoutes.get('/suggested-exercises', async (c) => {
 // POST /api/tutor/feedback — Generate feedback on audio recording
 tutorRoutes.post('/feedback', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
   const { audioUrl, surahId, ayahFrom, ayahTo } = await c.req.json();
 
   try {
@@ -172,7 +172,7 @@ tutorRoutes.post('/feedback', async (c) => {
 // GET /api/tutor/history — Get conversation history
 tutorRoutes.get('/history', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const history = await db.query<Record<string, unknown>>(

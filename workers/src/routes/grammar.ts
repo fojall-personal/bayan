@@ -9,7 +9,7 @@ export const grammarRoutes = new Hono<{ Bindings: { DB: Database } }>();
 grammarRoutes.get('/deepdive/:category', async (c) => {
   const { category } = c.req.param();
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const mastery = await db.get<Record<string, unknown>>(
@@ -81,7 +81,7 @@ grammarRoutes.get('/conjugations', async (c) => {
 // POST /api/grammar/exercise — Submit grammar exercise answer
 grammarRoutes.post('/exercise', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
   const { exerciseId, answer, correct } = await c.req.json();
 
   try {
@@ -119,7 +119,7 @@ grammarRoutes.post('/exercise', async (c) => {
 // GET /api/grammar/mastery — Get grammar mastery by category
 grammarRoutes.get('/mastery', async (c) => {
   const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
+  const db = getDB(c);
 
   try {
     const mastery = await db.query<Record<string, unknown>>(
