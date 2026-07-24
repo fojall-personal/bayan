@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
-import type { Database } from '../lib/db';
+import { Database } from '../lib/db';
+import { calculateCompositeScore, assignLearningPath, generateAssessmentResult } from '../lib/scoring';
 
 export const assessmentRoutes = new Hono<{ Bindings: { DB: Database } }>();
 
@@ -19,28 +20,53 @@ assessmentRoutes.get('/start', async (c) => {
 assessmentRoutes.post('/submit', async (c) => {
   const userId = c.get('userId');
   const db = c.env.DB;
-  const answers = await c.req.json();
+  const { literacy_score, comprehension_score, grammar_score, memorization_score } =
+    await c.req.json();
 
   try {
-    const id = crypto.randomUUID();
-    const now = new Date().toISOString();
+    const scores = {
+      literacy: literacy_score || 0,
+      comprehension: comprehension_score || 0,
+      grammar: grammar_score || 0,
+      memorization: memorization_score || 0,
+    };
 
+    const result = generateAssessmentResult(scores, userId);
+
+    // Save to database
     await db.run(
-      `INSERT INTO assessment_results (id, user_id, completed_at, literacy_score, comprehension_score, grammar_score, memorization_score, level, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO assessment_results (id, user_id, completed_at, literacy_score, comprehension_score, grammar_score, memorization_score, level, details)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        id,
+        result.id,
         userId,
-        now,
-        answers.literacy_score || 0,
-        answers.comprehension_score || 0,
-        answers.grammar_score || 0,
-        answers.memorization_score || 0,
-        answers.level || 'beginner',
-        JSON.stringify(answers.details || {}),
+        result.completed_at,
+        result.literacy_score,
+        result.comprehension_score,
+        result.grammar_score,
+        result.memorization_score,
+        result.level,
+        JSON.stringify(result.details),
       ]
     );
 
-    return c.json({ data: { id, level: answers.level || 'beginner' } });
+    // Update user's learning path
+    await db.run(
+      `UPDATE users SET current_path = ?, onboarding_completed = 1, updated_at = datetime('now') WHERE id = ?`,
+      [result.path, userId]
+    );
+
+    return c.json({
+      data: {
+        id: result.id,
+        level: result.level,
+        path: result.path,
+        composite_score: result.composite_score,
+        weakest_area: result.details.weakest_area,
+        strongest_area: result.details.strongest_area,
+        path_description: result.details.paths[result.path].description,
+      },
+    });
   } catch (error) {
     console.error('Assessment submit error:', error);
     return c.json({ error: 'Internal server error' }, 500);
