@@ -1,0 +1,11 @@
+name = "languagebuilder"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+[vars]
+API_TOKEN = "dev-token-change-in-production"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "languagebuilder"
+database_id = "local"
