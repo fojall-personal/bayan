@@ -254,6 +254,29 @@ POST /api/v1/tutor/chat
 
 ---
 
+## Agent Workflow
+
+**Work one slice at a time, not the whole roadmap in one session.** A real
+session (2026-07-23) ran ~400 messages / an hour straight through repeated
+"proceed with the next slice" nudges, hit the tool-call iteration cap once
+already, and eventually got stuck in an unproductive loop re-checking API
+responses without resolving the underlying issue (see the D1/auth-token row
+above) - the long, un-delegated session made it hard to tell "still making
+progress" from "stuck," and burned a lot of context doing it.
+
+**For anything that's a full slice of work** (a whole module, a multi-file
+feature, a backend+frontend integration pass): use `delegate_task` to run it
+in a subagent with its own fresh turn budget, and only bring the summary
+back into the main session. Don't chain slice after slice in one linear
+conversation.
+
+**If a fix attempt fails twice in a row, stop and report the exact error**
+instead of retrying a third time or drifting into unrelated exploration
+(e.g. don't go looking at alternate AI providers or unrelated tooling
+mid-task - stay scoped to the actual problem in front of you).
+
+---
+
 ## Common Tasks
 
 ### Running the Development Server
@@ -287,6 +310,7 @@ npx wrangler d1 execute languagebuilder-db --file=src/lib/db/migrations/001_init
 | Arabic text rendering broken | Check `lang="ar"`, `dir="rtl"`, font loaded |
 | Speech recognition inaccurate | Fallback to manual review, log errors |
 | Build fails on next export | Ensure all pages use static data or ISR |
+| `GET /api/auth/profile` returns 500 | No users exist yet in D1 (real, hit 2026-07-23) - seed a real user, don't just retry. Frontend was also found using the hardcoded token `dev-token-change-in-production` instead of a real env-var token - fix both together, not just the symptom. |
 
 ---
 
@@ -313,4 +337,4 @@ npx wrangler d1 execute languagebuilder-db --file=src/lib/db/migrations/001_init
 
 ---
 
-*Last updated: July 23, 2026*
+*Last updated: July 24, 2026*
