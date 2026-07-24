@@ -39,13 +39,21 @@ app.get('/health', (c) =>
 
 // Auth middleware — all /api/* routes require bearer token
 app.use('/api/*', async (c, next) => {
-  const { valid, userId } = verifyAuth(c.req.raw.headers);
-  if (!valid) {
-    return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const API_TOKEN = c.env.API_TOKEN || 'dev-token-change-in-production';
+    const auth = c.req.raw.headers.get('authorization');
+    
+    if (!auth || auth !== `Bearer ${API_TOKEN}`) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    
+    // For single-user app, always use the same user ID
+    setCurrentUser({ id: 'test-user-1' });
+    await next();
+  } catch (error) {
+    console.error('Middleware error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
   }
-  // For single-user app, always use the same user ID
-  setCurrentUser({ id: 'test-user-1' });
-  await next();
 });
 
 // Mount route handlers with the shared currentUser helper
