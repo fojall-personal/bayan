@@ -1,0 +1,186 @@
+[
+  {
+    "id": "madd",
+    "name": "Madd (مَدّ)",
+    "description": "Elongation of certain vowels",
+    "color": "#3b82f6",
+    "subcategories": [
+      {
+        "id": "madd_natural",
+        "name": "Madd Tabi'i (مَدّ طَبِيعِيّ)",
+        "description": "Natural elongation of alif, waw, or yaa when followed by their corresponding sukun",
+        "duration": "2 counts",
+        "example": "قَالَ — elongate the alif for 2 counts",
+        "color": "#3b82f6"
+      },
+      {
+        "id": "madd_necessary",
+        "name": "Madd Lazim (مَدّ لَزِم)",
+        "description": "Forced elongation when a madd letter is followed by a shadda",
+        "duration": "6 counts",
+        "example": "الْحَآئِرِينَ — elongate for 6 counts",
+        "color": "#ef4444"
+      },
+      {
+        "id": "madd_munfasil",
+        "name": "Madd Munfasil (مَدّ مُنْفَصِل)",
+        "description": "Elongation when a madd letter is followed by a hamza in a new word",
+        "duration": "2-5 counts",
+        "example": "إِذْ قَالَ — elongate the alif for 2-5 counts",
+        "color": "#f59e0b"
+      }
+    ]
+  },
+  {
+    "id": "noon_saakin",
+    "name": "Noon Saakin and Tanween (نُون سَاكِنَة وتَنْوِين)",
+    "description": "Rules for when noon with sukun or tanween appears",
+    "color": "#22c55e",
+    "subcategories": [
+      {
+        "id": "idgham_with_ghunnah",
+        "name": "Idgham with Ghunnah (إِدْغَام بِغُنَّة)",
+        "description": "When noon saakin is followed by ي، ر، م، ل، و، ن",
+        "duration": "2 counts ghunnah",
+        "example": "مِنْ يَوْمِ — noon merges into yaa with nasalization",
+        "color": "#22c55e"
+      },
+      {
+        "id": "idgham_without_ghunnah",
+        "name": "Idgham without Ghunnah (إِدْغَام بِلَا غُنَّة)",
+        "description": "When noon saakin is followed by ل، ر",
+        "duration": "2 counts",
+        "example": "مِن رَّبِّكُم — noon merges into ra without nasalization",
+        "color": "#8b5cf6"
+      },
+      {
+        "id": "ikhfa",
+        "name": "Ikhfa (إِخْفَاء)",
+        "description": "Hidden pronunciation of noon when followed by the remaining 15 letters",
+        "duration": "2 counts",
+        "example": "مِن بَعْدِ — noon pronounced with slight concealment",
+        "color": "#06b6d4"
+      },
+      {
+        "id": "izhar",
+        "name": "Izhar (إِظْهَار)",
+        "description": "Clear pronunciation of noon when followed by throat letters",
+        "duration": "1 count",
+        "example": "مِنْ أَنسَانٍ — noon pronounced clearly",
+        "color": "#8b5cf6"
+      }
+    ]
+  },
+  {
+    "id": "meem_saakin",
+    "name": "Meem Saakin (مِيم سَاكِنَة)",
+    "description": "Rules for meem with sukun",
+    "color": "#06b6d4",
+    "subcategories": [
+      {
+        "id": "ikhfa_shafawi",
+        "name": "Ikhfa Shafawi (إِخْفَاء شَفَوِيّ)",
+        "description": "When meem saakin is followed by ب",
+        "duration": "2 counts",
+        "example": "تَرْمِيهِم بِحِجَارَة — meem merges with slight nasalization",
+        "color": "#06b6d4"
+      },
+      {
+        "id": "idgham_shafawi",
+        "name": "Idgham Shafawi (إِدْغَام شَفَوِيّ)",
+        "description": "When meem saakin is followed by م",
+        "duration": "2 counts idgham",
+        "example": "لَّهُم مَّا — meem merges into following meem",
+        "color": "#a855f7"
+      },
+      {
+        "id": "izhar_shafawi",
+        "name": "Izhar Shafawi (إِظْهَار شَفَوِيّ)",
+        "description": "Clear pronunciation of meem when followed by any other letter",
+        "duration": "1 count",
+        "example": "لَّهُمْ رَبُّهُم — meem pronounced clearly",
+        "color": "#ec4899"
+      }
+    ]
+  },
+  {
+    "id": "qalqalah",
+    "name": "Qalqalah (قَلْقَلَة)",
+    "description": "Bouncing vibration of certain letters when they have sukun",
+    "color": "#f59e0b",
+    "subcategories": [
+      {
+        "id": "qalqalah_sughra",
+        "name": "Qalqalah Sughra (قَلْقَلَة صُغْرَى)",
+        "description": "Light qalqalah when the letter has sukun in the middle of a word",
+        "duration": "1 count",
+        "example": "مَقْرُوبٌ — bounce the ق",
+        "color": "#f59e0b"
+      },
+      {
+        "id": "qalqalah_kubra",
+        "name": "Qalqalah Kubra (قَلْقَلَة كُبْرَى)",
+        "description": "Strong qalqalah when the letter has sukun at the end of a word",
+        "duration": "2 counts",
+        "example": "يَا أَيُّهَا — bounce the ه at the end",
+        "color": "#ef4444"
+      }
+    ]
+  },
+  {
+    "id": "ghunnah",
+    "name": "Ghunnah (غُنَّة)",
+    "description": "Nasalization sound produced through the nose",
+    "color": "#ec4899",
+    "subcategories": [
+      {
+        "id": "ghunnah_madd",
+        "name": "Ghunnah with Madd",
+        "description": "Nasalization during elongation of madd letters",
+        "duration": "2 counts",
+        "example": "مَن يَمُنُّ — nasalize during the madd",
+        "color": "#ec4899"
+      },
+      {
+        "id": "ghunnah_nun",
+        "name": "Ghunnah with Noon Saakin",
+        "description": "Nasalization when noon saakin undergoes idgham with ghunnah",
+        "duration": "2 counts",
+        "example": "مِنْ يَوْمِ — nasalize the merged noon",
+        "color": "#22c55e"
+      }
+    ]
+  },
+  {
+    "id": "makharij",
+    "name": "Makharij al-Huruf (مَخَارِج الحُرُوف)",
+    "description": "Articulation points of Arabic letters",
+    "color": "#8b5cf6",
+    "subcategories": [
+      {
+        "id": "makharij_jathim",
+        "name": "Jathim (الجَذْم)",
+        "description": "Letters from the tip of the tongue — ت، د، ط، ظ، ن",
+        "letters": "ت د ط ظ ن",
+        "example": "ن — tip of tongue touches upper teeth",
+        "color": "#8b5cf6"
+      },
+      {
+        "id": "makharij_lisan",
+        "name": "Lisan (اللِّسَان)",
+        "description": "Letters from the middle of the tongue — ك، ج، ي",
+        "letters": "ك ج ي",
+        "example": "ك — middle of tongue touches soft palate",
+        "color": "#f97316"
+      },
+      {
+        "id": "makharij_halq",
+        "name": "Halq (الحَلْق)",
+        "description": "Letters from the throat — ا، ه، ع، ح، غ، خ",
+        "letters": "ا ه ع ح غ خ",
+        "example": "ع — back of tongue touches throat",
+        "color": "#8b5cf6"
+      }
+    ]
+  }
+]
