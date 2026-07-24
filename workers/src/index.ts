@@ -16,6 +16,20 @@ interface Env {
   API_TOKEN: string;
 }
 
+// Shared variable to pass userId across route boundaries
+let currentUser: { id: string } | null = null;
+
+export function getCurrentUser() {
+  if (!currentUser) {
+    throw new Error('Not authenticated');
+  }
+  return currentUser;
+}
+
+export function setCurrentUser(user: { id: string } | null) {
+  currentUser = user;
+}
+
 const app = new Hono<{ Bindings: Env }>();
 
 // Health check
@@ -29,11 +43,11 @@ app.use('/api/*', async (c, next) => {
   if (!valid) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
-  c.set('userId', userId);
+  setCurrentUser({ id: userId });
   await next();
 });
 
-// Mount route handlers
+// Mount route handlers with the shared currentUser helper
 app.route('/api/auth', authRoutes);
 app.route('/api/assessment', assessmentRoutes);
 app.route('/api/learning', learningRoutes);

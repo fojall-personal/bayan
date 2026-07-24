@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { Database } from '../lib/db';
+import { getCurrentUser } from '../index';
 
 export const progressRoutes = new Hono<{ Bindings: { DB: Database } }>();
 
 // GET /api/progress/dashboard — Complete dashboard data
 progressRoutes.get('/dashboard', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {
@@ -89,7 +90,7 @@ progressRoutes.get('/dashboard', async (c) => {
 
 // GET /api/progress/scores — Score history for charts
 progressRoutes.get('/scores', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {

@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { Database } from '../lib/db';
+import { getCurrentUser } from '../index';
 
 export const tajweedRoutes = new Hono<{ Bindings: { DB: Database } }>();
 
@@ -59,7 +60,7 @@ tajweedRoutes.get('/verses/:surahId', async (c) => {
 
 // GET /api/tajweed/mastery — Get user's tajweed mastery by rule
 tajweedRoutes.get('/mastery', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {
@@ -97,7 +98,7 @@ tajweedRoutes.get('/mastery', async (c) => {
 // POST /api/tajweed/practice/:ruleId/submit — Submit practice result
 tajweedRoutes.post('/practice/:ruleId/submit', async (c) => {
   const { ruleId } = c.req.param();
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
   const { wordId, correct, timeSpent } = await c.req.json();
 

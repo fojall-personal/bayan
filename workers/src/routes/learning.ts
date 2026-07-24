@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { Database } from '../lib/db';
+import { getCurrentUser } from '../index';
 
 export const learningRoutes = new Hono<{ Bindings: { DB: Database } }>();
 
 // GET /api/learning/next — Get next available lesson based on learning path
 learningRoutes.get('/next', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {
@@ -126,7 +127,7 @@ learningRoutes.get('/lessons', async (c) => {
 
 // GET /api/learning/lessons/:id — Get single lesson with progress
 learningRoutes.get('/lessons/:id', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const lessonId = c.req.param('id');
   const db = c.env.DB;
 
@@ -169,7 +170,7 @@ learningRoutes.get('/lessons/:id', async (c) => {
 
 // POST /api/learning/lessons/:id/submit — Submit exercise answers
 learningRoutes.post('/lessons/:id/submit', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const lessonId = c.req.param('id');
   const db = c.env.DB;
   const { answers, score, exerciseIndex } = await c.req.json();
@@ -270,7 +271,7 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
 
 // GET /api/learning/flashcards — Get vocabulary flashcards for review
 learningRoutes.get('/flashcards', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {
@@ -300,7 +301,7 @@ learningRoutes.get('/flashcards', async (c) => {
 
 // POST /api/learning/flashcards/review — Submit flashcard review
 learningRoutes.post('/flashcards/review', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
   const { word, quality } = await c.req.json();
 

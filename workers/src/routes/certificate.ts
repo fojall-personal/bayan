@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { Database } from '../lib/db';
+import { getCurrentUser } from '../index';
 
 export const certificateRoutes = new Hono<{ Bindings: { DB: Database } }>();
 
 // GET /api/certificate/export — Generate memorization certificate data
 certificateRoutes.get('/export', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {

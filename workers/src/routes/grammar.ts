@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { Database } from '../lib/db';
+import { getCurrentUser } from '../index';
 import { parseArabicSentence, checkGrammarErrors, VERB_CONJUGATIONS } from '../lib/grammar-parser';
 
 export const grammarRoutes = new Hono<{ Bindings: { DB: Database } }>();
@@ -7,7 +8,7 @@ export const grammarRoutes = new Hono<{ Bindings: { DB: Database } }>();
 // GET /api/grammar/deepdive/:category — Get deep-dive content for nahw/sarf/balagha
 grammarRoutes.get('/deepdive/:category', async (c) => {
   const { category } = c.req.param();
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {
@@ -47,7 +48,7 @@ grammarRoutes.get('/deepdive/:category', async (c) => {
 
 // POST /api/grammar/parse — Parse an Arabic sentence
 grammarRoutes.post('/parse', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const { sentence } = await c.req.json();
 
   try {
@@ -79,7 +80,7 @@ grammarRoutes.get('/conjugations', async (c) => {
 
 // POST /api/grammar/exercise — Submit grammar exercise answer
 grammarRoutes.post('/exercise', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
   const { exerciseId, answer, correct } = await c.req.json();
 
@@ -117,7 +118,7 @@ grammarRoutes.post('/exercise', async (c) => {
 
 // GET /api/grammar/mastery — Get grammar mastery by category
 grammarRoutes.get('/mastery', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {

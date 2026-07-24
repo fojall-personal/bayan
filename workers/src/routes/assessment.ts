@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { Database } from '../lib/db';
+import { getCurrentUser } from '../index';
 import { calculateCompositeScore, assignLearningPath, generateAssessmentResult } from '../lib/scoring';
 
 export const assessmentRoutes = new Hono<{ Bindings: { DB: Database } }>();
@@ -18,7 +19,7 @@ assessmentRoutes.get('/start', async (c) => {
 
 // POST /api/assessment/submit — Submit assessment answers
 assessmentRoutes.post('/submit', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
   const { literacy_score, comprehension_score, grammar_score, memorization_score } =
     await c.req.json();
@@ -75,7 +76,7 @@ assessmentRoutes.post('/submit', async (c) => {
 
 // GET /api/assessment/results — Get latest assessment results
 assessmentRoutes.get('/results', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {

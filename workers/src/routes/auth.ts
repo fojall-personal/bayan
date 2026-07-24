@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { Database } from '../lib/db';
+import { getCurrentUser } from '../index';
 
 export const authRoutes = new Hono<{ Bindings: { DB: Database } }>();
 
 // GET /api/auth/profile — Return user profile
 authRoutes.get('/profile', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {
@@ -27,7 +28,7 @@ authRoutes.get('/profile', async (c) => {
 
 // POST /api/auth/onboarding — Complete onboarding and save preferences
 authRoutes.post('/onboarding', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
   const { goal, readingAbility, memorizedSurahs, challenge } = await c.req.json();
 

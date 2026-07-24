@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { Database } from '../lib/db';
+import { getCurrentUser } from '../index';
 import { applySM2 } from '../lib/space-repetition';
 
 export const memorizationRoutes = new Hono<{ Bindings: { DB: Database } }>();
@@ -7,7 +8,7 @@ export const memorizationRoutes = new Hono<{ Bindings: { DB: Database } }>();
 // GET /api/memorization/surah/:surahId — Get surah progress
 memorizationRoutes.get('/surah/:surahId', async (c) => {
   const { surahId } = c.req.param();
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {
@@ -25,7 +26,7 @@ memorizationRoutes.get('/surah/:surahId', async (c) => {
 
 // GET /api/memorization/all — Get all memorization entries for user
 memorizationRoutes.get('/all', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {
@@ -44,7 +45,7 @@ memorizationRoutes.get('/all', async (c) => {
 
 // POST /api/memorization/add — Add a new memorization entry
 memorizationRoutes.post('/add', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
   const { surahId, ayahFrom, ayahTo } = await c.req.json();
 
@@ -78,7 +79,7 @@ memorizationRoutes.post('/add', async (c) => {
 // POST /api/memorization/:id/review — Review a memorization entry (SM-2)
 memorizationRoutes.post('/:id/review', async (c) => {
   const { id } = c.req.param();
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
   const { quality } = await c.req.json();
 
@@ -142,7 +143,7 @@ memorizationRoutes.post('/:id/review', async (c) => {
 // POST /api/memorization/:id/recall — Next-ayah recall exercise
 memorizationRoutes.post('/:id/recall', async (c) => {
   const { id } = c.req.param();
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
   const { recalledAyah } = await c.req.json();
 
@@ -207,7 +208,7 @@ memorizationRoutes.post('/:id/recall', async (c) => {
 
 // GET /api/memorization/review/today — Get today's review targets
 memorizationRoutes.get('/review/today', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {
@@ -231,7 +232,7 @@ memorizationRoutes.get('/review/today', async (c) => {
 
 // GET /api/memorization/surahs — Get all surahs with memorization status
 memorizationRoutes.get('/surahs', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {

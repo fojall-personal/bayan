@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { Database } from '../lib/db';
+import { getCurrentUser } from '../index';
 
 export const tutorRoutes = new Hono<{ Bindings: { DB: Database } }>();
 
 // POST /api/tutor/chat — Chat with AI tutor (context-aware)
 tutorRoutes.post('/chat', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
   const { message, conversationHistory } = await c.req.json();
 
@@ -93,7 +94,7 @@ tutorRoutes.post('/chat', async (c) => {
 
 // GET /api/tutor/suggested-exercises — Get exercise recommendations based on error patterns
 tutorRoutes.get('/suggested-exercises', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {
@@ -150,7 +151,7 @@ tutorRoutes.get('/suggested-exercises', async (c) => {
 
 // POST /api/tutor/feedback — Generate feedback on audio recording
 tutorRoutes.post('/feedback', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
   const { audioUrl, surahId, ayahFrom, ayahTo } = await c.req.json();
 
@@ -170,7 +171,7 @@ tutorRoutes.post('/feedback', async (c) => {
 
 // GET /api/tutor/history — Get conversation history
 tutorRoutes.get('/history', async (c) => {
-  const userId = c.get('userId');
+  const { id: userId } = getCurrentUser();
   const db = c.env.DB;
 
   try {
