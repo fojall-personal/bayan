@@ -106,6 +106,7 @@ languagebuilder/
 - [x] Module 02: Assessment Engine (scoring algorithm, adaptive path assignment, frontend flow)
 - [x] Module 03: Learning Engine (lesson delivery, exercise rendering, flashcards, spaced repetition)
 - [x] Module 04: Memorization Tracker (SM-2 spaced repetition, review sessions, surah progress)
+- [x] Module 05: Progress Dashboard & Onboarding (dashboard, streak, onboarding flow, score history)
 - [ ] Module 03: Learning Engine
 - [ ] Module 04: Memorization Tracker
 - [ ] Module 05: Progress Dashboard & Onboarding
