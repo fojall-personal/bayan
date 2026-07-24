@@ -7,7 +7,7 @@ export async function GET() {
 
     const res = await fetch('http://localhost:8787/health', {
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${token}`
       },
     });
 
