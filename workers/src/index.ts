@@ -7,6 +7,7 @@ import { learningRoutes } from './routes/learning';
 import { memorizationRoutes } from './routes/memorization';
 import { progressRoutes } from './routes/progress';
 import { tajweedRoutes } from './routes/tajweed';
+import { grammarRoutes } from './routes/grammar';
 
 interface Env {
   DB: Database;
@@ -37,5 +38,6 @@ app.route('/api/learning', learningRoutes);
 app.route('/api/memorization', memorizationRoutes);
 app.route('/api/progress', progressRoutes);
 app.route('/api/tajweed', tajweedRoutes);
+app.route('/api/grammar', grammarRoutes);
 
 export default app;

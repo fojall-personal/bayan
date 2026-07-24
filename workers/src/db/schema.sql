@@ -141,3 +141,25 @@ INSERT INTO tajweed_rules (id, name, description, color, color_name) VALUES
   ('qalqalah', 'Qalqalah (قلقة)', 'Vibrating bounce of ق ط ب ج د', '#f59e0b', 'amber'),
   ('ghunnah', 'Ghunnah (غُنَّة)', 'Nasalization of ن and م with shadda', '#ec4899', 'pink'),
   ('makharij', 'Makharij al-Huruf (مَخَارِج الحُرُوف)', 'Articulation points of letters', '#8b5cf6', 'purple');
+
+-- Grammar mastery tracking
+CREATE TABLE IF NOT EXISTS grammar_mastery (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  category TEXT NOT NULL,
+  mastery_level INTEGER NOT NULL DEFAULT 1,
+  total_attempts INTEGER NOT NULL DEFAULT 0,
+  correct_attempts INTEGER NOT NULL DEFAULT 0,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, category)
+);
+
+-- Grammar exercise answers
+CREATE TABLE IF NOT EXISTS grammar_exercises (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  exercise_id TEXT NOT NULL,
+  answer TEXT,
+  correct INTEGER NOT NULL DEFAULT 0,
+  answered_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
