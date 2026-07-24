@@ -109,8 +109,9 @@ languagebuilder/
 - [x] Module 05: Progress Dashboard & Onboarding (dashboard, streak, onboarding flow, score history)
 
 ### Phase 2: Enhancement
-- [ ] Module 06: Tajweed Visualization
-- [ ] Module 07: Grammar Deep-Dive
+- [x] Module 06: Tajweed Visualization (color-coded text, makharij, mastery tracking)
+
+
 
 ### Phase 3: Advanced Features
 - [ ] Module 08: AI Tutor & Advanced Features

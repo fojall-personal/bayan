@@ -567,13 +567,14 @@ Every component from module 11 and page from module 12 must pass the anti-slop c
 - [x] Module 03: Learning Engine (lesson delivery, flashcards, spaced repetition)
 - [x] Module 04: Memorization Tracker (SM-2 spaced repetition, review sessions, surah progress)
 - [x] Module 05: Progress Dashboard & Onboarding (dashboard, streak, onboarding flow, score history)
+
+### Phase 2: Enhancement
+- [x] Module 06: Tajweed Visualization (color-coded text, makharij, mastery tracking)
 - [ ] Module 03: Learning Engine
 - [ ] Module 04: Memorization Tracker
 - [ ] Module 05: Progress Dashboard & Onboarding
 
-### Phase 2: Enhancement
-- [ ] Module 06: Tajweed Visualization
-- [ ] Module 07: Grammar Deep-Dive
+
 
 ### Phase 3: Advanced Features
 - [ ] Module 08: AI Tutor & Advanced Features
