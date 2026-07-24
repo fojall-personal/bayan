@@ -564,6 +564,7 @@ Every component from module 11 and page from module 12 must pass the anti-slop c
 ### Phase 1: MVP Feature Modules
 - [x] Module 01: Database Schema & Data Layer (content seed)
 - [x] Module 02: Assessment Engine (scoring + path assignment)
+- [x] Module 03: Learning Engine (lesson delivery, flashcards, spaced repetition)
 - [ ] Module 03: Learning Engine
 - [ ] Module 04: Memorization Tracker
 - [ ] Module 05: Progress Dashboard & Onboarding
