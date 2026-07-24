@@ -9,6 +9,12 @@ authRoutes.get('/profile', async (c) => {
   try {
     const { id: userId } = getCurrentUser();
     const db = c.env.DB;
+    
+    // Debug: Check if db exists
+    if (!db) {
+      console.log('c.env.DB is undefined!');
+      return c.json({ error: 'Database not available' }, 500);
+    }
 
     try {
       const user = await db.get<Record<string, unknown>>(
@@ -23,11 +29,11 @@ authRoutes.get('/profile', async (c) => {
       return c.json({ data: user });
     } catch (dbError) {
       console.error('DB error:', dbError);
-      return c.json({ error: 'Database error' }, 500);
+      return c.json({ error: 'Database error', details: (dbError as Error).message }, 500);
     }
   } catch (error) {
     console.error('Auth profile error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return c.json({ error: 'Internal server error', details: (error as Error).message }, 500);
   }
 });
 
