@@ -108,3 +108,36 @@ CREATE INDEX IF NOT EXISTS idx_memorization_user ON memorization(user_id);
 CREATE INDEX IF NOT EXISTS idx_spaced_repetition_due ON spaced_repetition(due_date);
 CREATE INDEX IF NOT EXISTS idx_vocabulary_user ON vocabulary_mastery(user_id);
 CREATE INDEX IF NOT EXISTS idx_lessons_module ON lessons(module);
+
+-- Tajweed rules reference
+CREATE TABLE IF NOT EXISTS tajweed_rules (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  color TEXT NOT NULL,
+  color_name TEXT
+);
+
+-- User-taught tajweed practice tracking
+CREATE TABLE IF NOT EXISTS tajweed_practice (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  rule_id TEXT NOT NULL,
+  word_id TEXT,
+  correct INTEGER NOT NULL DEFAULT 0,
+  time_spent INTEGER,
+  practiced_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (rule_id) REFERENCES tajweed_rules(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tajweed_practice_user_rule ON tajweed_practice(user_id, rule_id);
+
+-- Seed: Tajweed rules (from content/tajweed/tajweed-rules.json)
+INSERT INTO tajweed_rules (id, name, description, color, color_name) VALUES
+  ('madd', 'Madd (مَدّ)', 'Elongation of certain vowels', '#3b82f6', 'blue'),
+  ('noon_saakin', 'Noon Saakin & Tanween', 'Rules for noon with sukun or tanween', '#22c55e', 'green'),
+  ('meem_saakin', 'Meem Saakin', 'Rules for meem with sukun', '#06b6d4', 'cyan'),
+  ('qalqalah', 'Qalqalah (قلقة)', 'Vibrating bounce of ق ط ب ج د', '#f59e0b', 'amber'),
+  ('ghunnah', 'Ghunnah (غُنَّة)', 'Nasalization of ن and م with shadda', '#ec4899', 'pink'),
+  ('makharij', 'Makharij al-Huruf (مَخَارِج الحُرُوف)', 'Articulation points of letters', '#8b5cf6', 'purple');

@@ -6,6 +6,7 @@ import { assessmentRoutes } from './routes/assessment';
 import { learningRoutes } from './routes/learning';
 import { memorizationRoutes } from './routes/memorization';
 import { progressRoutes } from './routes/progress';
+import { tajweedRoutes } from './routes/tajweed';
 
 interface Env {
   DB: Database;
@@ -35,5 +36,6 @@ app.route('/api/assessment', assessmentRoutes);
 app.route('/api/learning', learningRoutes);
 app.route('/api/memorization', memorizationRoutes);
 app.route('/api/progress', progressRoutes);
+app.route('/api/tajweed', tajweedRoutes);
 
 export default app;
