@@ -1,6 +1,10 @@
 node_modules/
 node_modules/
 
+# Environment variables
+.env
+.env.*
+
 # Next.js build artifacts
 src/app/.next/
 src/app/out/
@@ -9,3 +13,7 @@ src/app/out/
 
 # Wrangler dev state
 workers/.wrangler/
+
+# OS files
+.DS_Store
+Thumbs.db
