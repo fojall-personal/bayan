@@ -20,7 +20,7 @@ export function Button({
   type = 'button',
 }: ButtonProps) {
   const variants: Record<string, string> = {
-    primary: 'bg-arabic-green text-white hover:bg-arabic-green/90 shadow-glow',
+    primary: 'bg-primary-500 text-white hover:bg-primary-600 shadow-glow',
     secondary: 'bg-gray-800 text-gray-50 hover:bg-gray-700 border border-gray-700',
     ghost: 'text-gray-400 hover:text-gray-50 hover:bg-gray-800',
     danger: 'bg-red-600 text-white hover:bg-red-700',

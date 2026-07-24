@@ -11,7 +11,7 @@ export function Card({ children, className = '', interactive = false }: CardProp
     <div
       className={`bg-gray-900 border border-gray-800 rounded-xl p-6 ${
         interactive
-          ? 'hover:border-arabic-green/50 hover:shadow-glow transition-all cursor-pointer'
+          ? 'hover:border-primary-500/50 hover:shadow-glow transition-all cursor-pointer'
           : ''
       } ${className}`}
     >
