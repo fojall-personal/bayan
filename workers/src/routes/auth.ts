@@ -2,22 +2,16 @@ import { Hono } from 'hono';
 import { Database } from '../lib/db';
 import { getCurrentUser } from '../index';
 
-export const authRoutes = new Hono<{ Bindings: { DB: Database } }>();
+export const authRoutes = new Hono<{ Bindings: { DB: any } }>();
 
 // GET /api/auth/profile — Return user profile
 authRoutes.get('/profile', async (c) => {
   try {
     const { id: userId } = getCurrentUser();
-    const db = c.env.DB;
-    
-    // Debug: Check if db exists
-    if (!db) {
-      console.log('c.env.DB is undefined!');
-      return c.json({ error: 'Database not available' }, 500);
-    }
+    const dbWrapper = new Database(c.env.DB);
 
     try {
-      const user = await db.get<Record<string, unknown>>(
+      const user = await dbWrapper.get<Record<string, unknown>>(
         `SELECT id, goal, onboarding_completed, current_path, created_at FROM users WHERE id = ?`,
         [userId]
       );
