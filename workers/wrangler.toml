@@ -8,4 +8,8 @@ API_TOKEN = "dev-token-change-in-production"
 [[d1_databases]]
 binding = "DB"
 database_name = "languagebuilder"
-database_id = "local"
+database_id = "6216c466-c244-4c16-8569-c7281585fbc6"
+
+[[r2_buckets]]
+bucket_name = "languagebuilder-assets"
+binding = "languagebuilder_assets"
