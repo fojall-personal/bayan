@@ -1,5 +1,7 @@
 'use client';
 
+import { Sidebar } from './Sidebar';
+
 interface AppShellProps {
   children: React.ReactNode;
   sidebar?: boolean;

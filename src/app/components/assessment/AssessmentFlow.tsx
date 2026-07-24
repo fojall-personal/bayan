@@ -194,7 +194,13 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
       }
     } catch (error) {
       console.error('Failed to submit assessment:', error);
-      onComplete?.(moduleScores);
+      const fallbackScores = {
+        literacy: 0,
+        comprehension: 0,
+        grammar: 0,
+        memorization: 0,
+      };
+      onComplete?.(fallbackScores);
     }
   };
 

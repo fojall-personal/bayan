@@ -137,3 +137,23 @@ Private project. All rights reserved.
 - Quran.com API for verse data
 - Tanzil.net for Uthmani script
 - Cloudflare for serverless infrastructure
+
+
+## Deployment
+
+**Backend (Workers):** https://languagebuilder.fojall.workers.dev  
+**Frontend (Pages):** https://languagebuilder-frontend.pages.dev
+
+### Environment Variables
+- `AUTH_TOKEN` - Bearer token for API authentication
+- `DB` - D1 database binding
+- `languagebuilder_assets` - R2 bucket binding
+
+### Setup Commands
+```bash
+# Deploy Workers
+cd workers && npx wrangler deploy
+
+# Deploy Frontend
+cd src/app && npx wrangler pages deploy out --project-name=languagebuilder-frontend
+```

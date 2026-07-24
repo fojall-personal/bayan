@@ -3,9 +3,10 @@
 interface BadgeProps {
   children: React.ReactNode;
   variant?: 'default' | 'success' | 'warning' | 'error' | 'info';
+  className?: string;
 }
 
-export function Badge({ children, variant = 'default' }: BadgeProps) {
+export function Badge({ children, variant = 'default', className }: BadgeProps) {
   const variants: Record<string, string> = {
     default: 'bg-gray-700 text-gray-300',
     success: 'bg-arabic-green/20 text-arabic-green-400',
@@ -15,7 +16,7 @@ export function Badge({ children, variant = 'default' }: BadgeProps) {
   };
 
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${variants[variant]}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${variants[variant]} ${className || ''}`}>
       {children}
     </span>
   );

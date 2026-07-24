@@ -97,7 +97,7 @@ export function TajweedViewer({ surahId, surahName, verses }: TajweedViewerProps
               __html: highlightTajweed(
                 currentVerse.text_uthmani,
                 currentVerse.tajweed_tags,
-                highlightedRule
+                highlightedRule || undefined
               ),
             }}
           />
@@ -126,7 +126,7 @@ export function TajweedViewer({ surahId, surahName, verses }: TajweedViewerProps
                 __html: highlightTajweed(
                   verse.text_uthmani,
                   verse.tajweed_tags,
-                  highlightedRule
+                  highlightedRule || undefined
                 ),
               }}
             />

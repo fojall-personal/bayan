@@ -18,7 +18,14 @@ interface AssessmentResult {
   details: {
     weakest_area: string;
     strongest_area: string;
-    paths: Record<string, { name: string; description: string }>;
+    paths: Record<string, { 
+    name: string; 
+    description: string;
+    week1Focus?: string;
+    week5Focus?: string;
+    week9Focus?: string;
+    week13Focus?: string;
+  }>;
   };
 }
 
