@@ -167,3 +167,33 @@ The interface has been completely redesigned with:
 - **Mobile-First**: Fully responsive design that works on all devices
 - **Inline CSS**: Optimized for static export and fast loading
 - **Professional Layout**: Spacious, readable interface with proper spacing
+
+
+## 🎨 UI/UX Highlights
+
+- **Modern Design System**: Dark theme with Arabic green accents
+- **Responsive Layout**: Works perfectly on mobile, tablet, and desktop
+- **Professional Onboarding**: Beautiful goal selection interface
+- **Fast Performance**: Static export optimized for speed
+- **Accessible**: WCAG compliant navigation and interactions
+
+## 📱 Live Demo
+
+**Frontend**: https://languagebuilder-frontend.pages.dev  
+**Backend API**: https://languagebuilder.fojall.workers.dev
+
+## 🚀 Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Deploy to Cloudflare
+npm run deploy
+```
