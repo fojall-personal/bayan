@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { Database } from '../lib/db';
+import { Database } from '../lib/db';
 
 export const authRoutes = new Hono<{ Bindings: { DB: Database } }>();
 
@@ -9,62 +9,50 @@ authRoutes.get('/profile', async (c) => {
   const db = c.env.DB;
 
   try {
-    const user = await db.get<{
-      id: string;
-      goal: string;
-      onboarding_completed: number;
-      current_path: string;
-      created_at: string;
-    }>(`SELECT * FROM users WHERE id = ?`, [userId]);
+    const user = await db.get<Record<string, unknown>>(
+      `SELECT id, goal, onboarding_completed, current_path, created_at FROM users WHERE id = ?`,
+      [userId]
+    );
 
     if (!user) {
-      // Auto-create user on first access
-      const insert = await db.run(
-        `INSERT INTO users (id, goal, onboarding_completed, current_path) VALUES (?, ?, ?, ?)`,
-        [userId, 'all', 0, 'path1']
-      );
-
-      return c.json({
-        data: {
-          id: userId,
-          goal: 'all',
-          onboarding_completed: false,
-          current_path: 'path1',
-          created_at: new Date().toISOString(),
-        },
-      });
+      return c.json({ error: 'User not found' }, 404);
     }
 
-    return c.json({
-      data: {
-        id: user.id,
-        goal: user.goal,
-        onboarding_completed: user.onboarding_completed === 1,
-        current_path: user.current_path,
-        created_at: user.created_at,
-      },
-    });
+    return c.json({ data: user });
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error('Auth profile error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
 
-// POST /api/auth/onboard — Mark onboarding as complete
-authRoutes.post('/onboard', async (c) => {
+// POST /api/auth/onboarding — Complete onboarding and save preferences
+authRoutes.post('/onboarding', async (c) => {
   const userId = c.get('userId');
   const db = c.env.DB;
-  const { goal, current_path } = await c.req.json();
+  const { goal, readingAbility, memorizedSurahs, challenge } = await c.req.json();
 
   try {
+    // Determine initial learning path based on self-assessment
+    let currentPath = 'path1'; // Default: beginner
+    if (readingAbility === 'yes' && memorizedSurahs !== '0') {
+      currentPath = 'path3'; // Advanced
+    } else if (readingAbility === 'partial') {
+      currentPath = 'path2'; // Conversational
+    }
+
     await db.run(
-      `UPDATE users SET onboarding_completed = 1, goal = ?, current_path = ?, updated_at = datetime('now') WHERE id = ?`,
-      [goal || 'all', current_path || 'path1', userId]
+      `UPDATE users SET
+         goal = ?,
+         current_path = ?,
+         onboarding_completed = 1,
+         updated_at = datetime('now')
+       WHERE id = ?`,
+      [goal, currentPath, userId]
     );
 
-    return c.json({ data: { success: true } });
+    return c.json({ success: true, currentPath });
   } catch (error) {
-    console.error('Onboard error:', error);
+    console.error('Onboarding error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

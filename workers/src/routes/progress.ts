@@ -1,112 +1,177 @@
 import { Hono } from 'hono';
-import type { Database } from '../lib/db';
+import { Database } from '../lib/db';
 
 export const progressRoutes = new Hono<{ Bindings: { DB: Database } }>();
 
-// GET /api/progress/summary — Get user progress summary
-progressRoutes.get('/summary', async (c) => {
+// GET /api/progress/dashboard — Complete dashboard data
+progressRoutes.get('/dashboard', async (c) => {
   const userId = c.get('userId');
   const db = c.env.DB;
 
   try {
-    // Count total lessons
-    const totalLessons = await db.query<{ count: number }>(
-      `SELECT COUNT(*) as count FROM lessons`
-    );
+    // Fetch all dashboard data
+    const [user, latestAssessment, lessonProgress, dueMemorization, streak] =
+      await Promise.all([
+        db.get<Record<string, unknown>>(
+          `SELECT * FROM users WHERE id = ?`,
+          [userId]
+        ),
+        db.get<Record<string, unknown>>(
+          `SELECT * FROM assessment_results WHERE user_id = ? ORDER BY completed_at DESC LIMIT 1`,
+          [userId]
+        ),
+        db.query<Record<string, unknown>>(
+          `SELECT * FROM lesson_progress WHERE user_id = ? ORDER BY last_practiced DESC LIMIT 10`,
+          [userId]
+        ),
+        db.query<Record<string, unknown>>(
+          `SELECT * FROM memorization WHERE user_id = ? AND next_review <= datetime('now')`,
+          [userId]
+        ),
+        calculateStreak(db, userId),
+      ]);
 
-    // Count completed lessons
-    const completedLessons = await db.query<{ count: number }>(
-      `SELECT COUNT(*) as count FROM lesson_progress WHERE completed = 1`
-    );
-
-    // Count memorization entries
-    const memorizedEntries = await db.query<{ count: number }>(
-      `SELECT COUNT(*) as count FROM memorization WHERE user_id = ?`,
-      [userId]
-    );
-
-    // Count mastered entries
-    const masteredEntries = await db.query<{ count: number }>(
-      `SELECT COUNT(*) as count FROM memorization WHERE user_id = ? AND status = 'mastered'`,
-      [userId]
-    );
-
-    // Get latest assessment
-    const latestAssessment = await db.get<Record<string, unknown>>(
-      `SELECT * FROM assessment_results WHERE user_id = ? ORDER BY completed_at DESC LIMIT 1`,
-      [userId]
-    );
-
-    return c.json({
-      data: {
-        total_lessons: totalLessons[0]?.count || 0,
-        completed_lessons: completedLessons[0]?.count || 0,
-        memorized_entries: memorizedEntries[0]?.count || 0,
-        mastered_entries: masteredEntries[0]?.count || 0,
-        latest_assessment: latestAssessment || null,
-      },
-    });
-  } catch (error) {
-    console.error('Progress summary error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});
-
-// GET /api/progress/lesson/:id — Get lesson progress details
-progressRoutes.get('/lesson/:id', async (c) => {
-  const userId = c.get('userId');
-  const lessonId = c.req.param('id');
-  const db = c.env.DB;
-
-  try {
-    const progress = await db.get<Record<string, unknown>>(
-      `SELECT * FROM lesson_progress WHERE lesson_id = ?`,
-      [lessonId]
-    );
-
-    if (!progress) {
-      return c.json({ data: null });
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
     }
 
-    // Get quiz attempts for this lesson
-    const attempts = await db.query<Record<string, unknown>>(
-      `SELECT * FROM quiz_attempts WHERE user_id = ? AND lesson_id = ? ORDER BY completed_at DESC LIMIT 5`,
-      [userId, lessonId]
+    // Calculate summary metrics
+    const totalLessons = await db.get<Record<string, unknown>>(
+      `SELECT COUNT(*) as count FROM lessons`
     );
+    const completedLessons = await db.query<Record<string, unknown>>(
+      `SELECT COUNT(*) as count FROM lesson_progress WHERE completed = 1 AND user_id = ?`,
+      [userId]
+    );
+    const memorizedSurahs = await db.query<Record<string, unknown>>(
+      `SELECT DISTINCT surah_id FROM memorization WHERE user_id = ? AND status = 'mastered'`,
+      [userId]
+    );
+    const vocabularyReviewed = await db.get<Record<string, unknown>>(
+      `SELECT COUNT(*) as count FROM vocabulary_mastery WHERE user_id = ? AND last_seen >= datetime('now', '-7 days')`,
+      [userId]
+    );
+
+    const weeklyProgress = await getWeeklyProgress(db, userId);
 
     return c.json({
       data: {
-        completed: (progress.completed as number) === 1,
-        score: progress.score,
-        attempts: progress.attempts,
-        streak: progress.streak,
-        last_practiced: progress.last_practiced,
-        quiz_attempts: attempts,
+        user: {
+          id: user.id,
+          goal: user.goal,
+          onboarding_completed: (user.onboarding_completed as number) === 1,
+          current_path: user.current_path,
+          created_at: user.created_at,
+        },
+        latestAssessment: latestAssessment
+          ? {
+              ...latestAssessment,
+              details: JSON.parse((latestAssessment.details as string) || '{}'),
+            }
+          : null,
+        todayReview: dueMemorization || [],
+        streak,
+        stats: {
+          totalLessons: (totalLessons?.count as number) || 0,
+          completedLessons: (completedLessons?.[0]?.count as number) || 0,
+          memorizedSurahs: (memorizedSurahs?.length as number) || 0,
+          vocabularyReviewed: (vocabularyReviewed?.count as number) || 0,
+        },
+        weeklyProgress,
+        lastLesson: lessonProgress?.[0] || null,
       },
     });
   } catch (error) {
-    console.error('Progress lesson error:', error);
+    console.error('Dashboard error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
 
-// GET /api/progress/review — Get items due for review (spaced repetition)
-progressRoutes.get('/review', async (c) => {
+// GET /api/progress/scores — Score history for charts
+progressRoutes.get('/scores', async (c) => {
   const userId = c.get('userId');
   const db = c.env.DB;
-  const now = new Date().toISOString();
 
   try {
-    const dueItems = await db.query<Record<string, unknown>>(
-      `SELECT * FROM spaced_repetition WHERE user_id = ? AND due_date <= ? ORDER BY due_date ASC`,
-      [userId, now]
+    const history = await db.query<Record<string, unknown>>(
+      `SELECT literacy_score, comprehension_score, grammar_score, memorization_score, completed_at
+       FROM assessment_results
+       WHERE user_id = ?
+       ORDER BY completed_at ASC`,
+      [userId]
     );
 
     return c.json({
-      data: dueItems,
+      data: history.map((row) => ({
+        literacy_score: row.literacy_score,
+        comprehension_score: row.comprehension_score,
+        grammar_score: row.grammar_score,
+        memorization_score: row.memorization_score,
+        completed_at: row.completed_at,
+      })),
     });
   } catch (error) {
-    console.error('Progress review error:', error);
+    console.error('Scores history error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
+
+// Calculate streak
+async function calculateStreak(db: Database, userId: string): Promise<number> {
+  let streak = 0;
+  let checkDate = new Date();
+
+  // Check if user was active today
+  const today = await db.get<Record<string, unknown>>(
+    `SELECT COUNT(*) as count FROM lesson_progress WHERE user_id = ? AND DATE(last_practiced) = DATE('now')`,
+    [userId]
+  );
+
+  if (!today || today.count === 0) {
+    // Check yesterday
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
+  // Count consecutive days
+  while (true) {
+    const dayData = await db.get<Record<string, unknown>>(
+      `SELECT COUNT(*) as count FROM lesson_progress
+       WHERE user_id = ? AND DATE(last_practiced) = DATE(?, '-' || ? || ' days')`,
+      [userId, new Date().toISOString(), streak]
+    );
+
+    if (!dayData || dayData.count === 0) break;
+    streak++;
+  }
+
+  return streak;
+}
+
+// Get weekly progress
+async function getWeeklyProgress(
+  db: Database,
+  userId: string
+): Promise<{ lessonsCompleted: number; reviewsCompleted: number; targetLessons: number; targetReviews: number }> {
+  const startOfWeek = new Date();
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const lessons = await db.query<Record<string, unknown>>(
+    `SELECT lesson_id FROM lesson_progress
+     WHERE user_id = ? AND last_practiced >= ?`,
+    [userId, startOfWeek.toISOString()]
+  );
+
+  const reviews = await db.query<Record<string, unknown>>(
+    `SELECT id FROM memorization
+     WHERE user_id = ? AND last_reviewed >= ?`,
+    [userId, startOfWeek.toISOString()]
+  );
+
+  return {
+    lessonsCompleted: lessons.length,
+    reviewsCompleted: reviews.length,
+    targetLessons: 5,
+    targetReviews: 10,
+  };
+}
