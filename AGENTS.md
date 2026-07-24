@@ -204,6 +204,18 @@ wrangler d1 execute languagebuilder-db --command="PRAGMA foreign_keys = ON"
 
 ## Security
 
+### Environment Variables
+- Secrets file: `.env` (contains Cloudflare API tokens and auth tokens)
+- `.env` is in `.gitignore` and must never be committed
+- Cloudflare API token for Workers/D1/R2 operations
+- `AUTH_TOKEN` for API bearer token authentication
+
+### Best Practices
+- Never hardcode tokens in source code
+- Use environment variables for all secrets
+- Rotate API tokens periodically
+- Monitor API usage in Cloudflare dashboard
+
 - No user passwords — bearer token only
 - No PII collected beyond name/email
 - Audio recordings stored in R2 with time-limited signed URLs
