@@ -570,6 +570,7 @@ Every component from module 11 and page from module 12 must pass the anti-slop c
 
 ### Phase 2: Enhancement
 - [x] Module 06: Tajweed Visualization (color-coded text, makharij, mastery tracking)
+- [x] Module 07: Grammar Deep-Dive (sentence parser, conjugation tables, nahw/sarf/balagha, grammar checking)
 - [ ] Module 03: Learning Engine
 - [ ] Module 04: Memorization Tracker
 - [ ] Module 05: Progress Dashboard & Onboarding

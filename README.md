@@ -110,6 +110,7 @@ languagebuilder/
 
 ### Phase 2: Enhancement
 - [x] Module 06: Tajweed Visualization (color-coded text, makharij, mastery tracking)
+- [x] Module 07: Grammar Deep-Dive (sentence parser, conjugation tables, nahw/sarf/balagha, grammar checking)
 
 
 
