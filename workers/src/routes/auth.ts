@@ -6,20 +6,25 @@ export const authRoutes = new Hono<{ Bindings: { DB: Database } }>();
 
 // GET /api/auth/profile — Return user profile
 authRoutes.get('/profile', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = c.env.DB;
-
   try {
-    const user = await db.get<Record<string, unknown>>(
-      `SELECT id, goal, onboarding_completed, current_path, created_at FROM users WHERE id = ?`,
-      [userId]
-    );
+    const { id: userId } = getCurrentUser();
+    const db = c.env.DB;
 
-    if (!user) {
-      return c.json({ error: 'User not found' }, 404);
+    try {
+      const user = await db.get<Record<string, unknown>>(
+        `SELECT id, goal, onboarding_completed, current_path, created_at FROM users WHERE id = ?`,
+        [userId]
+      );
+
+      if (!user) {
+        return c.json({ error: 'User not found' }, 404);
+      }
+
+      return c.json({ data: user });
+    } catch (dbError) {
+      console.error('DB error:', dbError);
+      return c.json({ error: 'Database error' }, 500);
     }
-
-    return c.json({ data: user });
   } catch (error) {
     console.error('Auth profile error:', error);
     return c.json({ error: 'Internal server error' }, 500);
