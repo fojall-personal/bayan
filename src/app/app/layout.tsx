@@ -23,31 +23,142 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#0c0a09" />
         <style>{`
-          :root {
-            --color-primary-500: #22c55e;
-            --color-primary-600: #16a34a;
-            --color-gray-50: #f9fafb;
-            --color-gray-300: #d1d5db;
-            --color-gray-400: #9ca3af;
-            --color-gray-500: #6b7280;
-            --color-gray-700: #374151;
-            --color-gray-800: #1f2937;
-            --color-gray-900: #111827;
-            --color-gray-950: #0c0a09;
-          }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--color-gray-950); color: var(--color-gray-50); }
-          nav { border-bottom: 1px solid var(--color-gray-800); background: rgba(17, 24, 39, 0.5); backdrop-filter: blur(8px); }
-          .nav-container { max-width: 7xl; margin: 0 auto; padding: 0 1rem; }
-          .nav-content { display: flex; align-items: center; justify-content: space-between; height: 4rem; }
-          .nav-title { font-size: 1.25rem; font-weight: bold; color: var(--color-primary-500); }
-          .nav-links { display: none; }
-          .nav-link { color: var(--color-gray-300); text-decoration: none; padding: 0.5rem 0.75rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; transition: color 0.2s; }
-          .nav-link:hover { color: var(--color-primary-400); }
-          @media (min-width: 768px) { .nav-links { display: flex; gap: 1rem; } }
-          .mobile-menu-btn { color: var(--color-gray-300); background: none; border: none; cursor: pointer; }
-          main { max-width: 7xl; margin: 0 auto; padding: 1.5rem; }
-          @media (min-width: 1024px) { main { padding: 2rem 2rem; } }
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0c0a09;
+            color: #f9fafb;
+            line-height: 1.6;
+          }
+          nav {
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #1f2937;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+          }
+          .nav-container {
+            max-width: 80rem;
+            margin: 0 auto;
+            padding: 0 1rem;
+          }
+          .nav-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 4rem;
+          }
+          .nav-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #22c55e;
+            text-decoration: none;
+            transition: color 0.2s;
+          }
+          .nav-title:hover {
+            color: #4ade80;
+          }
+          .nav-links {
+            display: none;
+            gap: 0.25rem;
+          }
+          .nav-link {
+            color: #d1d5db;
+            text-decoration: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+          }
+          .nav-link:hover {
+            color: #4ade80;
+            background: rgba(34, 197, 94, 0.1);
+          }
+          @media (min-width: 768px) {
+            .nav-links {
+              display: flex;
+              gap: 0.25rem;
+            }
+          }
+          .mobile-menu-btn {
+            color: #d1d5db;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+          }
+          main {
+            max-width: 80rem;
+            margin: 0 auto;
+            padding: 1.5rem;
+          }
+          @media (min-width: 1024px) {
+            main {
+              padding: 2rem;
+            }
+          }
+          .goal-container {
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .goal-card {
+            background: #1f2937;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            max-width: 28rem;
+            width: 100%;
+          }
+          .goal-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #f9fafb;
+          }
+          .goal-options {
+            display: grid;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+          }
+          .goal-option {
+            background: #374151;
+            border: 2px solid #4b5563;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .goal-option:hover {
+            background: #4b5563;
+            border-color: #22c55e;
+          }
+          .goal-option:active {
+            background: #6b7280;
+          }
+          .btn {
+            background: #22c55e;
+            color: #0c0a09;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .btn:hover {
+            background: #4ade80;
+          }
+          .btn:active {
+            background: #16a34a;
+          }
+          .loading-text {
+            color: #9ca3af;
+            text-align: center;
+          }
         `}</style>
       </head>
       <body>
@@ -74,7 +185,9 @@ export default function RootLayout({
             </div>
           </div>
         </nav>
-        <main>{children}</main>
+        <main>
+          {children}
+        </main>
       </body>
     </html>
   );
