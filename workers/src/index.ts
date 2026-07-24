@@ -40,6 +40,12 @@ app.get('/health', (c) =>
 // Auth middleware — all /api/* routes require bearer token
 app.use('/api/*', async (c, next) => {
   try {
+    // Debug: Check if c.env exists
+    if (!c.env) {
+      console.log('c.env is undefined!');
+      return c.json({ error: 'Environment bindings not available' }, 500);
+    }
+    
     const API_TOKEN = c.env.API_TOKEN || 'dev-token-change-in-production';
     const auth = c.req.raw.headers.get('authorization');
     
