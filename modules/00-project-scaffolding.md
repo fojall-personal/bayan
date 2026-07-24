@@ -1,0 +1,498 @@
+# Module 0 — Project Scaffolding
+
+## Overview
+Foundation layer: Cloudflare Workers project setup, D1 database, Pages deployment, and single-user authentication. Everything else builds on this.
+
+## Dependencies
+None — this is the first module.
+
+## What This Module Delivers
+- A working Cloudflare Workers project (`workers/`)
+- A Cloudflare D1 database with initial schema migration
+- A Cloudflare Pages frontend project (`app/`)
+- Single-user auth (simple token-based, no external providers needed)
+- Shared types and utilities between frontend and workers
+- Environment variable configuration for Cloudflare dashboard
+
+## Tech Stack (Confirmed)
+| Layer | Choice | Reason |
+|-------|--------|--------|
+| Frontend | Next.js 14 (Pages) | Static export, Cloudflare Pages native |
+| Backend | Hono on Cloudflare Workers | Lightweight, Workers-native |
+| Database | Cloudflare D1 (SQLite) | Serverless SQL, free tier |
+| Auth | Bearer token (single user) | No external providers needed |
+| Build | Wrangler 3 | Cloudflare's CLI |
+| Styling | Tailwind CSS + shadcn/ui | Fast UI development |
+
+## Architecture
+
+```
+languagebuilder/
+├── workers/                 # Cloudflare Workers (backend)
+│   ├── src/
+│   │   ├── index.ts         # Main worker entry, all routes
+│   │   ├── routes/          # Route handlers by module
+│   │   │   ├── auth.ts
+│   │   │   ├── assessment.ts
+│   │   │   ├── learning.ts
+│   │   │   ├── memorization.ts
+│   │   │   └── progress.ts
+│   │   ├── db/
+│   │   │   ├── schema.sql   # D1 migration file
+│   │   │   └── migrations/  # Versioned migrations
+│   │   ├── lib/
+│   │   │   ├── auth.ts      # Token verification
+│   │   │   ├── db.ts        # D1 wrapper
+│   │   │   └── quran.ts     # Quran API integration
+│   │   └── types.ts         # Shared TypeScript types
+│   ├── wrangler.toml        # Workers config
+│   ├── package.json
+│   └── tsconfig.json
+├── app/                     # Next.js frontend (Cloudflare Pages)
+│   ├── app/                 # App Router
+│   │   ├── layout.tsx
+│   │   ├── page.tsx         # Dashboard / landing
+│   │   ├── auth/
+│   │   ├── assessment/
+│   │   ├── learning/
+│   │   ├── memorization/
+│   │   └── progress/
+│   ├── components/          # Reusable UI
+│   ├── lib/                 # Client-side utilities
+│   ├── styles/globals.css   # Tailwind
+│   ├── package.json
+│   └── tailwind.config.ts
+├── content/                 # Static content data
+│   ├── vocabulary.json      # 1000 Quranic word frequency list
+│   ├── grammar/             # Grammar lesson content
+│   ├── assessments/         # Test questions
+│   └── tajweed-rules.json   # Tajweed rule definitions
+├── scripts/                 # Dev scripts
+│   ├── seed-db.ts           # Populate D1 with initial data
+│   ├── export-quran.ts      # Download Quran data from tanzil.net
+│   └── test-api.ts          # API smoke tests
+└── PLAN.md                  # Master plan
+```
+
+## File Specifications
+
+### `workers/wrangler.toml`
+```toml
+name = "languagebuilder"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+[vars]
+API_TOKEN = ""  # Set in Cloudflare dashboard
+
+[[d1_databases]]
+binding = "DB"
+database_name = "languagebuilder"
+database_id = ""  # Set after creation
+
+# Optional R2 for audio
+# [[r2_buckets]]
+# binding = "AUDIO_BUCKET"
+# bucket_name = "languagebuilder-audio"
+```
+
+### `workers/src/types.ts` — Core Types
+```typescript
+// User identity (single user, token-authed)
+export interface UserProfile {
+  id: string;                    // UUID
+  created_at: string;            // ISO datetime
+  goal: 'read_quran' | 'understand_arabic' | 'memorize_quran' | 'all';
+  onboarding_completed: boolean;
+  current_path: LearningPath;    // Which learning path they're on
+}
+
+// Assessment results
+export interface AssessmentResult {
+  id: string;
+  user_id: string;
+  completed_at: string;
+  literacy_score: number;        // 0-100
+  comprehension_score: number;   // 0-100
+  grammar_score: number;         // 0-100
+  memorization_score: number;    // 0-100
+  level: 'beginner' | 'intermediate' | 'advanced';
+  details: AssessmentDetails;
+}
+
+// Learning progress
+export interface LessonProgress {
+  lesson_id: string;
+  module: 'literacy' | 'grammar' | 'vocabulary' | 'tajweed';
+  completed: boolean;
+  score: number;                 // 0-100
+  attempts: number;
+  last_practiced: string;
+  next_review: string;           // For spaced repetition
+}
+
+// Memorization tracking
+export interface MemorizationEntry {
+  surah_id: number;              // 1-114
+  ayah_from: number;             // Starting ayah
+  ayah_to: number;               // Ending ayah
+  status: 'new' | 'learning' | 'reviewing' | 'mastered';
+  last_reviewed: string;
+  next_review: string;
+  quality: number;               // 0-5 self-rating
+}
+
+// Quran data structures
+export interface QuranVerse {
+  surah: number;
+  ayah: number;
+  text_uthmani: string;
+  text_simple: string;
+  translation: string;
+  audio_url?: string;
+  tajweed_tags?: TajweedTag[];
+}
+
+export interface TajweedTag {
+  start: number;
+  end: number;
+  rule: string;                  // e.g., "madd", "ghunnah", "qalqalah"
+  color: string;                 // CSS color for visualization
+}
+```
+
+### `workers/src/db/schema.sql` — Database Schema
+```sql
+-- Users
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  goal TEXT NOT NULL DEFAULT 'all',
+  onboarding_completed INTEGER NOT NULL DEFAULT 0,
+  current_path TEXT NOT NULL DEFAULT 'path1',  -- path1, path2, path3
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Assessment results
+CREATE TABLE IF NOT EXISTS assessment_results (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  completed_at TEXT NOT NULL DEFAULT (datetime('now')),
+  literacy_score REAL NOT NULL,
+  comprehension_score REAL NOT NULL,
+  grammar_score REAL NOT NULL,
+  memorization_score REAL NOT NULL,
+  level TEXT NOT NULL,
+  details TEXT NOT NULL  -- JSON
+);
+
+-- Lesson progress
+CREATE TABLE IF NOT EXISTS lesson_progress (
+  lesson_id TEXT PRIMARY KEY,
+  module TEXT NOT NULL,
+  completed INTEGER NOT NULL DEFAULT 0,
+  score REAL NOT NULL DEFAULT 0,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_practiced TEXT,
+  next_review TEXT,
+  streak INTEGER NOT NULL DEFAULT 0,
+  FOREIGN KEY (lesson_id) REFERENCES lessons(id)
+);
+
+-- Memorization entries
+CREATE TABLE IF NOT EXISTS memorization (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  surah_id INTEGER NOT NULL,
+  ayah_from INTEGER NOT NULL,
+  ayah_to INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'new',
+  last_reviewed TEXT,
+  next_review TEXT,
+  quality INTEGER NOT NULL DEFAULT 0,
+  revision_count INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(user_id, surah_id, ayah_from, ayah_to)
+);
+
+-- Spaced repetition schedule
+CREATE TABLE IF NOT EXISTS spaced_repetition (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  item_type TEXT NOT NULL,    -- 'vocabulary' | 'lesson' | 'memorization'
+  item_id TEXT NOT NULL,
+  interval_days INTEGER NOT NULL DEFAULT 1,
+  ease_factor REAL NOT NULL DEFAULT 2.5,
+  due_date TEXT NOT NULL,
+  reviews_count INTEGER NOT NULL DEFAULT 0,
+  next_review TEXT NOT NULL
+);
+
+-- Vocabulary mastery
+CREATE TABLE IF NOT EXISTS vocabulary_mastery (
+  word TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  meaning_known INTEGER NOT NULL DEFAULT 0,
+  reading_known INTEGER NOT NULL DEFAULT 0,
+  last_seen TEXT,
+  next_review TEXT,
+  reviews INTEGER NOT NULL DEFAULT 0,
+  ease_factor REAL NOT NULL DEFAULT 2.5,
+  INTERVAL_days INTEGER NOT NULL DEFAULT 1
+);
+
+-- Lessons catalog (seeded, not user data)
+CREATE TABLE IF NOT EXISTS lessons (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  module TEXT NOT NULL,
+  level INTEGER NOT NULL,
+  content TEXT NOT NULL,      -- JSON: structured lesson content
+  exercises TEXT NOT NULL,    -- JSON: exercise set
+  prerequisites TEXT NOT NULL DEFAULT '[]',  -- JSON: array of lesson IDs
+  estimated_minutes INTEGER NOT NULL DEFAULT 15
+);
+
+-- Quiz attempts
+CREATE TABLE IF NOT EXISTS quiz_attempts (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  lesson_id TEXT NOT NULL,
+  module TEXT NOT NULL,
+  questions_answered INTEGER NOT NULL,
+  questions_correct INTEGER NOT NULL,
+  time_seconds INTEGER,
+  completed_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+```
+
+### `workers/src/lib/auth.ts` — Authentication
+```typescript
+// Single-user bearer token auth
+// Token is set as a Workers environment variable (API_TOKEN)
+
+export function verifyAuth(headers: Headers): { valid: boolean; userId: string } {
+  const auth = headers.get('authorization');
+  if (!auth || auth !== `Bearer ${API_TOKEN}`) {
+    return { valid: false, userId: '' };
+  }
+  return { valid: true, userId: 'fouad' }; // Single user ID
+}
+```
+
+### `workers/src/lib/db.ts` — Database Wrapper
+```typescript
+import type { D1Database } from '@cloudflare/workers-types';
+
+export class Database {
+  private db: D1Database;
+
+  constructor(db: D1Database) {
+    this.db = db;
+  }
+
+  // Generic query executor
+  async query<T>(sql: string, params: any[] = []): Promise<T[]> {
+    const stmt = this.db.prepare(sql);
+    const result = await stmt.bind(...params).all<T>();
+    return result.results;
+  }
+
+  async get<T>(sql: string, params: any[] = []): Promise<T | undefined> {
+    const stmt = this.db.prepare(sql);
+    const result = await stmt.bind(...params).first<T>();
+    return result || undefined;
+  }
+
+  async run(sql: string, params: any[] = []): Promise<D1Result> {
+    const stmt = this.db.prepare(sql);
+    return stmt.bind(...params).run();
+  }
+}
+```
+
+### `workers/src/index.ts` — Worker Entry Point
+```typescript
+import { Hono } from 'hono';
+import { verifyAuth } from './lib/auth';
+import { Database } from './lib/db';
+import { authRoutes } from './routes/auth';
+import { assessmentRoutes } from './routes/assessment';
+import { learningRoutes } from './routes/learning';
+import { memorizationRoutes } from './routes/memorization';
+import { progressRoutes } from './routes/progress';
+
+const app = new Hono<{ Bindings: Env }>();
+
+// Health check
+app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
+// All routes require auth
+app.use('/api/*', async (c, next) => {
+  const { valid, userId } = verifyAuth(c.req.raw.headers);
+  if (!valid) return c.json({ error: 'Unauthorized' }, 401);
+  c.set('userId', userId);
+  await next();
+});
+
+// Mount route handlers
+app.route('/api/auth', authRoutes);
+app.route('/api/assessment', assessmentRoutes);
+app.route('/api/learning', learningRoutes);
+app.route('/api/memorization', memorizationRoutes);
+app.route('/api/progress', progressRoutes);
+
+export default app;
+```
+
+### `app/package.json` — Frontend Dependencies
+```json
+{
+  "name": "languagebuilder-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && next export -o ../public",
+    "start": "next start",
+    "export": "next build && next export"
+  },
+  "dependencies": {
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.0",
+    "autoprefixer": "^10.4.0",
+    "clsx": "^2.1.0",
+    "lucide-react": "^0.378.0",
+    "sonner": "^1.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  }
+}
+```
+
+### `app/tailwind.config.ts`
+```typescript
+import type { Config } from 'tailwindcss';
+
+const config: Config = {
+  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0',
+          300: '#86efac', 400: '#4ade80', 500: '#22c55e',
+          600: '#16a34a', 700: '#15803d', 800: '#166534', 900: '#14532d',
+        },
+        arabic: {
+          green: '#006233',
+          gold: '#d4af37',
+          sand: '#c2b280',
+          dark: '#1a1a2e',
+        }
+      }
+    }
+  },
+  plugins: [],
+};
+export default config;
+```
+
+### `app/app/layout.tsx` — Root Layout
+```typescript
+import './globals.css';
+import { Toaster } from 'sonner';
+
+export const metadata = {
+  title: 'Language Builder — Arabic Comprehension & Quran Learning',
+  description: 'Learn Classical Arabic, master Quran grammar, and track your memorization',
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" dir="ltr">
+      <body className="min-h-screen bg-arabic-dark text-white">
+        <nav className="border-b border-white/10 px-6 py-4">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <a href="/" className="text-xl font-bold text-arabic-green">Language Builder</a>
+            <div className="flex gap-4">
+              <a href="/assessment" className="text-sm text-gray-300 hover:text-white">Assessment</a>
+              <a href="/learning" className="text-sm text-gray-300 hover:text-white">Learning</a>
+              <a href="/memorization" className="text-sm text-gray-300 hover:text-white">Memorization</a>
+              <a href="/progress" className="text-sm text-gray-300 hover:text-white">Progress</a>
+            </div>
+          </div>
+        </nav>
+        <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>
+        <Toaster position="bottom-right" />
+      </body>
+    </html>
+  );
+}
+```
+
+### `app/app/page.tsx` — Landing / Dashboard
+```typescript
+// Shows: onboarding prompt (if not completed), or dashboard overview
+// Dashboard shows: current learning path, next lesson, memorization targets, progress summary
+export default function HomePage() {
+  // ... checks onboarding status, fetches user progress, renders
+}
+```
+
+## Setup Commands
+
+```bash
+# 1. Install wrangler
+npm install -g wrangler
+
+# 2. Create D1 database
+wrangler d1 create languagebuilder
+
+# 3. Run schema migration
+wrangler d1 execute languagebuilder --local --file=workers/src/db/schema.sql
+
+# 4. Create dev database binding
+wrangler d1 execute languagebuilder --binding=DB --command="SELECT 1"
+
+# 5. Set API token (single user key)
+# In Cloudflare dashboard → Workers → Language Builder → Environment Variables
+# Name: API_TOKEN, Value: <generate-random-64-char-string>
+
+# 6. Run worker locally
+cd workers && npx wrangler dev
+
+# 7. Deploy worker
+cd workers && npx wrangler deploy
+
+# 8. Build and export frontend
+cd app && npm run export
+```
+
+## Verification Checklist
+- [ ] `wrangler d1 create languagebuilder` succeeds — database exists
+- [ ] Schema migration runs without errors on both local and remote D1
+- [ ] `wrangler dev` starts and `/health` returns `{"status":"ok"}`
+- [ ] API routes return 401 without auth token
+- [ ] API routes return 200 with correct auth token
+- [ ] Next.js app builds successfully with `next build`
+- [ ] Static export (`next export`) produces deployable files
+- [ ] Cloudflare Pages deployment succeeds
+- [ ] Worker deployment succeeds
+
+## What's NOT in This Module
+- Any assessment questions or content
+- Any learning lesson data
+- Any Quran text or audio
+- Any tajweed rule data
+- Any grammar curriculum
+
+These all come in Module 1 (data layer) and subsequent modules.
+
+## Next Module
+**Module 1: Database Schema & Data Layer** — Populates D1 with actual content: Quran verses, vocabulary list, grammar lessons, assessment questions. This module makes the database useful.

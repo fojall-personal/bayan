@@ -1,0 +1,569 @@
+# Module 6 — Tajweed Visualization
+
+## Overview
+Color-coded Quran text by tajweed rule, interactive makharij (articulation point) diagrams, audio comparison between user recitation and master reciters, and rule-specific practice exercises.
+
+## Dependencies
+- **Module 0**: D1 database, worker routes, auth working
+- **Module 1**: Quran verse data available, tajweed rules defined in `content/tajweed-rules.json`
+- **Module 4**: Memorization tracking (users practice tajweed on their memorized surahs)
+
+## What This Module Delivers
+- Color-coded Quran text with tajweed rule overlays
+- Interactive makharij diagrams showing letter articulation points
+- Audio playback with rule highlighting (synced audio + visual)
+- User recitation recording + comparison with master reciters
+- Rule-specific practice exercises (focus on one rule at a time)
+- Tajweed progress tracking per rule type
+- Visual legend explaining each color/rule
+
+## Architecture
+
+### Tajweed Visualization Flow
+
+```
+User selects a surah or verse
+        ↓
+  Quran text loaded with tajweed color tags
+        ↓
+┌─────────────────────────────────────────────────┐
+│  Color-Coded Display                            │
+│  - Each word/segment colored by tajweed rule    │
+│  - Hover/tap shows rule explanation             │
+│  - Click highlights all instances of that rule  │
+└─────────────────────────────────────────────────┘
+        ↓
+┌─────────────────────────────────────────────────┐
+│  Audio Playback                                 │
+│  - Play recitation (Alafasy/AbdulBasit)         │
+│  - Highlight current word as it's recited       │
+│  - Show rule tooltip when tajweed word plays    │
+└─────────────────────────────────────────────────┘
+        ↓
+┌─────────────────────────────────────────────────┐
+│  Practice Exercise                              │
+│  - Focus on ONE rule (e.g., madd)               │
+│  - Listen to example words                      │
+│  - Identify rule in new words                   │
+│  - Record yourself reciting practice words      │
+│  - Compare with model pronunciation             │
+└─────────────────────────────────────────────────┘
+        ↓
+  Rule progress saved, mastery tracked
+```
+
+## File Specifications
+
+### `content/tajweed-rules.json` — Tajweed Rule Definitions (Extended)
+
+```json
+[
+  {
+    "id": "madd",
+    "name": "Madd (مَدّ)",
+    "description": "Elongation of certain vowels",
+    "color": "#3b82f6",
+    "colorName": "blue",
+    "subcategories": [
+      {
+        "id": "madd_natural",
+        "name": "Madd Tabi'i",
+        "description": "Natural elongation of alif, waw, or yaa with sukun",
+        "duration": 2,
+        "color": "#60a5fa",
+        "examples": ["قَالَ", "يَقُولُ", "قُلْ"]
+      },
+      {
+        "id": "madd_necessary",
+        "name": "Madd Lazim",
+        "description": "Forced elongation with madd letter + shadda",
+        "duration": 6,
+        "color": "#ef4444",
+        "examples": ["الْحَآئِرِينَ", "الضَّآلِّينَ"]
+      }
+    ]
+  },
+  {
+    "id": "noon_saakin",
+    "name": "Noon Saakin & Tanween",
+    "description": "Rules for noon with sukun or tanween",
+    "color": "#22c55e",
+    "colorName": "green",
+    "subcategories": [
+      {
+        "id": "idgham_ghunnah",
+        "name": "Idgham with Ghunnah",
+        "description": "Noon merges into ي ر م ل و ن with nasalization",
+        "duration": 2,
+        "color": "#4ade80",
+        "examples": ["مِن يَوْمِ", "مَن يَقُولُ", "كِتَابٌ لَّهُ"]
+      },
+      {
+        "id": "ikhfa",
+        "name": "Ikhfa (Hidden Noon)",
+        "description": "Noon hidden when followed by throat letters",
+        "duration": 2,
+        "color": "#16a34a",
+        "examples": ["مِن بَعْدِ", "مِن ذِي", "رَحِيمٌ بِالْعَبْدِ"]
+      },
+      {
+        "id": "izhar",
+        "name": "Izhar (Clear Noon)",
+        "description": "Clear pronunciation before throat letters",
+        "duration": 1,
+        "color": "#8b5cf6",
+        "examples": ["مِنْ أَنسَانٍ", "مِنْ حَوْرٍ", "نُورٌ بَيِّن"]
+      }
+    ]
+  },
+  {
+    "id": "meem_saakin",
+    "name": "Meem Saakin",
+    "description": "Rules for meem with sukun",
+    "color": "#06b6d4",
+    "colorName": "cyan",
+    "subcategories": [
+      {
+        "id": "ikhfa_shafawi",
+        "name": "Ikhfa Shafawi",
+        "description": "Meem hidden before ب",
+        "duration": 2,
+        "color": "#22d3ee",
+        "examples": ["تَرْمِيهِم بِحِجَارَة", "لَّهُم مَّا"]
+      },
+      {
+        "id": "idgham_shafawi",
+        "name": "Idgham Shafawi",
+        "description": "Meem merges into م",
+        "duration": 2,
+        "color": "#a855f7",
+        "examples": ["لَّهُم مَّا", "بِمَنَازِلِ"]
+      }
+    ]
+  },
+  {
+    "id": "qalqalah",
+    "name": "Qalqalah (قلقة)",
+    "description": "Vibrating bounce of ق ط ب ج د",
+    "color": "#f59e0b",
+    "colorName": "amber",
+    "subcategories": [
+      {
+        "id": "qalqalah_sughra",
+        "name": "Qalqalah Sughra (Lesser)",
+        "description": "Qalqalah when letter has sukun in middle of word",
+        "duration": 1,
+        "color": "#fbbf24",
+        "examples": ["مَوقُوف", "بُجُد", "يَقْطَعُون"]
+      },
+      {
+        "id": "qalqalah_kubra",
+        "name": "Qalqalah Kubra (Greater)",
+        "description": "Qalqalah when letter has sukun at end of word (pausing)",
+        "duration": 2,
+        "color": "#ef4444",
+        "examples": ["الْحَوقُ", "مِن مَّوقُود", "إِلَيۡهِ يَصۡرُخُون"]
+      }
+    ]
+  },
+  {
+    "id": "ghunnah",
+    "name": "Ghunnah (غُنَّة)",
+    "description": "Nasalization of ن and م with shadda",
+    "color": "#ec4899",
+    "colorName": "pink",
+    "subcategories": [
+      {
+        "id": "ghunnah_mustila",
+        "name": "Ghunnah Mustala",
+        "description": "Nasalization when ن or م has shadda",
+        "duration": 2,
+        "color": "#f472b6",
+        "examples": ["أَنشَرَحَ", "وَمَن يَعمَل", "إِنّ"}
+      }
+    ]
+  }
+]
+```
+
+### `workers/src/routes/tajweed.ts` — API Routes
+
+```typescript
+import { Hono } from 'hono';
+import { Database } from '../lib/db';
+
+const tajweed = new Hono();
+
+// Get verses with tajweed color tags for a surah
+tajweed.get('/verses/:surahId', async (c) => {
+  const { surahId } = c.req.param();
+  const db = new Database(c.env.DB);
+
+  const verses = await db.query(
+    `SELECT surah, ayah, text_uthmani, text_simple, tajweed_tags
+     FROM quran_verses
+     WHERE surah = ?
+     ORDER BY ayah ASC`,
+    [surahId]
+  );
+
+  return c.json({ verses });
+});
+
+// Get tajweed practice exercises for a specific rule
+tajweed.get('/practice/:ruleId', async (c) => {
+  const { ruleId } = c.req.param();
+  const db = new Database(c.env.DB);
+
+  const rule = await getTajweedRule(db, ruleId);
+
+  // Get practice words for this rule
+  const practiceWords = await db.query(
+    `SELECT word, meaning, rule_id, audio_url FROM practice_words WHERE rule_id = ?`,
+    [ruleId]
+  );
+
+  return c.json({
+    rule,
+    practiceWords,
+    totalWords: practiceWords.length,
+    masteredWords: practiceWords.filter(w => w.mastered).length,
+  });
+});
+
+// Submit practice result
+tajweed.post('/practice/:ruleId/submit', async (c) => {
+  const { ruleId } = c.req.param();
+  const userId = c.get('userId');
+  const db = new Database(c.env.DB);
+  const body = await c.req.json();
+
+  const { wordId, correct, timeSpent } = body;
+
+  // Update practice tracking
+  await db.run(
+    `INSERT OR REPLACE INTO tajweed_practice (user_id, rule_id, word_id, correct, time_spent, practiced_at)
+     VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+    [userId, ruleId, wordId, correct ? 1 : 0, timeSpent]
+  );
+
+  // Update rule mastery
+  const totalAttempts = await db.get(
+    `SELECT COUNT(*) as count FROM tajweed_practice WHERE user_id = ? AND rule_id = ?`,
+    [userId, ruleId]
+  );
+
+  const correctAttempts = await db.get(
+    `SELECT COUNT(*) as count FROM tajweed_practice WHERE user_id = ? AND rule_id = ? AND correct = 1`,
+    [userId, ruleId]
+  );
+
+  const mastery = Math.round((correctAttempts?.count || 0) / (totalAttempts?.count || 1) * 100);
+
+  return c.json({ success: true, mastery, totalAttempts: totalAttempts?.count || 0 });
+});
+
+// Get user's tajweed mastery by rule
+tajweed.get('/mastery', async (c) => {
+  const userId = c.get('userId');
+  const db = new Database(c.env.DB);
+
+  const mastery = await db.query(
+    `SELECT r.id as rule_id, r.name, r.color,
+            COUNT(tp.id) as total_attempts,
+            SUM(CASE WHEN tp.correct = 1 THEN 1 ELSE 0 END) as correct,
+            CASE WHEN COUNT(tp.id) > 0 THEN
+              ROUND(SUM(CASE WHEN tp.correct = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(tp.id), 1)
+            ELSE 0 END as mastery_percentage
+     FROM tajweed_rules r
+     LEFT JOIN tajweed_practice tp ON r.id = tp.rule_id AND tp.user_id = ?
+     GROUP BY r.id, r.name, r.color`,
+    [userId]
+  );
+
+  return c.json({ mastery });
+});
+```
+
+### Frontend Components
+
+#### `app/components/tajweed/TajweedViewer.tsx`
+
+```typescript
+'use client';
+
+import { useState, useRef } from 'react';
+
+interface TajweedViewerProps {
+  surahId: number;
+  surahName: string;
+  verses: QuranVerse[];
+}
+
+interface QuranVerse {
+  surah: number;
+  ayah: number;
+  text_uthmani: string;
+  text_simple: string;
+  tajweed_tags?: TajweedTag[];
+  audio_url?: string;
+}
+
+interface TajweedTag {
+  start: number;
+  end: number;
+  rule: string;
+  color: string;
+}
+
+export function TajweedViewer({ surahId, surahName, verses }: TajweedViewerProps) {
+  const [highlightedRule, setHighlightedRule] = useState<string | null>(null);
+  const [currentAyah, setCurrentAyah] = useState(0);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Get all unique rules used in this surah
+  const allRules = new Set<string>();
+  verses.forEach(v => v.tajweed_tags?.forEach(t => allRules.add(t.rule)));
+
+  const handlePlayAudio = (verse: QuranVerse) => {
+    if (!verse.audio_url) return;
+
+    setAudioPlaying(true);
+    if (audioRef.current) {
+      audioRef.current.src = verse.audio_url;
+      audioRef.current.play();
+    }
+
+    // Highlight tajweed words as audio plays
+    // (Simplified — full sync would need word-level timing)
+    setTimeout(() => setAudioPlaying(false), 5000);
+  };
+
+  const handleRuleHover = (rule: string, color: string) => {
+    setHighlightedRule(rule);
+  };
+
+  const handleRuleLeave = () => {
+    setHighlightedRule(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{surahName}</h1>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-400">Verse:</span>
+          <select
+            value={currentAyah}
+            onChange={(e) => setCurrentAyah(Number(e.target.value))}
+            className="bg-gray-700 rounded px-2 py-1 text-sm"
+          >
+            {verses.map((v, i) => (
+              <option key={i} value={i}>Ayah {v.ayah}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Audio player */}
+      <audio ref={audioRef} onEnded={() => setAudioPlaying(false)} />
+
+      {/* Verse display with tajweed colors */}
+      {verses.map((verse, i) => (
+        <div
+          key={i}
+          className={`bg-gray-800 rounded-lg p-6 transition-all ${
+            currentAyah === i ? 'ring-2 ring-arabic-green' : ''
+          }`}
+        >
+          <div className="flex items-start justify-between mb-4">
+            <div className="text-sm text-gray-400">
+              Surah {verse.surah}, Ayah {verse.ayah}
+            </div>
+            <button
+              onClick={() => handlePlayAudio(verse)}
+              disabled={audioPlaying}
+              className="px-3 py-1 bg-arabic-green/20 text-arabic-green rounded-full text-sm hover:bg-arabic-green/30 disabled:opacity-50"
+            >
+              {audioPlaying ? '▶ Playing...' : '▶ Play'}
+            </button>
+          </div>
+
+          {/* Arabic text with tajweed highlighting */}
+          <div
+            className="text-3xl text-center leading-loose"
+            dir="rtl"
+            dangerouslySetInnerHTML={{
+              __html: highlightTajweed(verse.text_uthmani, verse.tajweed_tags, highlightedRule)
+            }}
+          />
+
+          {/* Translation */}
+          <div className="mt-4 text-gray-400 text-center text-sm">
+            {verse.translation}
+          </div>
+        </div>
+      ))}
+
+      {/* Tajweed Legend */}
+      <div className="bg-gray-800 rounded-lg p-6">
+        <h3 className="text-lg font-bold mb-4">Tajweed Legend</h3>
+        <div className="grid grid-cols-3 gap-3">
+          {Array.from(allRules).map(rule => {
+            const ruleDef = TAJWEED_RULES.find(r => r.id === rule);
+            return (
+              <button
+                key={rule}
+                onMouseEnter={() => handleRuleHover(rule, ruleDef?.color || '#fff')}
+                onMouseLeave={handleRuleLeave}
+                className="flex items-center gap-2 p-2 rounded hover:bg-gray-700 transition-colors"
+              >
+                <div
+                  className="w-4 h-4 rounded"
+                  style={{ backgroundColor: ruleDef?.color || '#fff' }}
+                />
+                <span className="text-sm">{ruleDef?.name || rule}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Highlight tajweed tags in Arabic text
+function highlightTajweed(text: string, tags?: TajweedTag[], highlightedRule?: string): string {
+  if (!tags || tags.length === 0) return text;
+
+  let result = text;
+
+  // Sort tags by position (reverse) to avoid index shifting
+  const sortedTags = [...tags].sort((a, b) => b.start - a.start);
+
+  for (const tag of sortedTags) {
+    const word = text.substring(tag.start, tag.end + 1);
+    const shouldHighlight = !highlightedRule || highlightedRule === tag.rule;
+    const bgColor = shouldHighlight
+      ? tag.color
+      : 'transparent';
+
+    result = result.replace(
+      word,
+      `<span style="background-color: ${bgColor}; padding: 0 2px; border-radius: 3px;">${word}</span>`
+    );
+  }
+
+  return result;
+}
+```
+
+#### `app/components/tajweed/MakharijDiagram.tsx`
+
+```typescript
+'use client';
+
+interface MakharijDiagramProps {
+  selectedLetter?: string;
+}
+
+// Makharij (articulation points) for Arabic letters
+const LETTERS_BY_MAKHARIJ: Record<string, string[]> = {
+  'جddf': ['ج', 'ش', 'ي'],
+  'حhat': ['ح', 'ه', 'ع', 'غ', 'خ'],
+  'قqaf': ['ق'],
+  'كkaf': ['ك', 'ء', 'إ', 'أ'],
+  'ظzhah': ['ظ'],
+  'ضdad': ['ض'],
+  'طtaa': ['ط'],
+  'ذzal': ['ذ'],
+  'زzay': ['ز'],
+  'سseen': ['س', 'ش'],
+  'شsheen': ['ش'],
+  'صsad': ['ص'],
+  'ضdad': ['ض'],
+  'ظza': ['ظ'],
+  'طtaa': ['ط'],
+  'قqaf': ['ق'],
+  'كkaf': ['ك'],
+  'جjim': ['ج'],
+  'حhat': ['ح'],
+  'عain': ['ع', 'غ', 'خ', 'ح', 'ه'],
+  'غghain': ['غ', 'ع', 'خ', 'ح', 'ه'],
+  'خkha': ['خ', 'ح', 'ه', 'ع', 'غ'],
+  'همهمه': ['ء', 'ه', 'ع', 'غ', 'خ'],
+  'ستلقلقل': ['ل', 'ر'],
+  'شفتل': ['م', 'و', 'ب'],
+  'لسنل': ['ن', 'ت', 'د', 'ط', 'ظ', 'س', 'ز', 'ث', 'ذ', 'ض', 'ص', 'ش', 'ض', 'ظ', 'ك'],
+  'مخرجين': ['ي', 'و', 'ئ', 'ء'],
+};
+
+export function MakharijDiagram({ selectedLetter }: MakharijDiagramProps) {
+  const makharij = Object.entries(LETTERS_BY_MAKHARIJ);
+
+  return (
+    <div className="bg-gray-800 rounded-lg p-6">
+      <h2 className="text-xl font-bold mb-6">Makharij (Articulation Points)</h2>
+
+      <div className="grid grid-cols-2 gap-4">
+        {makharij.map(([name, letters]) => (
+          <div
+            key={name}
+            className={`p-4 rounded-lg cursor-pointer transition-colors ${
+              selectedLetter && letters.includes(selectedLetter)
+                ? 'bg-arabic-green/20 border border-arabic-green'
+                : 'bg-gray-700 hover:bg-gray-600'
+            }`}
+            onClick={() => {/* Set selected letter */}}
+          >
+            <div className="font-semibold mb-2">{name}</div>
+            <div className="flex flex-wrap gap-2">
+              {letters.map(letter => (
+                <span
+                  key={letter}
+                  className={`w-8 h-8 flex items-center justify-center rounded text-lg ${
+                    selectedLetter === letter
+                      ? 'bg-arabic-green text-white'
+                      : 'bg-gray-600'
+                  }`}
+                >
+                  {letter}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Setup Commands
+
+```bash
+# No additional setup needed — uses content from Module 1
+# Just ensure tajweed rules are properly defined in content/tajweed-rules.json
+```
+
+## Verification Checklist
+- [ ] `/api/tajweed/verses/:surahId` returns verses with tajweed tags
+- [ ] Color-coded text renders correctly in frontend
+- [ ] Legend shows all rules used in the selected surah
+- [ ] Audio playback works for verses with tajweed
+- [ ] Rule hover highlights all instances of that rule
+- [ ] Makharij diagram displays all articulation points
+- [ ] Practice exercises load for each rule
+- [ ] Practice results are saved to database
+- [ ] Rule mastery percentage calculates correctly
+- [ ] Frontend tajweed viewer handles long surahs (pagination/virtualization)
+
+## What's NOT in This Module
+- Grammar deep-dive with parsing (Module 7)
+- AI tutor integration (Module 8)
+- Community features (not planned for single-user)
+
+## Next Module
+**Module 7: Grammar Deep-Dive** — Interactive sentence parsing, verb conjugation tables, balagha (rhetoric) examples with analysis, and real-time grammar checking in user input.

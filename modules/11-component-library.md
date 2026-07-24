@@ -1,0 +1,710 @@
+# Language Builder — Component Library
+
+## Layout Components
+
+### AppShell
+```typescript
+// app/components/layout/AppShell.tsx
+interface AppShellProps {
+  children: React.ReactNode;
+  sidebar?: boolean;
+}
+
+export function AppShell({ children, sidebar = true }: AppShellProps) {
+  return (
+    <div className="min-h-screen bg-gray-950 text-gray-50">
+      {sidebar && <Sidebar />}
+      <main className={sidebar ? 'ml-[280px]' : ''}>
+        <div className="p-8 max-w-7xl mx-auto">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}
+```
+
+### PageHeader
+```typescript
+// app/components/layout/PageHeader.tsx
+interface PageHeaderProps {
+  title: string;
+  subtitle?: string;
+  actions?: React.ReactNode;
+}
+
+export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
+  return (
+    <div className="flex items-start justify-between mb-8">
+      <div>
+        <h1 className="text-3xl font-bold">{title}</h1>
+        {subtitle && (
+          <p className="text-gray-400 mt-2">{subtitle}</p>
+        )}
+      </div>
+      {actions && (
+        <div className="flex gap-3">
+          {actions}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Navigation Components
+
+### Sidebar
+```typescript
+// app/components/layout/Sidebar.tsx
+export function Sidebar() {
+  const navItems = [
+    { icon: '🏠', label: 'Dashboard', href: '/' },
+    { icon: '📊', label: 'Assessment', href: '/assessment' },
+    { icon: '📖', label: 'Learning', href: '/learning' },
+    { icon: '🕌', label: 'Memorization', href: '/memorization' },
+    { icon: '✍️', label: 'Grammar', href: '/grammar' },
+    { icon: '🎯', label: 'Tajweed', href: '/tajweed' },
+    { icon: '🤖', label: 'AI Tutor', href: '/tutor' },
+    { icon: '📈', label: 'Progress', href: '/progress' },
+    { icon: '⚙️', label: 'Settings', href: '/settings' },
+  ];
+
+  return (
+    <nav className="fixed left-0 top-0 bottom-0 w-[280px] bg-gray-900 border-r border-gray-800 p-6">
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-10 h-10 rounded-full bg-arabic-green flex items-center justify-center text-xl">
+          📚
+        </div>
+        <div>
+          <div className="font-bold text-lg">Language Builder</div>
+          <div className="text-xs text-gray-400">Arabic Learning</div>
+        </div>
+      </div>
+
+      <ul className="space-y-2">
+        {navItems.map((item) => (
+          <li key={item.href}>
+            <a
+              href={item.href}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-gray-50 transition-all"
+            >
+              <span className="text-xl">{item.icon}</span>
+              <span className="font-medium">{item.label}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+```
+
+### MobileNav
+```typescript
+// app/components/layout/MobileNav.tsx
+export function MobileNav() {
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-2 flex justify-around">
+      {navItems.slice(0, 5).map((item) => (
+        <a
+          key={item.href}
+          href={item.href}
+          className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-gray-400 hover:text-gray-50"
+        >
+          <span className="text-xl">{item.icon}</span>
+          <span className="text-[10px]">{item.label}</span>
+        </a>
+      ))}
+    </nav>
+  );
+}
+```
+
+## Content Components
+
+### Card
+```typescript
+// app/components/ui/Card.tsx
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+  interactive?: boolean;
+}
+
+export function Card({ children, className = '', interactive = false }: CardProps) {
+  return (
+    <div
+      className={`bg-gray-900 border border-gray-800 rounded-xl p-6 ${
+        interactive ? 'hover:border-arabic-green/50 hover:shadow-glow transition-all cursor-pointer' : ''
+      } ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+```
+
+### Button
+```typescript
+// app/components/ui/Button.tsx
+interface ButtonProps {
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  onClick?: () => void;
+  className?: string;
+}
+
+export function Button({ 
+  children, 
+  variant = 'primary', 
+  size = 'md',
+  disabled = false,
+  onClick,
+  className = ''
+}: ButtonProps) {
+  const variants = {
+    primary: 'bg-arabic-green text-white hover:bg-arabic-green/90 shadow-glow',
+    secondary: 'bg-gray-800 text-gray-50 hover:bg-gray-700 border border-gray-700',
+    ghost: 'text-gray-400 hover:text-gray-50 hover:bg-gray-800',
+    danger: 'bg-red-600 text-white hover:bg-red-700',
+  };
+
+  const sizes = {
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2',
+    lg: 'px-6 py-3 text-lg',
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+```
+
+### ProgressBar
+```typescript
+// app/components/ui/ProgressBar.tsx
+interface ProgressBarProps {
+  progress: number;
+  label?: string;
+  color?: string;
+}
+
+export function ProgressBar({ progress, label, color = 'arabic-green' }: ProgressBarProps) {
+  return (
+    <div className="space-y-2">
+      {label && (
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-400">{label}</span>
+          <span className="font-medium">{Math.round(progress)}%</span>
+        </div>
+      )}
+      <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+        <div
+          className={`h-full bg-${color}-500 transition-all duration-500`}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+### Badge
+```typescript
+// app/components/ui/Badge.tsx
+interface BadgeProps {
+  children: React.ReactNode;
+  variant?: 'default' | 'success' | 'warning' | 'error' | 'info';
+}
+
+export function Badge({ children, variant = 'default' }: BadgeProps) {
+  const variants = {
+    default: 'bg-gray-700 text-gray-300',
+    success: 'bg-arabic-green/20 text-arabic-green-400',
+    warning: 'bg-yellow-500/20 text-yellow-400',
+    error: 'bg-red-500/20 text-red-400',
+    info: 'bg-blue-500/20 text-blue-400',
+  };
+
+  return (
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${variants[variant]}`}>
+      {children}
+    </span>
+  );
+}
+```
+
+### Input
+```typescript
+// app/components/ui/Input.tsx
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  error?: string;
+}
+
+export function Input({ label, error, className = '', ...props }: InputProps) {
+  return (
+    <div className="space-y-2">
+      {label && (
+        <label className="block text-sm font-medium text-gray-300">{label}</label>
+      )}
+      <input
+        className={`w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-arabic-green/50 focus:border-arabic-green transition-all ${error ? 'border-red-500' : ''} ${className}`}
+        {...props}
+      />
+      {error && (
+        <p className="text-sm text-red-400">{error}</p>
+      )}
+    </div>
+  );
+}
+```
+
+### Select
+```typescript
+// app/components/ui/Select.tsx
+interface SelectProps {
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (value: string) => void;
+  label?: string;
+}
+
+export function Select({ options, value, onChange, label }: SelectProps) {
+  return (
+    <div className="space-y-2">
+      {label && (
+        <label className="block text-sm font-medium text-gray-300">{label}</label>
+      )}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-50 focus:outline-none focus:ring-2 focus:ring-arabic-green/50 focus:border-arabic-green transition-all"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+```
+
+## Data Display Components
+
+### StatCard
+```typescript
+// app/components/dashboard/StatCard.tsx
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  icon?: string;
+  trend?: { value: number; positive: boolean };
+}
+
+export function StatCard({ label, value, icon, trend }: StatCardProps) {
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm text-gray-400 mb-1">{label}</p>
+          <p className="text-2xl font-bold">{value}</p>
+        </div>
+        {icon && <span className="text-2xl">{icon}</span>}
+      </div>
+      {trend && (
+        <div className={`mt-3 flex items-center gap-1 text-sm ${trend.positive ? 'text-arabic-green' : 'text-red-400'}`}>
+          <span>{trend.positive ? '↑' : '↓'}</span>
+          <span>{Math.abs(trend.value)}%</span>
+          <span className="text-gray-500">vs last week</span>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### LessonCard
+```typescript
+// app/components/learning/LessonCard.tsx
+interface LessonCardProps {
+  lesson: {
+    id: string;
+    title: string;
+    module: string;
+    level: number;
+    estimated_minutes: number;
+    completed?: boolean;
+    current_step?: number;
+    total_steps?: number;
+  };
+  onClick: () => void;
+}
+
+export function LessonCard({ lesson, onClick }: LessonCardProps) {
+  return (
+    <div
+      onClick={onClick}
+      className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-arabic-green/50 hover:shadow-glow transition-all cursor-pointer group"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <Badge variant={lesson.completed ? 'success' : 'info'}>
+          {lesson.module}
+        </Badge>
+        {lesson.completed && (
+          <span className="text-arabic-green text-lg">✓</span>
+        )}
+      </div>
+      
+      <h3 className="font-semibold text-lg mb-2 group-hover:text-arabic-green transition-colors">
+        {lesson.title}
+      </h3>
+      
+      <div className="flex items-center justify-between text-sm text-gray-400">
+        <span>Level {lesson.level}</span>
+        <span>{lesson.estimated_minutes} min</span>
+      </div>
+
+      {lesson.current_step && lesson.total_steps && (
+        <div className="mt-3">
+          <ProgressBar 
+            progress={(lesson.current_step / lesson.total_steps) * 100}
+            color="arabic-green"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### MemorizationEntry
+```typescript
+// app/components/memorization/MemorizationEntry.tsx
+interface MemorizationEntryProps {
+  entry: {
+    surah_id: number;
+    ayah_from: number;
+    ayah_to: number;
+    status: 'mastered' | 'learning' | 'reviewing' | 'new';
+    next_review: string;
+    audio_url?: string;
+  };
+  onClick: () => void;
+}
+
+export function MemorizationEntry({ entry, onClick }: MemorizationEntryProps) {
+  const statusColors = {
+    mastered: 'bg-arabic-green/20 text-arabic-green border-arabic-green/30',
+    learning: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+    reviewing: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    new: 'bg-gray-700 text-gray-400 border-gray-600',
+  };
+
+  return (
+    <div
+      onClick={onClick}
+      className={`p-4 border rounded-lg cursor-pointer hover:scale-[1.02] transition-all ${statusColors[entry.status]}`}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-semibold">Surah {entry.surah_id}</div>
+          <div className="text-sm opacity-80">Ayahs {entry.ayah_from}-{entry.ayah_to}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-sm font-medium capitalize">{entry.status}</div>
+          {entry.next_review && (
+            <div className="text-xs opacity-70">
+              Next: {new Date(entry.next_review).toLocaleDateString()}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+## Quiz Components
+
+### QuizQuestion
+```typescript
+// app/components/assessment/QuizQuestion.tsx
+interface QuizQuestionProps {
+  question: {
+    id: string;
+    type: 'multiple-choice' | 'fill-blank' | 'audio-recall';
+    text: string;
+    options?: string[];
+    correctAnswer?: string;
+    audioUrl?: string;
+  };
+  answer: string;
+  onAnswer: (answer: string) => void;
+}
+
+export function QuizQuestion({ question, answer, onAnswer }: QuizQuestionProps) {
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="mb-6">
+        <h3 className="text-xl font-semibold mb-4">{question.text}</h3>
+        
+        {question.type === 'multiple-choice' && question.options && (
+          <div className="space-y-3">
+            {question.options.map((option, i) => (
+              <button
+                key={i}
+                onClick={() => onAnswer(option)}
+                className={`w-full p-4 text-left rounded-lg border transition-all ${
+                  answer === option
+                    ? 'border-arabic-green bg-arabic-green/10 text-arabic-green'
+                    : 'border-gray-700 hover:border-gray-600'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {question.type === 'fill-blank' && (
+          <input
+            type="text"
+            value={answer}
+            onChange={(e) => onAnswer(e.target.value)}
+            placeholder="Type your answer..."
+            className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-arabic-green/50"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+### AudioPlayer
+```typescript
+// app/components/audio/AudioPlayer.tsx
+interface AudioPlayerProps {
+  src: string;
+  label?: string;
+  onRecordingComplete?: (blob: Blob) => void;
+  isRecording?: boolean;
+}
+
+export function AudioPlayer({ src, label, onRecordingComplete, isRecording }: AudioPlayerProps) {
+  const [playing, setPlaying] = useState(false);
+  const [recording, setRecording] = useState(false);
+
+  const handlePlay = () => {
+    setPlaying(!playing);
+    // Audio playback logic
+  };
+
+  const handleRecord = () => {
+    if (recording) {
+      // Stop recording
+      setRecording(false);
+      // Upload recording
+      onRecordingComplete?.(blob);
+    } else {
+      // Start recording
+      setRecording(true);
+    }
+  };
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      {label && <p className="text-sm text-gray-400 mb-4">{label}</p>}
+      
+      <div className="flex items-center gap-4">
+        <button
+          onClick={handlePlay}
+          className="w-12 h-12 rounded-full bg-arabic-green flex items-center justify-center hover:bg-arabic-green/90 transition-all"
+        >
+          {playing ? '⏸' : '▶️'}
+        </button>
+
+        <button
+          onClick={handleRecord}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+            recording
+              ? 'bg-red-600 animate-pulse'
+              : 'bg-gray-700 hover:bg-gray-600'
+          }`}
+        >
+          {recording ? '⏹' : '🎤'}
+        </button>
+
+        <div className="flex-1">
+          <audio src={src} controls className="w-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+## Empty States
+
+### EmptyState
+```typescript
+// app/components/ui/EmptyState.tsx
+interface EmptyStateProps {
+  icon: string;
+  title: string;
+  description: string;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+}
+
+export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+  return (
+    <div className="text-center py-12">
+      <div className="text-4xl mb-4">{icon}</div>
+      <h3 className="text-xl font-semibold mb-2">{title}</h3>
+      <p className="text-gray-400 mb-6 max-w-md mx-auto">{description}</p>
+      {action && (
+        <Button onClick={action.onClick}>
+          {action.label}
+        </Button>
+      )}
+    </div>
+  );
+}
+```
+
+## Loading States
+
+### Skeleton
+```typescript
+// app/components/ui/Skeleton.tsx
+interface SkeletonProps {
+  width?: string;
+  height?: string;
+  className?: string;
+}
+
+export function Skeleton({ width, height, className = '' }: SkeletonProps) {
+  return (
+    <div
+      className={`bg-gray-800 animate-pulse rounded ${className}`}
+      style={{ width, height }}
+    />
+  );
+}
+```
+
+### LoadingCard
+```typescript
+// app/components/ui/LoadingCard.tsx
+export function LoadingCard() {
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
+      <Skeleton width="120px" height="20px" />
+      <Skeleton width="100%" height="100px" />
+      <Skeleton width="80%" height="20px" />
+    </div>
+  );
+}
+```
+
+## Utility Hooks
+
+### useLocalStorage
+```typescript
+// app/hooks/useLocalStorage.ts
+import { useState, useEffect } from 'react';
+
+export function useLocalStorage<T>(key: string, initialValue: T) {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    if (typeof window === 'undefined') return initialValue;
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      return initialValue;
+    }
+  });
+
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return [storedValue, setValue] as const;
+}
+```
+
+### useAudioRecorder
+```typescript
+// app/hooks/useAudioRecorder.ts
+import { useState, useRef } from 'react';
+
+export function useAudioRecorder() {
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        chunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        // Return blob for upload
+        return blob;
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      return mediaRecorder;
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      throw error;
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  return {
+    isRecording,
+    startRecording,
+    stopRecording,
+  };
+}
+```

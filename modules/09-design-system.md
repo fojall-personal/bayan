@@ -1,0 +1,315 @@
+# Language Builder — Design System
+
+## Surface Archetypes (per page)
+
+| Page | Surface | Priority |
+|------|---------|----------|
+| Landing | Decide/Learn | Hero section, social proof |
+| Onboarding | Configure | Wizard flow, progressive disclosure |
+| Assessment | Monitor | Score display, progress indicators |
+| Dashboard | Monitor | Density, glanceable hierarchy |
+| Lessons | Operate | Action affordances, content focus |
+| Flashcards | Operate | Swipe gestures, recall testing |
+| Grammar Deep-Dive | Decide/Learn | Editorial layout, examples |
+| Memorization | Monitor | Progress bars, review targets |
+| Tajweed Viewer | Explore | Color-coded text, legend |
+| AI Tutor | Operate | Chat interface, message flow |
+| Analytics | Monitor | Charts, data density |
+| Settings | Configure | Form layout, toggles |
+
+## Color Palette
+
+### Primary — Arabic Green
+```css
+--color-primary-50:  #f0fdf4
+--color-primary-100: #dcfce7
+--color-primary-200: #bbf7d0
+--color-primary-300: #86efac
+--color-primary-400: #4ade80
+--color-primary-500: #22c55e  /* Primary accent */
+--color-primary-600: #16a34a
+--color-primary-700: #15803d
+--color-primary-800: #166534
+--color-primary-900: #14532d
+```
+
+### Secondary — Gold (Islamic art reference)
+```css
+--color-secondary-50:  #fffbeb
+--color-secondary-100: #fef3c7
+--color-secondary-200: #fde68a
+--color-secondary-300: #fcd34d
+--color-secondary-400: #fbbf24
+--color-secondary-500: #f59e0b  /* Accent for highlights */
+--color-secondary-600: #d97706
+--color-secondary-700: #b45309
+--color-secondary-800: #92400e
+--color-secondary-900: #78350f
+```
+
+### Neutrals (warm gray — avoids cold blue)
+```css
+--color-gray-50:   #fafaf9
+--color-gray-100:  #f5f5f4
+--color-gray-200:  #e7e5e4
+--color-gray-300:  #d6d3d1
+--color-gray-400:  #a8a29e
+--color-gray-500:  #78716c
+--color-gray-600:  #57534e
+--color-gray-700:  #44403c
+--color-gray-800:  #292524
+--color-gray-900:  #1c1917
+--color-gray-950:  #0c0a09  /* Page background */
+```
+
+### Semantic
+```css
+--color-success:   var(--color-primary-500)
+--color-warning:   var(--color-secondary-500)
+--color-error:     #ef4444
+--color-info:      #3b82f6
+```
+
+### Dark Mode (default for this app)
+```css
+:root {
+  --color-bg:        var(--color-gray-950);
+  --color-surface:   var(--color-gray-900);
+  --color-surface-2: var(--color-gray-800);
+  --color-border:    var(--color-gray-700);
+  --color-ink:       var(--color-gray-50);
+  --color-muted:     var(--color-gray-400);
+}
+```
+
+### Tajweed Rule Colors (for Module 6)
+```css
+--color-tajweed-madd:           #3b82f6
+--color-tajweed-noon-saakin:    #22c55e
+--color-tajweed-meem-saakin:    #06b6d4
+--color-tajweed-qalqalah:       #f59e0b
+--color-tajweed-ghunnah:        #ec4899
+--color-tajweed-makharij-gaf:   #8b5cf6
+--color-tajweed-makharij-hatif: #f97316
+```
+
+## Typography
+
+### Font Families
+```css
+--font-primary: 'IBM Plex Sans', system-ui, sans-serif;
+--font-arabic: 'Scheherazade New', 'Amiri', serif;
+--font-mono: 'IBM Plex Mono', monospace;
+```
+
+### Type Scale
+```css
+--text-xs:     0.75rem    /* 12px */   /* labels, metadata */
+--text-sm:     0.875rem   /* 14px */   /* body secondary */
+--text-base:   1rem       /* 16px */   /* body default */
+--text-lg:     1.125rem   /* 18px */   /* body emphasis */
+--text-xl:     1.25rem    /* 20px */   /* heading 4 */
+--text-2xl:    1.5rem     /* 24px */   /* heading 3 */
+--text-3xl:    1.875rem   /* 30px */   /* heading 2 */
+--text-4xl:    2.25rem    /* 36px */   /* heading 1 */
+--text-5xl:    3rem       /* 48px */   /* hero titles */
+```
+
+### Line Heights
+```css
+--leading-tight:   1.25
+--leading-normal:  1.5
+--leading-relaxed: 1.625
+--leading-arabic:  2.0  /* Generous spacing for Arabic text */
+```
+
+## Spacing
+
+### Scale
+```css
+--space-1:  0.25rem   /* 4px */
+--space-2:  0.5rem    /* 8px */
+--space-3:  0.75rem   /* 12px */
+--space-4:  1rem      /* 16px */
+--space-5:  1.25rem   /* 20px */
+--space-6:  1.5rem    /* 24px */
+--space-8:  2rem      /* 32px */
+--space-10: 2.5rem    /* 40px */
+--space-12: 3rem      /* 48px */
+--space-16: 4rem      /* 64px */
+```
+
+### Padding
+```css
+--padding-card:    var(--space-6)
+--padding-section: var(--space-10)
+--padding-page:    var(--space-8)
+```
+
+## Layout
+
+### Grid System
+- **Max width:** 1200px (main content), 640px (narrow/assessment), 480px (mobile)
+- **Columns:** 12-column grid, 24px gaps
+- **Sidebar:** 280px (collapsible on mobile)
+
+### Shadows
+```css
+--shadow-sm:    0 1px 2px rgba(0,0,0,0.3)
+--shadow-md:    0 4px 6px rgba(0,0,0,0.4)
+--shadow-lg:    0 10px 15px rgba(0,0,0,0.5)
+--shadow-xl:    0 20px 25px rgba(0,0,0,0.6)
+--shadow-glow:  0 0 20px rgba(34, 197, 94, 0.3)
+```
+
+### Border Radius
+```css
+--radius-sm:   0.25rem   /* 4px */   /* buttons, inputs */
+--radius-md:   0.5rem    /* 8px */   /* cards, dropdowns */
+--radius-lg:   0.75rem   /* 12px */  /* modals */
+--radius-xl:   1rem      /* 16px */  /* large containers */
+--radius-full: 9999px     /* pills */
+```
+
+## Components
+
+### Buttons
+```css
+/* Primary button */
+.btn-primary {
+  background: var(--color-primary-500);
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.btn-primary:hover {
+  background: var(--color-primary-600);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Secondary button */
+.btn-secondary {
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
+}
+.btn-secondary:hover {
+  background: var(--color-gray-700);
+}
+```
+
+### Cards
+```css
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--padding-card);
+}
+.card-interactive {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.card-interactive:hover {
+  border-color: var(--color-primary-500);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+```
+
+### Progress Indicators
+```css
+.progress-bar {
+  height: 8px;
+  background: var(--color-gray-700);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--color-primary-500);
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease;
+}
+```
+
+### Navigation
+```css
+.nav {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  padding: var(--space-6);
+  z-index: 50;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  color: var(--color-muted);
+  transition: all 0.2s ease;
+}
+.nav-item:hover, .nav-item.active {
+  background: var(--color-primary-500/10);
+  color: var(--color-primary-400);
+}
+```
+
+## Motion
+
+### Default Transitions
+```css
+transition: all 0.2s ease;
+```
+
+### Page Transitions
+```css
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-transition {
+  animation: fadeIn 0.3s ease;
+}
+```
+
+### Stagger Children
+```css
+.stagger > * {
+  opacity: 0;
+  animation: fadeIn 0.3s ease forwards;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 50ms; }
+.stagger > *:nth-child(3) { animation-delay: 100ms; }
+```
+
+## Responsive Breakpoints
+```css
+/* Mobile first */
+@media (min-width: 640px) { /* sm */ }
+@media (min-width: 768px) { /* md */ }
+@media (min-width: 1024px) { /* lg */ }
+@media (min-width: 1280px) { /* xl */ }
+```
+
+## Anti-Slop Checklist
+
+Before finalizing any page design, verify:
+- [ ] No generic gradient backgrounds
+- [ ] No icon-topper pattern (icon above every heading)
+- [ ] No center-stack for Operate/Monitor surfaces
+- [ ] Tajweed colors are functional, not decorative
+- [ ] Arabic text has generous line height (2.0)
+- [ ] Progress indicators use green, not generic blue
+- [ ] No fake metrics or placeholder stats
+- [ ] Empty states have actionable suggestions
