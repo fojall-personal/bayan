@@ -243,3 +243,20 @@ error card.
 ## 📝 License
 
 Private repository — all rights reserved.
+
+### Local development against one origin
+
+Production serves the site and the API from a single Pages origin (see
+`workers/src/pages-entry.ts`). To reproduce that locally:
+
+```bash
+cd src/app && NEXT_PUBLIC_API_TOKEN=<value from workers/.dev.vars> npm run build
+cd ../../workers && npm run build:pages          # bundles _worker.js into out/
+npx wrangler pages dev ../src/app/out \
+  --d1 DB=6216c466-c244-4c16-8569-c7281585fbc6 \
+  --persist-to .wrangler/state                    # shares the local D1
+```
+
+Then the whole app is on `http://localhost:8788` — no CORS, no `NEXT_PUBLIC_API_URL`.
+Set `NEXT_PUBLIC_API_URL` only when pointing the frontend at a *separate*
+`wrangler dev` Worker, which is the one case CORS still applies.

@@ -1,16 +1,20 @@
-// Single entry point for every call to the Workers API.
+// Single entry point for every call to the API.
 //
-// The frontend ships as a static export on Cloudflare Pages, so there is no
-// server to proxy /api/* — relative paths resolve against the Pages origin and
-// return the 404 page. Every request must name the Worker explicitly.
+// The API is served from the same origin as the site: a _worker.js at the root
+// of the Pages output routes /api/* into the Hono app and everything else to
+// static assets (workers/src/pages-entry.ts). So NEXT_PUBLIC_API_URL is
+// normally EMPTY and requests are relative.
 //
-// Both values are inlined at build time by Next (NEXT_PUBLIC_*), so they have to
-// be present in the build environment, not the runtime one. See
-// .github/workflows/deploy.yml.
+// Set NEXT_PUBLIC_API_URL only to point at a Worker on a different origin — a
+// standalone `wrangler dev` during development, for instance. In that case CORS
+// applies and the origin must be listed in ALLOWED_ORIGINS.
 //
-// Note: NEXT_PUBLIC_API_TOKEN is shipped in the JS bundle and is therefore
-// readable by anyone who loads the page. It gates casual access to a
-// single-user self-hosted deployment; it is not a secret.
+// NEXT_PUBLIC_* values are inlined at build time, so they must be present in the
+// build environment, not the runtime one. See .github/workflows/deploy.yml.
+//
+// Note: NEXT_PUBLIC_API_TOKEN ships in the JS bundle and is readable by anyone
+// who loads the page. It gates casual access to a self-hosted deployment; it is
+// not a secret, and Cloudflare Access replaces it (plan §4).
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? '').replace(/\/$/, '');
 const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN ?? '';
@@ -35,13 +39,12 @@ export class ApiConfigError extends Error {
 }
 
 function assertConfigured(path: string): void {
-  const missing: string[] = [];
-  if (!API_BASE) missing.push('NEXT_PUBLIC_API_URL');
-  if (!API_TOKEN) missing.push('NEXT_PUBLIC_API_TOKEN');
-  if (missing.length) {
+  // An empty API_BASE is correct and expected — it means same-origin. Only the
+  // token is required, and only for as long as token auth is in use.
+  if (!API_TOKEN) {
     throw new ApiConfigError(
-      `Cannot call ${path}: ${missing.join(' and ')} missing from this build. ` +
-        'Set them in the build environment and redeploy.'
+      `Cannot call ${path}: NEXT_PUBLIC_API_TOKEN is missing from this build. ` +
+        'Set it in the build environment and redeploy.'
     );
   }
 }

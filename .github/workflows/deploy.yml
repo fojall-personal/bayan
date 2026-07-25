@@ -55,14 +55,14 @@ jobs:
         working-directory: src/app
         run: npx tsc --noEmit
 
-      - name: Build
+      - name: Build frontend
         working-directory: src/app
-        # NEXT_PUBLIC_* values are inlined into the bundle at build time, so they
-        # must be present here — not at runtime. Without them the static export
-        # ships `Bearer undefined` and calls a relative /api path that does not
-        # exist on the Pages origin.
+        # NEXT_PUBLIC_* values are inlined at build time, so they must be present
+        # here, not at runtime. NEXT_PUBLIC_API_URL is intentionally unset: the
+        # API is served from the same origin by the _worker.js built below, so
+        # requests are relative.
         env:
-          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://languagebuilder.fojall.workers.dev' }}
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_API_TOKEN: ${{ secrets.API_TOKEN }}
         run: |
           if [ -z "$NEXT_PUBLIC_API_TOKEN" ]; then
@@ -72,6 +72,20 @@ jobs:
             exit 1
           fi
           npm run build
+
+      # Pages advanced mode: a single _worker.js at the output root serves /api/*
+      # through Hono and everything else from static assets, so the site and API
+      # share one origin. Without this step the deployed site has no API at all.
+      - name: Install worker dependencies
+        working-directory: workers
+        run: npm ci
+
+      - name: Bundle API into the Pages output
+        working-directory: workers
+        run: |
+          npm run build:pages
+          test -s ../src/app/out/_worker.js || { echo "::error::_worker.js was not produced"; exit 1; }
+          echo "_worker.js: $(wc -c < ../src/app/out/_worker.js) bytes"
 
       - name: Deploy to Cloudflare Pages
         if: github.event_name != 'pull_request'
