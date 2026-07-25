@@ -59,12 +59,12 @@ languagebuilder/
 | Layer | Technology |
 |-------|------------|
 | Frontend | Next.js 14, React 18, TypeScript |
-| Styling | Tailwind CSS, shadcn/ui |
-| Backend | Cloudflare Workers (Hono framework) |
+| Styling | Tailwind CSS (no component library) |
+| Backend | Hono, served as _worker.js inside the Pages output (one origin) |
 | Database | Cloudflare D1 (SQLite) |
 | Storage | Cloudflare R2 (audio, images) |
-| Cache | Cloudflare KV (sessions, quick lookups) |
-| Auth | Bearer token (single-user, self-hosted) |
+| Cache | none bound yet — KV was listed but never used |
+| Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
 | TTS | Cloudflare Workers AI or external API |
 | STT | Cloudflare Workers AI (Whisper) or Azure |
 | Quran Data | Quran.com API + Tanzil.net |
@@ -284,25 +284,61 @@ Arabic UI strings use `dir="rtl"` on the root container.
 
 ## API Endpoints (Live)
 
+Extracted from the mounted routes, not written by hand — the previous list named
+four endpoints that never existed (`/api/auth/verify`,
+`GET /api/auth/onboarding`, `POST /api/memorization/record`,
+`POST /api/tajweed/analyze`, `GET /api/tutor/chat`) and omitted a dozen that do.
+
+All `/api/*` routes require auth: a verified Cloudflare Access JWT when
+`ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` are set, otherwise the shared bearer
+token. `/health` is public.
+
 ```
-GET  /api/auth/profile
-GET  /api/auth/verify
-GET  /api/auth/onboarding
+GET  /api/assessment/results
 GET  /api/assessment/start
 POST /api/assessment/submit
-GET  /api/assessment/results
+POST /api/auth/onboarding
+GET  /api/auth/profile
+GET  /api/auth/whoami
+GET  /api/certificate/export
+GET  /api/grammar/conjugations
+GET  /api/grammar/deepdive/:category
+POST /api/grammar/exercise
+GET  /api/grammar/mastery
+POST /api/grammar/parse
+GET  /api/learning/flashcards
+POST /api/learning/flashcards/review
 GET  /api/learning/lessons
 GET  /api/learning/lessons/:id
 POST /api/learning/lessons/:id/submit
-GET  /api/learning/flashcards
-POST /api/learning/flashcards/review
+GET  /api/learning/next
+POST /api/memorization/:id/recall
+POST /api/memorization/:id/review
+POST /api/memorization/add
+GET  /api/memorization/all
+GET  /api/memorization/review/today
+GET  /api/memorization/surah/:surahId
 GET  /api/memorization/surahs
-POST /api/memorization/record
-GET  /api/memorization/review
-POST /api/tajweed/analyze
-GET  /api/tutor/chat
+GET  /api/progress/dashboard
+GET  /api/progress/scores
+GET  /api/tajweed/mastery
+POST /api/tajweed/practice/:ruleId/submit
+GET  /api/tajweed/rules
+GET  /api/tajweed/verses/:surahId
 POST /api/tutor/chat
+POST /api/tutor/feedback
+GET  /api/tutor/history
+GET  /api/tutor/suggested-exercises
+GET  /health
 ```
+
+Two of these return empty until the Quran text is ingested, which is blocked —
+see `docs/HANDOFF-LOCAL-SESSION.md`:
+`GET /api/tajweed/verses/:surahId` and the joined text in
+`GET /api/memorization/review/today`.
+
+`POST /api/tutor/*` is answered by a keyword matcher, not a model. `POST
+/api/tutor/feedback` returns a fixed string.
 
 ---
 

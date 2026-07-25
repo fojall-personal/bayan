@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/Button';
 
 type GrammarCategory = 'nahw' | 'sarf' | 'balagha';
 
-const CATEGORIES: { id: GrammarCategory; name: string; icon: string }[] = [
-  { id: 'nahw', name: 'النَّحْو (Syntax)', icon: '📐' },
-  { id: 'sarf', name: 'الصَّرْف (Morphology)', icon: '🔬' },
-  { id: 'balagha', name: 'البَلَاغَة (Rhetoric)', icon: '✨' },
+const CATEGORIES: { id: GrammarCategory; name: string; arabic: string }[] = [
+  // Emoji icons removed: DESIGN.md anti-slop tell 7 is an icon above every
+  // heading, and these carried no meaning the label did not already convey.
+  { id: 'nahw', name: 'Syntax', arabic: 'النَّحْو' },
+  { id: 'sarf', name: 'Morphology', arabic: 'الصَّرْف' },
+  { id: 'balagha', name: 'Rhetoric', arabic: 'البَلَاغَة' },
 ];
 
 export default function GrammarPage() {
@@ -35,7 +37,7 @@ export default function GrammarPage() {
                 : 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300'
             }`}
           >
-            <span className="text-xl">{cat.icon}</span>
+            <span className="text-xl"></span>
             <span className="font-medium">{cat.name}</span>
           </button>
         ))}

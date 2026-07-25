@@ -91,7 +91,7 @@ export function AdvancedMemorizationTools() {
 
       {/* Audio testing */}
       <Card>
-        <h2 className="text-lg font-bold mb-3">🎧 Audio Testing (No Text)</h2>
+        <h2 className="text-lg font-bold mb-3">Recall without the text</h2>
         <p className="text-gray-400 text-sm mb-4">
           Test your memorization by recalling ayahs from audio only. No visual hints!
         </p>
@@ -160,7 +160,7 @@ export function AdvancedMemorizationTools() {
 
       {/* Certificate */}
       <Card>
-        <h2 className="text-lg font-bold mb-3">📜 Memorization Certificate</h2>
+        <h2 className="text-lg font-bold mb-3">Memorisation certificate</h2>
         <p className="text-gray-400 text-sm mb-4">
           Generate a certificate for your memorization milestones.
         </p>

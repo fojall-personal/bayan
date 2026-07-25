@@ -159,6 +159,18 @@ Recorded so the local session does not redo it:
   cross-reference card, which `alert()`ed a description of an unbuilt feature, is
   gone. No `alert()` calls remain anywhere.
 - **Dashboard routed** at `/dashboard` — Module 05's component had been unreachable.
+- **The old audit's bug list is closed out.** All 16 `BUG-xxx` items from
+  `docs/audit-bug-list.md` are resolved; the last two were fixed in this pass —
+  suggestion chips in the tutor only filled the input box, so a click read as a
+  dead control (BUG-010), and two emoji headings plus three emoji category icons
+  remained (BUG-013). `BUG-016` needed nothing: Next emits the viewport meta.
+  That file and five other superseded documents have been deleted.
+- **Documentation now matches the code.** `AGENTS.md` listed five endpoints that
+  never existed (`/api/auth/verify`, `GET /api/auth/onboarding`,
+  `POST /api/memorization/record`, `POST /api/tajweed/analyze`,
+  `GET /api/tutor/chat`) and omitted a dozen real ones; its endpoint section is
+  now generated from the mounted routes. Its stack table claimed shadcn/ui and
+  KV, neither of which is used.
 
 ---
 
@@ -190,7 +202,44 @@ Also still open:
 
 ---
 
-## 7. Also unverified from here
+## 7. One open question: `/api/auth/whoami` through Pages
+
+Worth a single curl on the first real deploy.
+
+`GET /api/auth/whoami` returns 200 through the standalone Worker
+(`wrangler dev`) and **404 through `wrangler pages dev`** — same code, same
+bundle, and the bundle demonstrably contains the route (md5 changes on rebuild,
+`whoami` present in `_worker.js`). Its sibling routes in the same sub-app are
+live on that origin: `/api/auth/profile` returns 200 and
+`POST /api/auth/onboarding` reaches its handler.
+
+I first assumed a parent-level `app.get('/api/auth/whoami')` was being shadowed
+by `app.route('/api/auth', authRoutes)`, and moved it into the sub-app. That is
+the better design regardless — it is an auth route — but it did not change the
+404, so the shadowing theory was wrong.
+
+Most likely a `wrangler pages dev` asset-resolution or caching quirk rather than
+a defect in the app, since every other endpoint resolves correctly through the
+same path. I could not confirm it: clearing wrangler's tmp directory to force a
+clean reload left pages dev unable to start (it fails on an outbound fetch this
+environment blocks).
+
+**To settle it:** after deploying, run
+
+```bash
+curl -H "Authorization: Bearer $API_TOKEN" \
+  https://languagebuilder-frontend.pages.dev/api/auth/whoami
+```
+
+If that returns 200, it was a local dev-server quirk and nothing needs doing. If
+it 404s on real Pages, the route needs relocating — and since `whoami` is the
+intended way to confirm Access is working, fix it before relying on it for that.
+
+Nothing else depends on this endpoint.
+
+---
+
+## 8. Also unverified from here
 
 - **The deployed site.** Every claim about production is inferred from the built
   output and local runs. Once CI is green, load the site and check: fonts

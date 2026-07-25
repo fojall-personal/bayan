@@ -100,17 +100,6 @@ app.use('/api/*', async (c, next) => {
   await next();
 });
 
-// Who am I — useful for confirming Access is wired up correctly.
-app.get('/api/auth/whoami', (c) =>
-  c.json({
-    data: {
-      userId: c.get('userId'),
-      email: c.get('userEmail') ?? null,
-      mode: c.env.ACCESS_TEAM_DOMAIN && c.env.ACCESS_AUD ? 'access' : 'shared-token',
-    },
-  })
-);
-
 app.route('/api/auth', authRoutes);
 app.route('/api/assessment', assessmentRoutes);
 app.route('/api/learning', learningRoutes);

@@ -5,6 +5,24 @@ import type { Database } from '../lib/db';
 
 export const authRoutes = new Hono<AppEnv>();
 
+// GET /api/auth/whoami — report the resolved identity and which auth mode is
+// active. The quickest way to confirm Access is wired up correctly.
+//
+// Registered here rather than on the parent app: a parent-level
+// app.get('/api/auth/whoami') is shadowed by app.route('/api/auth', authRoutes),
+// which answers with the sub-app's 404. That shadowing did not show up under
+// `wrangler dev` (where the Hono app is the default export) but did through the
+// Pages _worker.js, so it was only caught by smoke-testing the production path.
+authRoutes.get('/whoami', (c) =>
+  c.json({
+    data: {
+      userId: c.get('userId'),
+      email: c.get('userEmail') ?? null,
+      mode: c.env.ACCESS_TEAM_DOMAIN && c.env.ACCESS_AUD ? 'access' : 'shared-token',
+    },
+  })
+);
+
 // GET /api/auth/profile — Return user profile
 authRoutes.get('/profile', async (c) => {
   try {

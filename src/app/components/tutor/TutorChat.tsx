@@ -22,13 +22,16 @@ export function TutorChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
+  // Accepts an override so a suggestion chip sends immediately rather than only
+  // filling the box, which read as a dead click (audit BUG-010).
+  const handleSend = async (override?: string) => {
+    const text = (override ?? input).trim();
+    if (!text || loading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content: text,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -80,7 +83,7 @@ export function TutorChat() {
               {suggestions.map((s) => (
                 <button
                   key={s}
-                  onClick={() => setInput(s)}
+                  onClick={() => handleSend(s)}
                   className="px-3 py-1 bg-gray-700 rounded-full text-sm hover:bg-gray-600 transition-colors"
                 >
                   {s}
