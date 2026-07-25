@@ -185,20 +185,44 @@ Single-user bearer token authentication:
 
 ## Deployment
 
-### Cloudflare
+### Deployment
+
+#### Automated (CI/CD)
+The app automatically deploys to Cloudflare Pages when you push to the `main` branch:
+
 ```bash
-wrangler deploy
-wrangler d1 execute languagebuilder-db --command="PRAGMA foreign_keys = ON"
+git push origin main
 ```
 
-### Prerequisites
-1. Cloudflare account with Workers + D1 + R2
-2. Domain configured (e.g., `learn.arabicbuilder.app`)
-3. `AUTH_TOKEN` set in environment
+The GitHub Actions workflow will:
+1. Install dependencies
+2. Build the Next.js app
+3. Deploy to Cloudflare Pages
 
-### CI/CD
-- GitHub Actions push to main → deploy to Cloudflare
-- Preview deployments on PRs via Vercel or Cloudflare Preview
+**Production URL:** https://languagebuilder-frontend.pages.dev
+
+#### Manual Deployment
+```bash
+# Install dependencies
+cd src/app && npm install
+
+# Build
+npm run build
+
+# Deploy to Cloudflare Pages
+npx wrangler pages deploy out --project-name=languagebuilder-frontend --branch=main
+```
+
+#### Environment Variables
+Set these secrets in your GitHub repository:
+- `CLOUDFLARE_API_TOKEN` - Cloudflare API token with Pages write permissions
+- `CLOUDFLARE_ACCOUNT_ID` - Your Cloudflare account ID
+
+#### Cloudflare Pages Configuration
+1. Connect your GitHub repository to Cloudflare Pages
+2. Set build command: `cd src/app && npm run build`
+3. Set output directory: `src/app/out`
+4. Set production branch: `main`
 
 ---
 
