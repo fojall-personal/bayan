@@ -3,10 +3,18 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { BookOpen, Brain, BookMarked, Sparkles } from 'lucide-react';
 
 interface OnboardingProps {
   onComplete: () => void;
 }
+
+const iconMap = {
+  read_quran: BookOpen,
+  understand_arabic: Brain,
+  memorize_quran: BookMarked,
+  all: Sparkles,
+};
 
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [step, setStep] = useState(1);
@@ -22,7 +30,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ goal, readingAbility, memorizedSurahs, challenge }),
       });
@@ -43,14 +51,14 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           <div key={s} className="flex items-center">
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                step >= s ? 'bg-green-500 text-white' : 'bg-gray-700 text-gray-400'
+                step >= s ? 'bg-primary-500 text-white' : 'bg-gray-700 text-gray-400'
               }`}
             >
               {s}
             </div>
             {s < 3 && (
               <div
-                className={`w-16 h-1 ${step > s ? 'bg-green-500' : 'bg-gray-700'}`}
+                className={`w-16 h-1 ${step > s ? 'bg-primary-500' : 'bg-gray-700'}`}
               />
             )}
           </div>
@@ -63,24 +71,27 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           <h2 className="text-2xl font-bold mb-6 text-center">What's your goal?</h2>
           <div className="space-y-3">
             {[
-              { value: 'read_quran', label: 'Read the Quran fluently', icon: '📖' },
-              { value: 'understand_arabic', label: 'Understand Classical Arabic', icon: '🧠' },
-              { value: 'memorize_quran', label: 'Memorize the Quran (Hifz)', icon: '🕌' },
-              { value: 'all', label: 'All of the above', icon: '✨' },
-            ].map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setGoal(option.value as any)}
-                className={`w-full p-4 rounded-lg text-left flex items-center gap-4 transition-colors ${
-                  goal === option.value
-                    ? 'bg-green-500/20 border border-green-500'
-                    : 'bg-gray-800 hover:bg-gray-700'
-                }`}
-              >
-                <span className="text-2xl">{option.icon}</span>
-                <span className="font-semibold">{option.label}</span>
-              </button>
-            ))}
+              { value: 'read_quran', label: 'Read the Quran fluently' },
+              { value: 'understand_arabic', label: 'Understand Classical Arabic' },
+              { value: 'memorize_quran', label: 'Memorize the Quran (Hifz)' },
+              { value: 'all', label: 'All of the above' },
+            ].map((option) => {
+              const Icon = iconMap[option.value as keyof typeof iconMap];
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => setGoal(option.value as any)}
+                  className={`w-full p-4 rounded-lg text-left flex items-center gap-4 transition-colors ${
+                    goal === option.value
+                      ? 'bg-primary-500/20 border border-primary-500'
+                      : 'bg-surface-2 hover:bg-surface hover:border-border'
+                  }`}
+                >
+                  {Icon && <Icon className="w-6 h-6 text-primary-400" />}
+                  <span className="font-semibold">{option.label}</span>
+                </button>
+              );
+            })}
           </div>
           <Button
             onClick={() => setStep(2)}
@@ -111,8 +122,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     onClick={() => setReadingAbility(option.value as any)}
                     className={`flex-1 p-3 rounded-lg border transition-colors ${
                       readingAbility === option.value
-                        ? 'border-green-500 bg-green-500/10'
-                        : 'border-gray-600 hover:border-gray-500'
+                        ? 'border-primary-500 bg-primary-500/10'
+                        : 'border-border hover:border-muted'
                     }`}
                   >
                     {option.label}
@@ -137,8 +148,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     onClick={() => setMemorizedSurahs(option.value as any)}
                     className={`flex-1 p-3 rounded-lg border transition-colors ${
                       memorizedSurahs === option.value
-                        ? 'border-green-500 bg-green-500/10'
-                        : 'border-gray-600 hover:border-gray-500'
+                        ? 'border-primary-500 bg-primary-500/10'
+                        : 'border-border hover:border-muted'
                     }`}
                   >
                     {option.label}
@@ -160,8 +171,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     onClick={() => setChallenge(option.value as any)}
                     className={`flex-1 p-3 rounded-lg border transition-colors ${
                       challenge === option.value
-                        ? 'border-green-500 bg-green-500/10'
-                        : 'border-gray-600 hover:border-gray-500'
+                        ? 'border-primary-500 bg-primary-500/10'
+                        : 'border-border hover:border-muted'
                     }`}
                   >
                     {option.label}
@@ -186,12 +197,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       {step === 3 && (
         <Card className="p-8 text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-gray-400 mb-6">
+          <p className="text-muted mb-6">
             Take our 30-minute diagnostic assessment to personalize your learning path.
             We'll assess your Arabic reading, comprehension, grammar, and memorization levels.
           </p>
 
-          <div className="bg-gray-800 rounded-lg p-4 mb-6 text-left">
+          <div className="bg-surface-2 rounded-lg p-4 mb-6 text-left">
             <h3 className="font-semibold mb-2">Your Profile:</h3>
             <ul className="text-sm text-gray-300 space-y-1">
               <li>• Goal: {goal}</li>
@@ -202,7 +213,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           </div>
 
           <Button onClick={handleStartAssessment} className="w-full py-4 text-lg font-semibold">
-            Start Assessment →
+            Start Assessment
           </Button>
 
           <Button
