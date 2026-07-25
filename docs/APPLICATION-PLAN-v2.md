@@ -3,6 +3,7 @@
 **Date:** 2026-07-25
 **Supersedes:** the roadmap and feature sections of `PLAN.md` (kept for history)
 **Companion:** `docs/CODE-AUDIT-2026-07-25.md` — verified current state
+**Audience:** decided 2026-07-25 — a small group of close friends, non-commercial (§4)
 
 v1 of the plan was written before any code existed and was never revised against
 what got built. It marked eleven modules complete while six endpoints returned
@@ -107,7 +108,81 @@ And the central design decision:
 
 ---
 
-## 4. Data sources — researched, with licences
+## 4. Audience and identity — decided
+
+**Decided 2026-07-25: a small group of close friends. Not a commercial product.**
+
+This was the load-bearing open question, and answering it settles several things
+that were previously hedged. "Half-building for many users" is exactly what
+produced the current schema; so is building for one and bolting on the rest later.
+Neither is now necessary.
+
+### What it settles
+
+| | Decision |
+|---|---|
+| Scale | Order of 5–50 people, known to each other and to the operator |
+| Accounts | **Real per-user identity, required.** Not a shared login. |
+| Data visibility | **Private by default.** Nobody sees anyone else's progress unless they opt in. |
+| Commercial features | Still out — pricing, tiers, conversion funnels have no meaning here |
+| Teacher/admin features | Still out — a peer group has no teacher role |
+| Operational stance | Other people's data now. Loss and downtime cost trust, not just time. |
+
+Privacy default is deliberate: memorisation progress is personal, and "close
+friends" is not a reason to make it visible by default. Sharing, if it ever
+happens, is opt-in (§7.3, F14).
+
+### Identity: use Cloudflare Access
+
+The current design — one shared bearer token, inlined into the JS bundle,
+resolving every request to a hardcoded `test-user-1` — cannot support this. With
+several users it is worse than imperfect: everyone shares one identity, so all
+progress commingles into one row set, and the bundled token lets any user read and
+write any other's data.
+
+Writing a conventional auth system (registration, password hashing, reset emails,
+verification) is a disproportionate amount of security-sensitive code for a group
+of friends. **Cloudflare Access** is the right answer:
+
+- **Free for up to 50 seats, permanently** — matches the audience exactly. Beyond
+  50 it is $7/user/month for all users, which would be the signal to reconsider.
+- Handles login itself (Google, GitHub, or one-time e-mail PIN — the last needs
+  nothing from the user but an inbox).
+- Passes identity to the origin as a signed JWT in `Cf-Access-Jwt-Assertion`,
+  plus `Cf-Access-Authenticated-User-Email`.
+- Verification is ~30 lines in the Worker: `jose`'s `jwtVerify` +
+  `createRemoteJWKSet` against `https://<team>.cloudflareaccess.com/cdn-cgi/access/certs`,
+  checking the policy audience. **Validate the JWT — do not trust the e-mail
+  header alone.**
+- No passwords stored, no e-mail to send, no reset flow, no PII beyond an address.
+- Adding a friend is adding an e-mail to an Access policy.
+
+**Consequence: the same-origin architecture is now required, not merely
+preferred.** Access cookies are per-hostname. With the site on `pages.dev` and
+the API on `workers.dev`, the browser would have to carry an Access session across
+two origins — credentialed CORS, two Access applications, and a cookie problem
+that does not need to exist. Put both behind one hostname:
+
+```
+  bayan.<domain>            →  Pages (static export)
+  bayan.<domain>/api/*      →  Worker route
+  one Access application covering bayan.<domain>
+```
+
+One session covers pages and API. No CORS. No token in the bundle.
+
+**Provisioning becomes just-in-time.** On the first authenticated request, upsert a
+`users` row from the JWT's e-mail. `seed-user.sql` stays for local development,
+where there is no Access in front.
+
+**Fallback if a custom domain is not wanted:** issue a per-user opaque token by
+hand, map token → `user_id` in D1, store it in `localStorage`. No login flow, but
+tokens leak, get shared, and are revoked manually. Acceptable for five people;
+not for fifty.
+
+---
+
+## 5. Data sources — researched, with licences
 
 Every feature below is costed against a real source. This section is what v1
 lacked: it listed "Quran.com API + Tanzil.net" and then wrote code against a
@@ -120,7 +195,7 @@ fabricated endpoint.
 | Morphology / i'rab | [Quranic Arabic Corpus](https://corpus.quran.com/download/) v0.4 | **GNU GPL**, attribution + link to corpus.quran.com required | Root, lemma, POS, form, case for every word. ⚠️ GPL — see risk R3. |
 | Word-level audio timing | Quran Foundation API `segments=true`; or [`cpfair/quran-align`](https://github.com/cpfair/quran-align) | API: OAuth2. quran-align: pre-generated releases | `[word_index, start_ms, end_ms]`. Enables word highlighting and "listen → recall". |
 | Translation, tafsir, reciter audio | Quran Foundation (Quran.com) API v4 | **OAuth2 client credentials** — `x-auth-token` + `x-client-id` | Registration required. |
-| Scheduling algorithm | FSRS | Open source | See §5. |
+| Scheduling algorithm | FSRS | Open source | See §6. |
 | LLM + STT | Cloudflare Workers AI | 10,000 neurons/day free, then $0.011/1k | 60+ models incl. Whisper and current LLMs (Qwen3, GLM-4.7-Flash, Llama). |
 
 Three findings here overturn existing code:
@@ -139,7 +214,7 @@ Three findings here overturn existing code:
 
 ---
 
-## 5. Algorithm decision: FSRS over SM-2
+## 6. Algorithm decision: FSRS over SM-2
 
 The current `space-repetition.ts` is labelled SM-2 but is a simplified
 approximation — quality 3 never decreases ease, quality 4 never changes it, and a
@@ -165,9 +240,9 @@ and conflating them is what makes hifz-without-understanding the default.
 
 ---
 
-## 6. Feature set
+## 7. Feature set
 
-### 6.1 In — v1 core loop
+### 7.1 In — v1 core loop
 
 **F1. Reader.** Word-by-word Uthmani text; tap a word for root, lemma, POS, form
 and case from the corpus; tajweed colouring from the CC-BY dataset; reciter audio
@@ -202,7 +277,7 @@ comprehension path, per §3.
 activity, per-domain score history, weekly load forecast from FSRS due counts.
 No widget that implies tracking it does not do.
 
-### 6.2 In — v2
+### 7.2 In — v2
 
 **F8. Grounded explanations (Workers AI).** An LLM that answers "why is this word
 `majrūr`?" **with the corpus record for that word in its context**, and cites it.
@@ -216,7 +291,7 @@ generated from corpus data, which has form labels for every verb.
 **F10. Self-recording.** Record, play back against a reciter, self-rate. Explicit
 non-goal: automatic correctness. Feeds the FSRS recall schedule via self-rating.
 
-### 6.3 In — v3
+### 7.3 In — v3
 
 **F11. Balagha.** Curated, hand-authored, ~30 examples. Last, per §3, and the one
 place where hand-authoring is the right call because the corpus does not annotate
@@ -228,14 +303,21 @@ exist — scope only after F1–F10 land.
 **F13. Certificate.** Already mostly works. Needs a `users.name` column, which it
 reads today and which does not exist.
 
-### 6.4 Out — and why
+**F14. Opt-in progress sharing.** Now plausible in a way it was not for a single
+user or a public product: a known peer group is the one setting where gentle
+accountability works ("3 of your group reviewed today"). Strictly opt-in per user,
+strictly aggregate — no browsing another person's mistakes. Deliberately last, so
+it cannot become a reason to weaken the privacy default in §4.
+
+### 7.4 Out — and why
 
 | Feature | Decision | Reason |
 |---|---|---|
 | **Recitation ASR / mistake detection** | **Out** | §2. Three years and 75k curated minutes to match. Use Tarteel. This is the single biggest scope reduction versus v1, which had it in the placement test *and* Modules 04 and 08. |
-| Teacher mode, multi-student, parental controls | Out until real accounts exist | v1 promised these while auth resolved every request to one hardcoded id. Chasing them is how `lesson_progress` and `vocabulary_mastery` ended up without `user_id`. |
-| Monetization tiers, institutional pricing | Out | The app is single-user and self-hosted. Pricing pages for a product with one user are fiction. |
-| Community, leaderboards, forum, study groups | Out | Needs a user base; also needs moderation nobody has time for. |
+| Multi-user accounts | **Now IN** — see §4 | Reversed by the audience decision. Cloudflare Access + `user_id` on every table. This is the one v1 ambition that turned out to be required rather than premature. |
+| Teacher mode, parental controls, curriculum assignment | Out | A peer group of friends has no teacher role. Revisit only if someone actually wants to teach a class with it. |
+| Monetization tiers, institutional pricing | Out | Explicitly not a commercial product. |
+| Leaderboards, forum, study groups | Out | Ranking friends against each other is the wrong incentive for hifz, and a forum needs moderation nobody has time for. F14 covers the useful 5% of this. |
 | Hand-written Arabic parser | **Deleted** | Superseded by the corpus. |
 | Generic 1000-word vocabulary list | Replaced by F3 | Frequency scoped to the hifz plan beats a static list. |
 | Durable Objects | Out | v1 specified them for SRS scheduling. D1 plus a `due` column is sufficient; DO adds a moving part for no gain at this scale. |
@@ -243,10 +325,10 @@ reads today and which does not exist.
 
 ---
 
-## 7. Data model changes
+## 8. Data model changes
 
 Do these **before** more data accrues — the cost of adding `user_id` rises with
-every row.
+every row, and §4 makes it mandatory rather than speculative.
 
 1. **`lesson_progress`**: add `user_id`; PK → `(user_id, lesson_id)`. Fixes
    `/api/progress/dashboard`, `/api/learning/next`, `/api/tutor/chat`.
@@ -254,11 +336,14 @@ every row.
    cannot know the same word.
 3. **`memorization`**: add FSRS state (`stability`, `difficulty`, `reps`,
    `lapses`, `last_review`, `due`); `id` → `TEXT` (code inserts a UUID into an
-   `INTEGER PRIMARY KEY`). Add the separate comprehension schedule from §5.
+   `INTEGER PRIMARY KEY`). Add the separate comprehension schedule from §6.
 4. **`quran_verses`**: create it, once, with one column naming — the two routes
    that read it currently assume different names. Loaded from the pinned Tanzil
    text + tajweed annotations + corpus morphology.
-5. **`users`**: add `name` (the certificate already reads it).
+5. **`users`**: add `email` (unique — the identity from the Access JWT) and
+   `name` (the certificate already reads it). Provisioned just-in-time on first
+   authenticated request; `id` stays an opaque internal key so a changed address
+   does not orphan progress.
 6. **Blob PKs**: `tutor_conversations`, `tutor_topic_history`,
    `grammar_exercises` insert `randomblob(16)` into `INTEGER PRIMARY KEY`. Use
    `TEXT` + UUID.
@@ -267,6 +352,10 @@ every row.
    `quiz_attempts(user_id)`.
 8. **Make the schema idempotent** — the `tajweed_rules` seed is a bare `INSERT`,
    so re-running `schema.sql` fails.
+9. **Audit every query for tenancy.** With more than one real user, a missing
+   `WHERE user_id = ?` stops being a latent bug and becomes one friend reading
+   another's data. `tutor.ts:31` already selects an assessment with no user
+   filter. Every user-scoped table needs the predicate, checked once, deliberately.
 
 Adopt real migrations (`workers/src/db/migrations/NNN_*.sql`, applied in order,
 recorded in a `schema_migrations` table). A single mutable `schema.sql` is how the
@@ -274,7 +363,7 @@ schema and the queries drifted apart unnoticed.
 
 ---
 
-## 8. Roadmap
+## 9. Roadmap
 
 Each stage ends with a check that exercises the running system. Stages 1–6 are
 the audit's remediation order; 7+ is new capability. **No stage is "done" on a
@@ -283,7 +372,8 @@ green build** — that rule is what produced eleven false ✅s.
 | Stage | Work | Done when |
 |---|---|---|
 | **1 ✅** | Frontend↔Worker wiring, user row, CORS, fail-closed auth, CI typecheck | `GET /api/auth/profile` returns the user row through the deployed site. *Verified locally; awaiting secrets for remote.* |
-| **2** | §7.1–7.3, 7.6, 7.8 + `tutor.ts:31` binding + `learning.ts:111` SQL | All 19 endpoints return non-5xx against a seeded DB |
+| **2** | §8.1–8.4, 8.6–8.9 + `tutor.ts:31` binding + `learning.ts:111` SQL. Migrations table. | All 19 endpoints return non-5xx against a seeded DB; every user-scoped query filters by `user_id` |
+| **2b** | **Identity (§4):** custom domain, Pages + Worker under one hostname, Access application, JWT verification in the Worker, just-in-time user provisioning. Retire `NEXT_PUBLIC_API_TOKEN`. | Two different people log in and see two different, private profiles |
 | **3** | Lesson-grading contract; assessment result DTO; `error.tsx` | Submit a lesson, see a real score; kill the API, see an error not a blank |
 | **4** | Font `@import` order, Reem Kufi, `ProgressBar`/`Badge` static classes, logo viewBox, button contrast; pick one design system | Fonts load in devtools; progress bars visibly fill; contrast ≥ 4.5:1 |
 | **5** | Delete or route the 17 orphans — decides Module 05's real status; reset `PLAN.md` checkboxes | No unreachable component; docs match code |
@@ -293,13 +383,19 @@ green build** — that rule is what produced eleven false ✅s.
 | **9** | F6 tajweed track, F8 grounded explanations, F9 pattern drills | Explanation cites the corpus record; refuses when unannotated |
 | **10** | F10 recording, F11 balagha, F13 certificate | — |
 
+Stage 2b is deliberately early. Identity is the one thing that gets more
+expensive the longer it waits — every row written under the shared
+`test-user-1` identity before Access lands is a row that has to be attributed to
+a real person afterwards, or thrown away. Do it before Stage 7 writes anything a
+user would miss.
+
 Stages 2–6 are debt paydown on work already marked complete. That is the honest
 cost of eleven premature checkboxes, and it is cheaper to pay now than after
-F1–F13 are built on top of it.
+F1–F14 are built on top of it.
 
 ---
 
-## 9. Definition of Done
+## 10. Definition of Done
 
 Extends the UI rule already in `AGENTS.md` — a green deploy is not proof a visual
 fix landed — to the backend, where it was missing.
@@ -314,36 +410,39 @@ A feature is done when:
 3. **The file is reachable.** Trace the import chain from a route. 17 files
    currently fail this.
 4. **Types check.** Both projects, in CI. Non-negotiable now that it is wired.
-5. **Content is verified by a competent reader.** §10 R4.
+5. **Content is verified by a competent reader.** §11 R4.
 6. **The claim matches the code.** If a step is a placeholder, the docs say
    placeholder. `seed-db.ts` printing `✅ Seeded 18 assessment questions` while
    writing nothing cost more trust than the missing feature did.
 
 ---
 
-## 10. Risks
+## 11. Risks
 
 | # | Risk | Severity | Mitigation |
 |---|---|---|---|
-| R1 | **Scope collapse under solo maintenance.** v1 planned 12 modules across 3 pillars for one part-time developer, and the result was breadth marked complete over a backend that could not serve a request. | **High** | The §6.4 cuts are the mitigation. Ship F1–F3 fully before F4. |
+| R1 | **Scope collapse under solo maintenance.** v1 planned 12 modules across 3 pillars for one part-time developer, and the result was breadth marked complete over a backend that could not serve a request. | **High** | The §7.4 cuts are the mitigation. Ship F1–F3 fully before F4. |
 | R2 | **Quran API OAuth blocks content ingestion.** Registration may be slow or terms may not fit. | Medium | Text, tajweed and morphology all come from static licensed files. Only translation/tafsir/audio need the API — degrade to text-only rather than block. |
-| R3 | **Corpus is GPL.** Morphological annotation is GNU GPL with attribution; the repo is private "all rights reserved". | Medium | Keep corpus data as a **data file**, not linked code, and attribute with a link to corpus.quran.com as required. Get advice before any distribution. Fallback: [QuranMorph](https://www.researchgate.net/publication/392941154_QuranMorph_Morphologically_Annotated_Quranic_Corpus) or Quran Foundation word-by-word. |
-| R4 | **Content errors teach falsehoods.** Already shipped: الرحيم glossed "the Forgiving" (that is الغفور) with the correct answer absent from the options; Form II/III patterns swapped in two places; `سرف` for صرف. | **High** | This is a religious-education app — a wrong gloss is worse than a missing feature. No hand-authored Arabic ships without review by a competent reader. Prefer generated-from-corpus (F4) over hand-authored wherever possible. |
+| R3 | **Corpus is GPL.** Morphological annotation is GNU GPL with attribution. | **Low** (was Medium) | Downgraded by §4: hosting one instance for friends is network use, and GPL's trigger is *distribution* of the work — not serving data from it. Attribution with a link to corpus.quran.com is required regardless and costs nothing. The risk only returns if someone self-hosts their own copy. Fallback: [QuranMorph](https://www.researchgate.net/publication/392941154_QuranMorph_Morphologically_Annotated_Quranic_Corpus) or Quran Foundation word-by-word. |
+| R4 | **Content errors teach falsehoods.** Already shipped: الرحيم glossed "the Forgiving" (that is الغفور) with the correct answer absent from the options; Form II/III patterns swapped in two places; `سرف` for صرف. | **Highest** (raised by §4) | Now the top risk in the plan. Teaching a wrong gloss of الرحمن الرحيم to friends who trust the app is a different order of problem from one developer's own test data — and they have no reason to doubt it. Pull the three known fixes forward out of Stage 6. No hand-authored Arabic reaches a user without review by a competent reader; prefer generated-from-corpus (F4) wherever possible. |
 | R5 | **Tanzil encoding drift** silently misaligns every tajweed offset. | Medium | Pin the bundled April-2017 text; checksum it in CI; assert a known annotation lands on the expected codepoints. |
 | R6 | **Workers AI free tier (10k neurons/day)** exceeded by F8. | Low | Cache explanations by `(word, ayah)` — the corpus record is deterministic, so the same question has the same answer. Cache hit rate should be high. |
-| R7 | **Public bearer token.** `NEXT_PUBLIC_API_TOKEN` ships in the bundle by construction. | Medium | Accepted for single-user self-hosting; the API is read-mostly and holds no PII. Revisit before any second user. Rotate the token committed in `.dev.vars`. |
+| R7 | **Public bearer token.** `NEXT_PUBLIC_API_TOKEN` ships in the bundle by construction, and resolves every caller to one identity. | **Blocking** (was Medium, accepted) | No longer tolerable: with several users a bundled token means any of them can read and write any other's data. Resolved — not mitigated — by Stage 2b: Access supplies identity and the token is deleted. Until then, treat all data as shared. Rotate the token committed in `.dev.vars` regardless. |
 | R8 | **FSRS mis-tuned on sparse data**, giving bad intervals early. | Low | Use published default parameters until there are enough reviews to fit; store raw review logs so it can be re-fit retroactively. |
+| R9 | **Data loss now costs someone else's months of work.** A friend's hifz history is not reproducible. | **High** | Scheduled `d1 export` to R2 on a cron Worker, plus D1 Time Travel for point-in-time restore. Test a restore *before* inviting anyone — an untested backup is not a backup. |
+| R10 | **Operating a service for people you care about.** Silent breakage is now discovered by a friend, not a log. | Medium | Uptime check on `/health`; surface real errors in the UI (Stage 3) rather than blank regions; keep the group small enough to tell them directly when something breaks. |
 
 ---
 
-## 11. Open questions
+## 12. Open questions
 
 Ones where the answer changes the build, rather than v1's list of things nobody
 needed to decide:
 
-1. **Is this for one user or eventually many?** Everything in §6.4 and §7 hinges
-   on it. Building for one is legitimate and much cheaper — but say so, because
-   half-building for many is what produced the current schema.
+1. ~~**Is this for one user or eventually many?**~~ **Answered 2026-07-25: a small
+   group of close friends, non-commercial.** See §4. This drove multi-user accounts
+   back in scope, Cloudflare Access as the identity layer, a custom domain as a
+   requirement rather than a preference, R7 to blocking and R4 to highest.
 2. **Which mushaf and qira'ah?** The plan assumes Hafs — the tajweed dataset is
    Hafs-only. Anything else means new data.
 3. **How much daily time is the app designed for?** FSRS load balancing needs a
@@ -351,8 +450,14 @@ needed to decide:
    lessons and 10 reviews elsewhere, which are different numbers.
 4. **Does recitation correctness matter enough to reverse R1?** If yes, the
    answer is still "use Tarteel alongside," not "build ASR."
-5. **Is distribution ever intended?** Determines whether R3's GPL question is
-   theoretical or blocking.
+5. **Is distribution ever intended?** Now mostly settled — hosting one instance
+   is not distribution (R3). Still open if a friend ever wants their own copy.
+6. **How many friends, and do you want them to know who else is on it?** Changes
+   nothing structural — Access covers 50 either way — but it decides whether F14
+   is worth building and whether the group is visible to itself at all.
+7. **Whose e-mail addresses go in the Access policy, and who adds them?** The
+   entire access-control model is that list. Worth being deliberate about who can
+   edit it.
 
 ---
 
@@ -371,6 +476,10 @@ needed to decide:
 - [Cloudflare Workers AI — pricing and free allocation](https://developers.cloudflare.com/workers-ai/platform/pricing/)
 - [Tarteel — mistake detection](https://tarteel.ai/blog/introducing-mistake-detection/)
 - [The Tarteel Dataset](https://openreview.net/forum?id=TAdzPkgnnV8)
+- [Cloudflare Zero Trust — free plan limits (50 seats)](https://costbench.com/software/business-vpn/cloudflare-zero-trust/free-plan/)
+- [Cloudflare Access — seat management](https://github.com/cloudflare/cloudflare-docs/blob/production/content/cloudflare-one/identity/users/seat-management.md)
+- [Cloudflare Access — validating the JWT at the origin](https://blog.cloudflare.com/protecting-apis-with-jwt-validation/)
+- [Cloudflare Access — application token / `Cf-Access-Jwt-Assertion`](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/application-token/)
 - [Best Quran apps 2026 — comparison](https://www.getnafs.com/blog/quran-apps-comparison-2026/)
 - [Tarteel vs Quranly](https://www.quranly.app/blog/tarteel-vs-quranly-comparison)
 - [Bayyinah TV — Arabic curriculum](https://explore.bayyinahtv.com/arabic/)
