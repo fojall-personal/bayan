@@ -23,11 +23,11 @@ export default function RootLayout({
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="theme-color" content="#0c0a09" />
+        <meta name="theme-color" content="#071411" />
       </head>
-      <body className="min-h-screen bg-gray-950 text-gray-50">
+      <body className="min-h-screen bg-ground-950 font-body text-ground-50 antialiased">
         <Nav />
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 pt-24">
+        <main className="mx-auto max-w-7xl px-4 pb-16 pt-24 sm:px-6 lg:px-8">
           {children}
         </main>
       </body>

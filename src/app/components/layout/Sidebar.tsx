@@ -44,8 +44,8 @@ export function Sidebar() {
   return (
     <nav className="fixed left-0 top-0 bottom-0 w-[280px] bg-surface border-r border-border p-6">
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center">
-          <BookOpen className="w-5 h-5 text-white" />
+        <div className="w-10 h-10 rounded-full bg-gold-500 flex items-center justify-center">
+          <BookOpen className="w-5 h-5 text-ground-50" />
         </div>
         <div>
           <div className="font-bold text-lg">Language Builder</div>
@@ -63,7 +63,7 @@ export function Sidebar() {
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   isActive
-                    ? 'bg-primary-500/10 text-primary-400'
+                    ? 'bg-gold-500/10 text-gold-400'
                     : 'text-muted hover:bg-surface-2 hover:text-ink'
                 }`}
               >

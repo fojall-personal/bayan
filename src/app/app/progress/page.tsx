@@ -54,7 +54,7 @@ export default function ProgressPage() {
           <p className="text-gray-400 mb-4">{error}</p>
           <button
             onClick={fetchScores}
-            className="text-primary-500 hover:text-primary-400 font-medium"
+            className="text-gold-400 hover:text-gold-400 font-medium"
           >
             Try again
           </button>
@@ -68,7 +68,7 @@ export default function ProgressPage() {
             <p className="text-gray-400 mb-4">
               No assessment data yet. Take the diagnostic assessment to get started.
             </p>
-            <Link href="/assessment" className="inline-block text-primary-500 hover:text-primary-400 font-medium">
+            <Link href="/assessment" className="inline-block text-gold-400 hover:text-gold-400 font-medium">
               Take Diagnostic Assessment →
             </Link>
           </div>
@@ -84,25 +84,25 @@ export default function ProgressPage() {
                     label="Literacy"
                     value={score.literacy_score}
                     max={100}
-                    color="bg-green-500"
+                    color="bg-leaf-500"
                   />
                   <ScoreBar
                     label="Grammar"
                     value={score.grammar_score}
                     max={100}
-                    color="bg-purple-500"
+                    color="bg-tajweed-makharij"
                   />
                   <ScoreBar
                     label="Comprehension"
                     value={score.comprehension_score}
                     max={100}
-                    color="bg-blue-500"
+                    color="bg-info"
                   />
                   <ScoreBar
                     label="Memorization"
                     value={score.memorization_score}
                     max={100}
-                    color="bg-orange-500"
+                    color="bg-tajweed-qalqalah"
                   />
                 </div>
               </div>
@@ -165,7 +165,7 @@ function WeeklyCalendar() {
             key={day}
             className={`p-3 rounded-lg text-center ${
               isToday
-                ? 'bg-green-500/20 border border-green-500'
+                ? 'bg-leaf-500/20 border border-leaf-500'
                 : 'bg-gray-800'
             }`}
           >

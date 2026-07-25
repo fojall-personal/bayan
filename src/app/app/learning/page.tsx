@@ -8,6 +8,12 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
 
+const PATH_NAMES: Record<string, string> = {
+  path1: 'Complete Beginner',
+  path2: 'Conversational Speaker',
+  path3: 'Advanced Reader',
+};
+
 export default function LearningPageRoute() {
   const [view, setView] = useState<'lesson' | 'flashcards'>('lesson');
   const [user, setUser] = useState<{ id: string; current_path: string } | null>(null);
@@ -75,11 +81,20 @@ export default function LearningPageRoute() {
       />
 
       {user?.current_path && (
-        <Card className="mb-6">
-          <h3 className="font-semibold mb-2">Your Learning Path</h3>
-          <p className="text-gray-400 text-sm capitalize">
-            Path {user.current_path} — Continue from where you left off.
-          </p>
+        <Card className="mb-8" flush>
+          <div className="flex items-baseline justify-between gap-4">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-label text-gold-400">
+                Your path
+              </div>
+              {/* `capitalize` was title-casing the whole sentence, and the label
+                * read "Path path2". Map the stored id to its real name. */}
+              <div className="mt-1.5 font-display text-lg text-ground-50">
+                {PATH_NAMES[user.current_path] ?? 'Personalised path'}
+              </div>
+            </div>
+            <p className="text-sm text-ground-400">Continue where you left off</p>
+          </div>
         </Card>
       )}
 

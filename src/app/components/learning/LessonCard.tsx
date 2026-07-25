@@ -45,7 +45,7 @@ export function LessonCard({ lesson, onClick }: LessonCardProps) {
         <div className="mt-3">
           <ProgressBar
             progress={(lesson.current_step / lesson.total_steps) * 100}
-            color="arabic-green"
+            tone="leaf"
           />
         </div>
       )}

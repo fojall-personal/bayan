@@ -63,7 +63,7 @@ export function TajweedViewer({ surahId, surahName, verses }: TajweedViewerProps
           <select
             value={currentAyah}
             onChange={(e) => setCurrentAyah(Number(e.target.value))}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500/50"
+            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-leaf-500/50"
           >
             {verses.map((v, i) => (
               <option key={i} value={i}>
@@ -74,7 +74,7 @@ export function TajweedViewer({ surahId, surahName, verses }: TajweedViewerProps
           <button
             onClick={handlePlayAudio}
             disabled={audioPlaying}
-            className="px-4 py-2 bg-green-500/20 text-green-500 rounded-lg text-sm hover:bg-green-500/30 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 bg-leaf-500/20 text-leaf-400 rounded-lg text-sm hover:bg-leaf-500/30 disabled:opacity-50 transition-colors"
           >
             {audioPlaying ? '▶ Playing...' : '▶ Play'}
           </button>
@@ -112,7 +112,7 @@ export function TajweedViewer({ surahId, surahName, verses }: TajweedViewerProps
             onClick={() => setCurrentAyah(i)}
             className={`text-right p-4 rounded-lg border transition-all text-xl ${
               currentAyah === i
-                ? 'border-green-500 bg-green-500/10'
+                ? 'border-leaf-500 bg-leaf-500/10'
                 : 'border-gray-700 hover:border-gray-600 bg-gray-800'
             }`}
           >

@@ -73,7 +73,7 @@ export function AudioPlayer({ src, label, onRecordingComplete, isRecording }: Au
           onClick={handleRecord}
           className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
             recording
-              ? 'bg-red-600 animate-pulse'
+              ? 'bg-error animate-pulse'
               : 'bg-gray-700 hover:bg-gray-600'
           }`}
         >

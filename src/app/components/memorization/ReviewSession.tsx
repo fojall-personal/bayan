@@ -47,7 +47,7 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Ayah display */}
       <Card className="text-center py-8">
-        <div className="text-3xl text-green-500 mb-4 arabic-text" dir="rtl">
+        <div className="text-3xl text-leaf-400 mb-4 arabic-text" dir="rtl">
           {entry.ayah_text || `Surah ${entry.surah_id}, Ayahs ${entry.ayah_from}-${entry.ayah_to}`}
         </div>
         <p className="text-gray-400">
@@ -108,7 +108,7 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
                 onClick={() => handleRate(quality)}
                 className={`w-full p-3 rounded-lg text-left transition-colors ${
                   selfRating === quality
-                    ? 'bg-green-500/20 border border-green-500'
+                    ? 'bg-leaf-500/20 border border-leaf-500'
                     : 'bg-gray-700 hover:bg-gray-600'
                 }`}
               >

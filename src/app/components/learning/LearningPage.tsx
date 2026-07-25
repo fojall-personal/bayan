@@ -187,7 +187,7 @@ export function LearningPage({ userId }: LearningPageProps) {
                   {example.meaning}
                 </div>
                 {example.rule && (
-                  <div className="text-xs text-primary-400 mt-2">
+                  <div className="text-xs text-gold-400 mt-2">
                     Rule: {example.rule}
                   </div>
                 )}
@@ -204,7 +204,7 @@ export function LearningPage({ userId }: LearningPageProps) {
           <div className="space-y-4">
             {lesson.content.rules.map((rule, i) => (
               <div key={i} className="bg-gray-800 rounded-lg p-4">
-                <h3 className="font-semibold text-primary-400 mb-2">
+                <h3 className="font-semibold text-gold-400 mb-2">
                   {rule.name}
                 </h3>
                 <p className="text-gray-300 text-sm mb-2">{rule.description}</p>
@@ -275,7 +275,7 @@ export function LearningPage({ userId }: LearningPageProps) {
                           }
                           className={`w-full p-4 text-left rounded-lg border transition-all ${
                             answers[currentExerciseIndex] === option
-                              ? 'border-primary-500 bg-primary-500/10 text-primary-400'
+                              ? 'border-gold-500 bg-gold-500/10 text-gold-400'
                               : 'border-gray-700 hover:border-gray-600'
                           }`}
                         >
@@ -296,7 +296,7 @@ export function LearningPage({ userId }: LearningPageProps) {
                       handleAnswer(currentExerciseIndex, e.target.value)
                     }
                     placeholder="Type your answer..."
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 transition-all"
                   />
                 </div>
               )}

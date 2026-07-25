@@ -80,21 +80,21 @@ export function SurahProgress({ surahId, surahName, totalAyahs }: SurahProgressP
           <span>{masteredCount} / {totalAyahs} ayahs memorized</span>
           <span>{Math.round(percentage)}%</span>
         </div>
-        <ProgressBar progress={percentage} color="primary" />
+        <ProgressBar progress={percentage} tone="leaf" />
       </div>
 
       {/* Status breakdown */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="text-center p-4 bg-green-500/10 rounded-lg">
-          <div className="text-2xl font-bold text-green-500">{masteredCount}</div>
+        <div className="text-center p-4 bg-leaf-500/10 rounded-lg">
+          <div className="text-2xl font-bold text-leaf-400">{masteredCount}</div>
           <div className="text-sm text-gray-400">Mastered</div>
         </div>
-        <div className="text-center p-4 bg-yellow-500/10 rounded-lg">
-          <div className="text-2xl font-bold text-yellow-500">{learningCount}</div>
+        <div className="text-center p-4 bg-gold-500/10 rounded-lg">
+          <div className="text-2xl font-bold text-gold-400">{learningCount}</div>
           <div className="text-sm text-gray-400">Learning</div>
         </div>
-        <div className="text-center p-4 bg-blue-500/10 rounded-lg">
-          <div className="text-2xl font-bold text-blue-500">{reviewingCount}</div>
+        <div className="text-center p-4 bg-info/10 rounded-lg">
+          <div className="text-2xl font-bold text-info">{reviewingCount}</div>
           <div className="text-sm text-gray-400">Reviewing</div>
         </div>
       </div>
@@ -106,9 +106,9 @@ export function SurahProgress({ surahId, surahName, totalAyahs }: SurahProgressP
           const status = entry?.status || 'new';
 
           const statusColors = {
-            mastered: 'bg-green-500 text-white',
-            learning: 'bg-yellow-500 text-black',
-            reviewing: 'bg-blue-500 text-white',
+            mastered: 'bg-leaf-500 text-ground-50',
+            learning: 'bg-gold-500 text-black',
+            reviewing: 'bg-info text-ground-50',
             new: 'bg-gray-700 text-gray-400',
           };
 

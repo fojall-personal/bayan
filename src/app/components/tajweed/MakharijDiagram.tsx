@@ -48,7 +48,7 @@ export function MakharijDiagram({
               key={name}
               className={`p-4 rounded-lg transition-colors ${
                 isHovered || hasSelected
-                  ? 'bg-green-500/20 border border-green-500'
+                  ? 'bg-leaf-500/20 border border-leaf-500'
                   : 'bg-gray-800 hover:bg-gray-700'
               }`}
               onMouseEnter={() => setHoveredMakharij(name)}
@@ -61,7 +61,7 @@ export function MakharijDiagram({
                     key={letter}
                     className={`w-10 h-10 flex items-center justify-center rounded text-lg ${
                       selectedLetter === letter
-                        ? 'bg-green-500 text-white'
+                        ? 'bg-leaf-500 text-ground-50'
                         : 'bg-gray-600 text-gray-200'
                     }`}
                   >

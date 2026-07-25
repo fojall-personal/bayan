@@ -16,7 +16,7 @@ export function Navbar({ title, links = [] }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <a href="/" className="text-xl font-bold text-primary-500">
+            <a href="/" className="text-xl font-bold text-gold-400">
               {title}
             </a>
           </div>
@@ -27,7 +27,7 @@ export function Navbar({ title, links = [] }: NavbarProps) {
               <a
                 key={link.href}
                 href={link.href}
-                className="text-gray-300 hover:text-primary-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                className="text-gray-300 hover:text-gold-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 {link.label}
               </a>
@@ -38,7 +38,7 @@ export function Navbar({ title, links = [] }: NavbarProps) {
           <div className="md:hidden">
             <button
               type="button"
-              className="text-gray-300 hover:text-primary-400 p-2"
+              className="text-gray-300 hover:text-gold-400 p-2"
               aria-label="Toggle menu"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

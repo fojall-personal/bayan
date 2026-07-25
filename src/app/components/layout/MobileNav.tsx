@@ -40,7 +40,7 @@ export function MobileNav() {
             href={item.href}
             className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all ${
               isActive
-                ? 'text-primary-400'
+                ? 'text-gold-400'
                 : 'text-muted hover:text-ink'
             }`}
           >

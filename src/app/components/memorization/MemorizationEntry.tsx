@@ -15,8 +15,8 @@ interface MemorizationEntryProps {
 export function MemorizationEntry({ entry, onClick }: MemorizationEntryProps) {
   const statusColors: Record<string, string> = {
     mastered: 'bg-arabic-green/20 text-arabic-green border-arabic-green/30',
-    learning: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-    reviewing: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    learning: 'bg-gold-500/20 text-gold-400 border-gold-400/30',
+    reviewing: 'bg-info/20 text-info border-info/30',
     new: 'bg-gray-700 text-gray-400 border-gray-600',
   };
 

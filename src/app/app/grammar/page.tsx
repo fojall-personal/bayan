@@ -31,7 +31,7 @@ export default function GrammarPage() {
             onClick={() => setCategory(cat.id)}
             className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
               category === cat.id
-                ? 'border-green-500 bg-green-500/10 text-green-400'
+                ? 'border-leaf-500 bg-leaf-500/10 text-leaf-400'
                 : 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300'
             }`}
           >

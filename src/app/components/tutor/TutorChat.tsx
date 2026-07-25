@@ -97,7 +97,7 @@ export function TutorChat() {
             <div
               className={`max-w-[85%] p-3 rounded-lg ${
                 msg.role === 'user'
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-leaf-500 text-ground-50'
                   : 'bg-gray-700 text-gray-100'
               }`}
             >
@@ -147,7 +147,7 @@ export function TutorChat() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Ask me anything about Arabic..."
-          className="flex-1 p-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
+          className="flex-1 p-3 bg-gray-800 border border-gray-700 rounded-lg text-ground-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-leaf-500/50 focus:border-leaf-500 transition-all"
         />
         <Button
           onClick={handleSend}

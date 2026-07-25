@@ -20,7 +20,7 @@ export function StatCard({ label, value, icon, trend }: StatCardProps) {
       {trend && (
         <div
           className={`mt-3 flex items-center gap-1 text-sm ${
-            trend.positive ? 'text-arabic-green' : 'text-red-400'
+            trend.positive ? 'text-arabic-green' : 'text-error'
           }`}
         >
           <span>{trend.positive ? '↑' : '↓'}</span>

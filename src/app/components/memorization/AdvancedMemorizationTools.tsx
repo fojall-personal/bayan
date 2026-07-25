@@ -129,7 +129,7 @@ export function AdvancedMemorizationTools() {
                     onChange={(e) => setUserAnswer(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAnswer()}
                     placeholder="Type what you heard..."
-                    className="flex-1 p-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all"
+                    className="flex-1 p-3 bg-gray-800 border border-gray-700 rounded-lg text-ground-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-leaf-500/50 transition-all"
                   />
                   <Button onClick={handleAnswer} className="px-6">
                     Check
@@ -140,7 +140,7 @@ export function AdvancedMemorizationTools() {
                     setAudioTesting(false);
                     setCurrentAyah(null);
                   }}
-                  className="text-sm text-red-400 hover:text-red-300"
+                  className="text-sm text-error hover:text-error"
                 >
                   End Test
                 </button>
@@ -164,7 +164,7 @@ export function AdvancedMemorizationTools() {
           <input
             type="number"
             placeholder="Surah number"
-            className="flex-1 p-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50"
+            className="flex-1 p-2 bg-gray-800 border border-gray-700 rounded-lg text-ground-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-leaf-500/50"
             min="1"
             max="114"
           />
@@ -185,15 +185,15 @@ export function AdvancedMemorizationTools() {
         </Button>
 
         {certificate && (
-          <div className="mt-4 p-4 bg-gray-800 rounded-lg border border-green-500/30">
+          <div className="mt-4 p-4 bg-gray-800 rounded-lg border border-leaf-500/30">
             <h3 className="font-bold text-lg text-center mb-2">{certificate.title}</h3>
             <p className="text-center text-gray-400 mb-4">{certificate.subtitle}</p>
             <div className="text-center space-y-1">
               <p className="text-xl font-bold">{certificate.userName}</p>
               <p className="text-sm text-gray-400">{certificate.date}</p>
               <div className="mt-4 text-sm">
-                <p>Surahs completed: <span className="font-bold text-green-400">{certificate.totalSurahs}</span></p>
-                <p>Ayahs memorized: <span className="font-bold text-green-400">{certificate.totalAyahs}</span></p>
+                <p>Surahs completed: <span className="font-bold text-leaf-400">{certificate.totalSurahs}</span></p>
+                <p>Ayahs memorized: <span className="font-bold text-leaf-400">{certificate.totalAyahs}</span></p>
               </div>
               {certificate.surahs.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1 justify-center">

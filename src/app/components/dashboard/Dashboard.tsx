@@ -94,8 +94,8 @@ export function Dashboard() {
           </p>
         </div>
         {data.streak > 0 && (
-          <div className="flex items-center gap-2 bg-primary-500/10 px-4 py-2 rounded-full">
-            <Flame className="w-5 h-5 text-primary-400" />
+          <div className="flex items-center gap-2 bg-gold-500/10 px-4 py-2 rounded-full">
+            <Flame className="w-5 h-5 text-gold-400" />
             <span className="font-bold">{data.streak} day streak</span>
           </div>
         )}
@@ -103,13 +103,13 @@ export function Dashboard() {
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <a href="/learning" className="p-4 bg-primary-500/10 border border-primary-500 rounded-lg hover:bg-primary-500/20 transition-colors">
-          <BookOpen className="w-6 h-6 text-primary-400 mb-2" />
+        <a href="/learning" className="p-4 bg-gold-500/10 border border-gold-500 rounded-lg hover:bg-gold-500/20 transition-colors">
+          <BookOpen className="w-6 h-6 text-gold-400 mb-2" />
           <div className="font-semibold">Continue Lesson</div>
           <div className="text-sm text-muted">Grammar-05 (20 min)</div>
         </a>
-        <a href="/memorization" className="p-4 bg-secondary-500/10 border border-secondary-500 rounded-lg hover:bg-secondary-500/20 transition-colors">
-          <BookMarked className="w-6 h-6 text-secondary-400 mb-2" />
+        <a href="/memorization" className="p-4 bg-gold-500/10 border border-gold-400 rounded-lg hover:bg-gold-500/20 transition-colors">
+          <BookMarked className="w-6 h-6 text-gold-400 mb-2" />
           <div className="font-semibold">Memorization Review</div>
           <div className="text-sm text-muted">{data.todayReview.length} ayahs due</div>
         </a>
@@ -183,10 +183,10 @@ function ModuleProgress({
   color: string;
 }) {
   const colorMap: Record<string, string> = {
-    green: 'bg-primary-500',
-    blue: 'bg-blue-500',
-    purple: 'bg-purple-500',
-    orange: 'bg-orange-500',
+    green: 'bg-gold-500',
+    blue: 'bg-info',
+    purple: 'bg-tajweed-makharij',
+    orange: 'bg-tajweed-qalqalah',
   };
 
   return (
@@ -197,7 +197,7 @@ function ModuleProgress({
       </div>
       <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
         <div
-          className={`h-full ${colorMap[color] || 'bg-primary-500'} transition-all duration-500`}
+          className={`h-full ${colorMap[color] || 'bg-gold-500'} transition-all duration-500`}
           style={{ width: `${score}%` }}
         />
       </div>

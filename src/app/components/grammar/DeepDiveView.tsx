@@ -94,7 +94,7 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
     <div className="page-transition space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <info.icon className="w-8 h-8 text-primary-400" />
+        <info.icon className="w-8 h-8 text-gold-400" />
         <div>
           <h1 className="text-2xl font-bold">Grammar Deep-Dive</h1>
           <p className="text-muted">{info.name}</p>
@@ -127,7 +127,7 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
             onClick={() => setSelectedLesson(lesson)}
             className={`p-4 rounded-lg text-left transition-all border ${
               selectedLesson?.id === lesson.id
-                ? 'border-green-500 bg-green-500/10'
+                ? 'border-leaf-500 bg-leaf-500/10'
                 : 'border-gray-700 bg-gray-800 hover:bg-gray-700'
             }`}
           >
@@ -193,7 +193,7 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             placeholder="Type an Arabic sentence..."
-            className="flex-1 p-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
+            className="flex-1 p-3 bg-gray-800 border border-gray-700 rounded-lg text-ground-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-leaf-500/50 focus:border-leaf-500 transition-all"
           />
           <Button
             onClick={handleParse}
@@ -245,12 +245,12 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
             )}
 
             {parseResult.errors.length > 0 && (
-              <div className="mt-4 p-3 bg-red-500/10 border border-red-500 rounded-lg">
-                <h5 className="font-semibold text-red-400 mb-2">
+              <div className="mt-4 p-3 bg-error/10 border border-error rounded-lg">
+                <h5 className="font-semibold text-error mb-2">
                   Grammar Issues Found:
                 </h5>
                 {parseResult.errors.map((error: any, i: number) => (
-                  <div key={i} className="text-sm text-red-300">
+                  <div key={i} className="text-sm text-error">
                     • {error.message} — Suggestion: {error.suggestion}
                   </div>
                 ))}

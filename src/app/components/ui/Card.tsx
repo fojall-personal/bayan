@@ -4,14 +4,18 @@ interface CardProps {
   children: React.ReactNode;
   className?: string;
   interactive?: boolean;
+  /** Renders on the darker canvas instead of the raised surface. */
+  flush?: boolean;
 }
 
-export function Card({ children, className = '', interactive = false }: CardProps) {
+export function Card({ children, className = '', interactive = false, flush = false }: CardProps) {
   return (
     <div
-      className={`bg-gray-900 border border-gray-800 rounded-xl p-6 ${
+      className={`rounded-lg border border-ground-800 p-card ${
+        flush ? 'bg-ground-950' : 'bg-ground-900'
+      } ${
         interactive
-          ? 'hover:border-primary-500/50 hover:shadow-glow transition-all cursor-pointer'
+          ? 'cursor-pointer transition-colors duration-200 hover:border-gold-500/40 hover:bg-ground-800'
           : ''
       } ${className}`}
     >

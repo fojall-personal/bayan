@@ -56,7 +56,7 @@ export function AssessmentResults({ result }: { result: AssessmentResult }) {
 
       {/* Composite Score */}
       <Card className="text-center py-8">
-        <div className="text-6xl font-bold text-primary-500 mb-2">
+        <div className="text-6xl font-bold text-gold-400 mb-2">
           {compositeScore}%
         </div>
         <div className="text-gray-400">Composite Score</div>
@@ -64,10 +64,10 @@ export function AssessmentResults({ result }: { result: AssessmentResult }) {
 
       {/* Module Scores */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ScoreCard label="Literacy" score={result.literacy_score} color="primary" />
-        <ScoreCard label="Comprehension" score={result.comprehension_score} color="secondary" />
-        <ScoreCard label="Grammar" score={result.grammar_score} color="info" />
-        <ScoreCard label="Memorization" score={result.memorization_score} color="success" />
+        <ScoreCard label="Literacy" score={result.literacy_score} tone="leaf" />
+        <ScoreCard label="Comprehension" score={result.comprehension_score} tone="gold" />
+        <ScoreCard label="Grammar" score={result.grammar_score} tone="info" />
+        <ScoreCard label="Memorization" score={result.memorization_score} tone="leaf" />
       </div>
 
       {/* Analysis */}
@@ -89,7 +89,7 @@ export function AssessmentResults({ result }: { result: AssessmentResult }) {
       <Card>
         <h3 className="text-lg font-semibold mb-4">Your Learning Path</h3>
         <div className="bg-gray-800 rounded-lg p-4">
-          <h4 className="font-semibold text-primary-400 mb-2">{path?.name || 'Custom Path'}</h4>
+          <h4 className="font-semibold text-gold-400 mb-2">{path?.name || 'Custom Path'}</h4>
           <p className="text-gray-400 text-sm mb-4">{path?.description || 'Personalized based on your results'}</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -121,21 +121,24 @@ export function AssessmentResults({ result }: { result: AssessmentResult }) {
   );
 }
 
-function ScoreCard({ label, score, color }: { label: string; score: number; color: string }) {
-  const colorClasses: Record<string, string> = {
-    primary: 'bg-primary-500',
-    secondary: 'bg-secondary-500',
-    info: 'bg-blue-500',
-    success: 'bg-green-500',
-  };
-
+function ScoreCard({
+  label,
+  score,
+  tone,
+}: {
+  label: string;
+  score: number;
+  tone: 'gold' | 'leaf' | 'info' | 'muted';
+}) {
   return (
     <Card>
-      <div className="flex justify-between items-center mb-3">
-        <span className="font-medium">{label}</span>
-        <span className="text-2xl font-bold">{score}%</span>
+      <div className="mb-3 flex items-center justify-between">
+        <span className="font-medium text-ground-100">{label}</span>
+        <span className="font-display text-2xl font-semibold tabular-nums text-ground-50">
+          {score}%
+        </span>
       </div>
-      <ProgressBar progress={score} color={color} />
+      <ProgressBar progress={score} tone={tone} />
     </Card>
   );
 }

@@ -246,8 +246,8 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
               onClick={() => handleAnswer(option)}
               className={`w-full p-4 text-left rounded-lg border ${
                 answers[currentQuestion.id] === option 
-                  ? 'border-primary-500 bg-primary-500/10' 
-                  : 'border-gray-700 hover:border-primary-500'
+                  ? 'border-gold-500 bg-gold-500/10' 
+                  : 'border-gray-700 hover:border-gold-500'
               } transition-all ${
                 /[\u0600-\u06FF]/.test(option) ? 'text-right' : ''
               }`}

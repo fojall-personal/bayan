@@ -46,14 +46,14 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           <div key={s} className="flex items-center">
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                step >= s ? 'bg-primary-500 text-white' : 'bg-gray-700 text-gray-400'
+                step >= s ? 'bg-gold-500 text-ground-50' : 'bg-gray-700 text-gray-400'
               }`}
             >
               {s}
             </div>
             {s < 3 && (
               <div
-                className={`w-16 h-1 ${step > s ? 'bg-primary-500' : 'bg-gray-700'}`}
+                className={`w-16 h-1 ${step > s ? 'bg-gold-500' : 'bg-gray-700'}`}
               />
             )}
           </div>
@@ -78,11 +78,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   onClick={() => setGoal(option.value as any)}
                   className={`w-full p-4 rounded-lg text-left flex items-center gap-4 transition-colors ${
                     goal === option.value
-                      ? 'bg-primary-500/20 border border-primary-500'
+                      ? 'bg-gold-500/20 border border-gold-500'
                       : 'bg-surface-2 hover:bg-surface hover:border-border'
                   }`}
                 >
-                  {Icon && <Icon className="w-6 h-6 text-primary-400" />}
+                  {Icon && <Icon className="w-6 h-6 text-gold-400" />}
                   <span className="font-semibold">{option.label}</span>
                 </button>
               );
@@ -117,7 +117,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     onClick={() => setReadingAbility(option.value as any)}
                     className={`flex-1 p-3 rounded-lg border transition-colors ${
                       readingAbility === option.value
-                        ? 'border-primary-500 bg-primary-500/10'
+                        ? 'border-gold-500 bg-gold-500/10'
                         : 'border-border hover:border-muted'
                     }`}
                   >
@@ -143,7 +143,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     onClick={() => setMemorizedSurahs(option.value as any)}
                     className={`flex-1 p-3 rounded-lg border transition-colors ${
                       memorizedSurahs === option.value
-                        ? 'border-primary-500 bg-primary-500/10'
+                        ? 'border-gold-500 bg-gold-500/10'
                         : 'border-border hover:border-muted'
                     }`}
                   >
@@ -166,7 +166,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     onClick={() => setChallenge(option.value as any)}
                     className={`flex-1 p-3 rounded-lg border transition-colors ${
                       challenge === option.value
-                        ? 'border-primary-500 bg-primary-500/10'
+                        ? 'border-gold-500 bg-gold-500/10'
                         : 'border-border hover:border-muted'
                     }`}
                   >

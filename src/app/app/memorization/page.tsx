@@ -147,19 +147,19 @@ export default function MemorizationPage() {
           <Card>
             <div className="grid grid-cols-4 gap-4 text-center">
               <div>
-                <div className="text-2xl font-bold text-green-500">
+                <div className="text-2xl font-bold text-leaf-400">
                   {surahs.reduce((sum, s) => sum + (s.mastered as number), 0)}
                 </div>
                 <div className="text-sm text-gray-400">Mastered</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-yellow-500">
+                <div className="text-2xl font-bold text-gold-400">
                   {surahs.reduce((sum, s) => sum + (s.learning as number), 0)}
                 </div>
                 <div className="text-sm text-gray-400">Learning</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-blue-500">
+                <div className="text-2xl font-bold text-info">
                   {surahs.reduce((sum, s) => sum + (s.reviewing as number), 0)}
                 </div>
                 <div className="text-sm text-gray-400">Reviewing</div>
