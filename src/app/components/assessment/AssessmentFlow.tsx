@@ -50,14 +50,14 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
     // Calculate scores for each module
     const moduleScores: Record<string, number> = {};
 
-    for (const module of modules) {
+    for (const mod of modules) {
       let correct = 0;
-      for (const question of module.questions) {
+      for (const question of mod.questions) {
         if (answers[question.id] === question.correctAnswer) {
           correct++;
         }
       }
-      moduleScores[module.id] = Math.round((correct / module.questions.length) * 100);
+      moduleScores[mod.id] = Math.round((correct / mod.questions.length) * 100);
     }
 
     setScores(moduleScores);

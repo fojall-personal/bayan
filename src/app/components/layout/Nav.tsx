@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * Bayan wordmark: a gold eight-point star followed by the name set in the
@@ -48,6 +48,44 @@ const LINKS = [
 export function Nav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  // The mobile menu had aria-expanded but nothing else: Escape did not close it,
+  // focus never entered it, and Tab walked straight past into the page behind
+  // (audit BUG-014).
+  useEffect(() => {
+    if (!open) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        toggleRef.current?.focus();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const focusable = panelRef.current?.querySelectorAll<HTMLElement>('a[href], button');
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    panelRef.current?.querySelector<HTMLElement>('a[href]')?.focus();
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open]);
+
+  // Close on navigation, or the panel stays open over the new page.
+  useEffect(() => setOpen(false), [pathname]);
 
   // Was missing entirely: /tajweed, /grammar, /tutor and /advanced were
   // unreachable by clicking, and no link showed which page you were on.
@@ -80,6 +118,7 @@ export function Nav() {
           </div>
 
           <button
+            ref={toggleRef}
             onClick={() => setOpen(!open)}
             aria-expanded={open}
             aria-controls="mobile-nav"
@@ -98,7 +137,11 @@ export function Nav() {
       </div>
 
       {open && (
-        <div id="mobile-nav" className="border-t border-ground-800 bg-ground-950 md:hidden">
+        <div
+          id="mobile-nav"
+          ref={panelRef}
+          className="border-t border-ground-800 bg-ground-950 md:hidden"
+        >
           <div className="space-y-1 px-3 py-3">
             {LINKS.map((link) => (
               <Link

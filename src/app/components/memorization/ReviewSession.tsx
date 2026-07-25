@@ -74,7 +74,7 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
             onClick={() => setStep('recite')}
             className="w-full mt-4"
           >
-            I've listened — Continue to Recite
+            I&apos;ve listened — continue to recite
           </Button>
         </Card>
       )}

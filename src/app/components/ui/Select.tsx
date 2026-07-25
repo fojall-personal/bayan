@@ -1,5 +1,7 @@
 'use client';
 
+import { useId } from 'react';
+
 interface SelectOption {
   value: string;
   label: string;
@@ -14,19 +16,23 @@ interface SelectProps {
 }
 
 export function Select({ options, value, onChange, label, className = '' }: SelectProps) {
+  const id = useId();
   return (
     <div className="space-y-2">
       {label && (
-        <label className="block text-sm font-medium text-gray-300">{label}</label>
+        <label htmlFor={id} className="block text-sm font-medium text-ground-300">
+          {label}
+        </label>
       )}
       <select
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-50 focus:outline-none focus:ring-2 focus:ring-arabic-green/50 focus:border-arabic-green transition-all ${className}`}
+        className={`w-full rounded-md border border-ground-700 bg-ground-800 px-4 py-2.5 text-ground-50 transition-colors focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/50 ${className}`}
       >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
           </option>
         ))}
       </select>

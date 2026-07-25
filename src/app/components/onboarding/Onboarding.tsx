@@ -63,7 +63,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       {/* Step 1: Goal Selection */}
       {step === 1 && (
         <Card className="p-8">
-          <h2 className="text-2xl font-bold mb-6 text-center">What's your goal?</h2>
+          <h2 className="text-2xl font-bold mb-6 text-center">What&apos;s your goal?</h2>
           <div className="space-y-3">
             {[
               { value: 'read_quran', label: 'Read the Quran fluently' },
@@ -154,7 +154,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             </div>
 
             <div>
-              <label className="block text-lg font-semibold mb-3">What's your biggest challenge?</label>
+              <label className="block text-lg font-semibold mb-3">What&apos;s your biggest challenge?</label>
               <div className="flex gap-3">
                 {[
                   { value: 'reading', label: 'Reading Arabic' },
@@ -194,7 +194,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           <h2 className="text-2xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-muted mb-6">
             Take our 30-minute diagnostic assessment to personalize your learning path.
-            We'll assess your Arabic reading, comprehension, grammar, and memorization levels.
+            We&apos;ll assess your Arabic reading, comprehension, grammar, and memorization levels.
           </p>
 
           <div className="bg-surface-2 rounded-lg p-4 mb-6 text-left">

@@ -1,24 +1,30 @@
 'use client';
 
-import { Button } from '../ui/Button';
+import { Button } from './Button';
 
 interface EmptyStateProps {
-  icon: string;
   title: string;
   description: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
+  action?: { label: string; onClick: () => void };
 }
 
-export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+/**
+ * Empty states always carry an action — an empty screen with no next step is one
+ * of the anti-slop tells in DESIGN.md.
+ *
+ * No icon prop: the previous version required an emoji string, which is tell 12
+ * (decorative glyph above a heading).
+ */
+export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
-    <div className="text-center py-12">
-      <div className="text-4xl mb-4">{icon}</div>
-      <h3 className="text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-gray-400 mb-6 max-w-md mx-auto">{description}</p>
-      {action && <Button onClick={action.onClick}>{action.label}</Button>}
+    <div className="mx-auto max-w-md py-14 text-center">
+      <h3 className="font-display text-xl font-semibold text-ground-50">{title}</h3>
+      <p className="mt-3 text-sm leading-relaxed text-ground-300">{description}</p>
+      {action && (
+        <div className="mt-7">
+          <Button onClick={action.onClick}>{action.label}</Button>
+        </div>
+      )}
     </div>
   );
 }

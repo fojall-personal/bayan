@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
+import { Input } from '@/components/ui/Input';
 
 interface Lesson {
   id: string;
@@ -295,17 +296,13 @@ export function LearningPage({ userId }: LearningPageProps) {
 
               {/* Fill in Blank */}
               {lesson.exercises[currentExerciseIndex].type === 'fill_blank' && (
-                <div>
-                  <input
-                    type="text"
-                    value={answers[currentExerciseIndex] || ''}
-                    onChange={(e) =>
-                      handleAnswer(currentExerciseIndex, e.target.value)
-                    }
-                    placeholder="Type your answer..."
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 transition-all"
-                  />
-                </div>
+                <Input
+                  dir="auto"
+                  value={String(answers[currentExerciseIndex] ?? '')}
+                  onChange={(e) => handleAnswer(currentExerciseIndex, e.target.value)}
+                  placeholder="Type your answer"
+                  aria-label="Your answer"
+                />
               )}
 
               {/* Match */}

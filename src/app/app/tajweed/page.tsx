@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
+import { Tabs } from '@/components/ui/Tabs';
 
 interface TajweedRule {
   id: string;
@@ -22,7 +23,10 @@ interface TajweedRule {
 export default function TajweedPage() {
   const [view, setView] = useState<'viewer' | 'makharij' | 'mastery'>('viewer');
   const [rules, setRules] = useState<TajweedRule[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Was initialised true while the fetch only runs for the mastery tab, so the
+  // default Reader view showed "Loading..." permanently and the page was
+  // effectively unreachable.
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,7 +49,7 @@ export default function TajweedPage() {
     }
   };
 
-  if (loading) {
+  if (loading && view === 'mastery') {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-gray-400">Loading...</div>
@@ -67,26 +71,16 @@ export default function TajweedPage() {
         title="Tajweed"
         subtitle="Color-coded Quran text with rule visualization"
         actions={
-          <div className="flex gap-2">
-            <Button
-              variant={view === 'viewer' ? 'primary' : 'secondary'}
-              onClick={() => setView('viewer')}
-            >
-              Viewer
-            </Button>
-            <Button
-              variant={view === 'makharij' ? 'primary' : 'secondary'}
-              onClick={() => setView('makharij')}
-            >
-              Makharij
-            </Button>
-            <Button
-              variant={view === 'mastery' ? 'primary' : 'secondary'}
-              onClick={() => setView('mastery')}
-            >
-              Mastery
-            </Button>
-          </div>
+          <Tabs
+            label="Tajweed views"
+            value={view}
+            onChange={setView}
+            items={[
+              { id: 'viewer', label: 'Reader' },
+              { id: 'makharij', label: 'Makharij' },
+              { id: 'mastery', label: 'Mastery' },
+            ]}
+          />
         }
       />
 

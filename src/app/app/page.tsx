@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const GOALS = [
   {
@@ -73,18 +74,11 @@ function GoalCard({
 }
 
 export default function GoalSelection() {
-  const [goal, setGoal] = useState<string | null>(null);
-
-  const select = (id: string) => {
-    setGoal(id);
-    // Previously the choice lived only in component state and the CTA navigated
-    // away, so the answer to the first question the app asks was discarded.
-    try {
-      window.localStorage.setItem('bayan.goal', id);
-    } catch {
-      // private mode / storage disabled — the assessment still works without it
-    }
-  };
+  // Persisted so the answer to the first question the app asks is not discarded
+  // when the CTA navigates away. useLocalStorage handles the private-mode and
+  // storage-disabled cases.
+  const [goal, setGoal] = useLocalStorage<string | null>('bayan.goal', null);
+  const select = (id: string) => setGoal(id);
 
   return (
     <div className="relative">

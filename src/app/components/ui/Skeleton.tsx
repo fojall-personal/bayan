@@ -1,31 +1,26 @@
 'use client';
 
 interface SkeletonProps {
-  width?: string;
-  height?: string;
   className?: string;
 }
 
-export function Skeleton({ width, height, className = '' }: SkeletonProps) {
+/** Sized with utility classes so no inline style is needed. */
+export function Skeleton({ className = '' }: SkeletonProps) {
+  return <div aria-hidden="true" className={`animate-pulse rounded bg-ground-800 ${className}`} />;
+}
+
+export function LoadingCard({ lines = 3 }: { lines?: number }) {
   return (
     <div
-      className={`bg-gray-800 animate-pulse rounded ${className}`}
-      style={{ width, height }}
-    />
-  );
-}
-
-interface LoadingCardProps {
-  lines?: number;
-}
-
-export function LoadingCard({ lines = 3 }: LoadingCardProps) {
-  return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
-      <Skeleton width="120px" height="20px" />
-      <Skeleton width="100%" height="100px" />
-      <Skeleton width="80%" height="20px" />
-      {lines > 3 && <Skeleton width="60%" height="20px" />}
+      role="status"
+      aria-label="Loading"
+      className="space-y-4 rounded-lg border border-ground-800 bg-ground-900 p-card"
+    >
+      <Skeleton className="h-5 w-32" />
+      <Skeleton className="h-24 w-full" />
+      {Array.from({ length: Math.max(0, lines - 2) }).map((_, i) => (
+        <Skeleton key={i} className={i % 2 ? 'h-4 w-3/5' : 'h-4 w-4/5'} />
+      ))}
     </div>
   );
 }

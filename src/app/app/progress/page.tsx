@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface ScoreEntry {
   literacy_score: number;
@@ -64,22 +65,24 @@ export default function ProgressPage() {
       <Card>
         <h2 className="text-xl font-bold mb-4">Score History</h2>
         {scores.length === 0 ? (
-          <div>
-            <p className="text-gray-400 mb-4">
-              No assessment data yet. Take the diagnostic assessment to get started.
-            </p>
-            <Link href="/assessment" className="inline-block text-gold-400 hover:text-gold-400 font-medium">
-              Take Diagnostic Assessment →
-            </Link>
-          </div>
+          <EmptyState
+            title="No scores yet"
+            description="The placement assessment sets your starting level and the path that follows from it. It takes about fifteen minutes."
+            action={{
+              label: 'Take the assessment',
+              onClick: () => {
+                window.location.href = '/assessment';
+              },
+            }}
+          />
         ) : (
           <div className="space-y-4">
             {scores.map((score, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <div className="text-sm text-gray-400 w-24 shrink-0">
+              <div key={i} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <div className="shrink-0 text-sm text-ground-400 sm:w-24">
                   {new Date(score.completed_at).toLocaleDateString()}
                 </div>
-                <div className="flex-1 grid grid-cols-4 gap-2">
+                <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-2">
                   <ScoreBar
                     label="Literacy"
                     value={score.literacy_score}
@@ -154,7 +157,7 @@ function WeeklyCalendar() {
   startOfWeek.setDate(today.getDate() - today.getDay() + 1);
 
   return (
-    <div className="grid grid-cols-7 gap-2">
+    <div className="grid grid-cols-7 gap-1 sm:gap-2">
       {days.map((day, i) => {
         const date = new Date(startOfWeek);
         date.setDate(startOfWeek.getDate() + i);

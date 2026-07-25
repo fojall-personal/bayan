@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
+import { Tabs } from '@/components/ui/Tabs';
 
 interface SurahSummary {
   surah_id: number;
@@ -124,20 +125,15 @@ export default function MemorizationPage() {
         title="Memorization"
         subtitle="Track your Quran memorization progress"
         actions={
-          <div className="flex gap-2">
-            <Button
-              variant={view === 'surahs' ? 'primary' : 'secondary'}
-              onClick={() => setView('surahs')}
-            >
-              Surahs
-            </Button>
-            <Button
-              variant={view === 'review' ? 'primary' : 'secondary'}
-              onClick={() => setView('review')}
-            >
-              Today's Review
-            </Button>
-          </div>
+          <Tabs
+            label="Memorization views"
+            value={view}
+            onChange={setView}
+            items={[
+              { id: 'surahs', label: 'Surahs' },
+              { id: 'review', label: 'Due today' },
+            ]}
+          />
         }
       />
 

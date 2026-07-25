@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { apiPost } from '@/lib/api';
+import { Input } from '@/components/ui/Input';
 
 interface Message {
   id: string;
@@ -140,14 +141,16 @@ export function TutorChat() {
       </div>
 
       <div className="flex gap-2">
-        <input
-          type="text"
-          dir="rtl"
+        {/* dir was hardcoded "rtl", so English typed backwards. 'auto' picks
+          * direction from what has actually been typed. */}
+        <Input
+          dir="auto"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Ask me anything about Arabic..."
-          className="flex-1 p-3 bg-gray-800 border border-gray-700 rounded-lg text-ground-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-leaf-500/50 focus:border-leaf-500 transition-all"
+          placeholder="Ask about grammar, tajweed or memorisation"
+          aria-label="Message the tutor"
+          className="flex-1"
         />
         <Button
           onClick={handleSend}

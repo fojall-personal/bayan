@@ -7,6 +7,7 @@ import { Flashcards } from '@/components/learning/Flashcards';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
+import { Tabs } from '@/components/ui/Tabs';
 
 const PATH_NAMES: Record<string, string> = {
   path1: 'Complete Beginner',
@@ -63,20 +64,15 @@ export default function LearningPageRoute() {
         title="Learning"
         subtitle="Your personalized learning path"
         actions={
-          <div className="flex gap-2">
-            <Button
-              variant={view === 'lesson' ? 'primary' : 'secondary'}
-              onClick={() => setView('lesson')}
-            >
-              Lessons
-            </Button>
-            <Button
-              variant={view === 'flashcards' ? 'primary' : 'secondary'}
-              onClick={() => setView('flashcards')}
-            >
-              Flashcards
-            </Button>
-          </div>
+          <Tabs
+            label="Learning views"
+            value={view}
+            onChange={setView}
+            items={[
+              { id: 'lesson', label: 'Lessons' },
+              { id: 'flashcards', label: 'Flashcards' },
+            ]}
+          />
         }
       />
 

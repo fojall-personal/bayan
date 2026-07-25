@@ -164,21 +164,29 @@ Recorded so the local session does not redo it:
 
 ## 6. Still open, and doable anywhere
 
-Not blocked by this environment; just not done yet.
+Unreachable components are down to **4 files / 237 LOC** (from 17 / 1,144 at
+audit time). What remains, and why:
 
-- **10 components remain unreachable** (439 LOC), each waiting on a named
-  feature: `AudioPlayer` + `useAudioRecorder` → F10 self-recording;
-  `Input`/`Select` → forms; `EmptyState`/`Skeleton` → loading and empty states;
-  `QuizQuestion`/`LessonCard`/`MemorizationEntry` → F1/F2/F4. Route them with
-  their feature or delete them; leaving them is the state the audit criticised.
-- **No ESLint config**, so `npm run lint` prompts for setup.
-- **Accessibility**: tab switchers on `/learning`, `/memorization` and `/tajweed`
-  are not keyboard-operable (no `role="tablist"`, no arrow keys); the mobile menu
-  has `aria-expanded` but no focus trap; the tutor input is always RTL.
-- **No `loading.tsx`**, so route transitions have no skeleton.
-- **The tutor is still a keyword matcher.** The plan's F8 design — render the
-  corpus record and let a model only narrate it — needs the morphology corpus
-  (§4), so it is blocked on that rather than on the model.
+| File | Status |
+|---|---|
+| `components/audio/AudioPlayer.tsx` | Blocked on F10 — needs reciter audio URLs from the Quran Foundation API (§1 unreachable) |
+| `hooks/useAudioRecorder.ts` | Same: F10 self-recording |
+| `components/assessment/QuizQuestion.tsx` | Duplicates markup now inline in `LearningPage`. Refactor `LearningPage` onto it, or delete |
+| `components/ui/Select.tsx` | No form needs a select yet. First one that does should use it |
+
+`ReviewSession.handlePlayAudio` is still a fake — a 3-second `setTimeout` with a
+"Placeholder audio playback" comment. It is the last placeholder-presented-as-a-
+feature in the codebase, and it needs the same audio URLs, so it is blocked
+alongside F10 rather than being an oversight.
+
+Also still open:
+
+- **The tutor is a keyword matcher.** Its F8 redesign — render the corpus record,
+  let a model only narrate it — is blocked on the morphology corpus (§4), so it
+  is a data dependency rather than a model one.
+- **Two `react-hooks/exhaustive-deps` warnings** (`DeepDiveView`,
+  `SurahProgress`). Intentional as written, but worth resolving with
+  `useCallback` rather than leaving warnings in the build.
 
 ---
 
