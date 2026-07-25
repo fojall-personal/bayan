@@ -329,6 +329,40 @@ mid-task - stay scoped to the actual problem in front of you).
 
 ---
 
+## Definition of Done for UI/visual fixes
+
+A successful build and a green deploy are **not proof a visual fix landed** —
+they only prove the code compiles. A real session (2026-07-24/25,
+"Modern Design System for Quran App") ran an 8-commit design-system overhaul
+replacing emoji icons with Lucide across four components, all checks green,
+deploy succeeded — but the live homepage was unchanged, because 3 of the 4
+"fixed" files (`Onboarding.tsx`, `Dashboard.tsx`, `Sidebar.tsx`,
+`MobileNav.tsx` minus `DeepDiveView.tsx`, which was a real fix) are dead
+code, not imported by any route. Passing every code-level check (build
+succeeds, no hardcoded colors, brace matching) said nothing about whether
+the edited file is actually reachable from a URL.
+
+Before calling any UI/visual fix complete:
+
+1. **Confirm the file is reachable.** Find the actual route entry
+   (`app/<route>/page.tsx`, or `app/page.tsx` for `/`, or `app/layout.tsx`
+   for nav/shell chrome) and trace the import chain from there to the file
+   you edited. If nothing under `app/` imports it, you edited dead code —
+   go find the file the route actually renders instead.
+2. **Re-fetch the live URL after deploy**, not just check that `git push`
+   succeeded or `gh run list` shows green. Grep the actual served
+   HTML/DOM for the specific thing you changed (e.g. absence of the emoji
+   characters, presence of an `<svg>`). A green Actions run only proves the
+   build compiled — it does not prove the visual defect is gone.
+
+**Known orphaned files in this repo** (not imported by any route as of
+2026-07-25 — confirm before "fixing," and consider deleting them or wiring
+them up instead of patching in place):
+`components/onboarding/Onboarding.tsx`, `components/dashboard/Dashboard.tsx`,
+`components/layout/Sidebar.tsx`, `components/layout/MobileNav.tsx`.
+
+---
+
 ## Common Tasks
 
 ### Running the Development Server
@@ -366,6 +400,7 @@ npx wrangler d1 execute languagebuilder-db --file=src/lib/db/migrations/001_init
 | `globals.css` corrupted | Restore from git — repeated `}` characters break CSS parser |
 | Frontend showing raw JS instead of UI | Check CSS is loading (27KB+), verify Tailwind compiled correctly |
 | `GET /api/auth/profile` returns 500 | No users exist yet in D1 - seed a real user, don't just retry. Frontend was also found using the hardcoded token `dev-token-change-in-production` instead of a real env-var token - fix both together, not just the symptom. |
+| A "fixed" component doesn't show up live | You likely edited an orphaned file — see "Definition of Done for UI/visual fixes" above. Trace the route's import chain before editing. |
 
 ---
 
