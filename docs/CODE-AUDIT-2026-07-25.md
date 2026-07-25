@@ -1,6 +1,19 @@
 # Language Builder — Full Code Audit
 
 **Date:** 2026-07-25
+**Status: HISTORICAL — most findings are resolved.** Left unedited on purpose: it
+is the record of what was true before Stages 1–6, and several commits reference
+its section numbers. For current state read `docs/APPLICATION-PLAN-v2.md` §1; for
+what is still outstanding read `docs/HANDOFF-LOCAL-SESSION.md`.
+
+Resolved since: §3 (frontend could not reach the backend), §4 (all four schema
+defects), §5 (the cross-layer contracts), §6 (the design system, including the
+font `@import` and the dynamic-class bugs), §7 (the placeholders presented as
+features, bar one noted in the handoff), §8's three Arabic errors, and §9's
+missing tests, ESLint, error boundaries and most of the dead code.
+
+Still open from it: §8's content volume, the `quran_verses` ingest, and the
+morphology corpus — all blocked on files this environment cannot fetch.
 **Scope:** `src/app` (Next.js frontend), `workers/` (Cloudflare Workers API), `content/`, `scripts/`, CI/CD
 **Method:** read every source file; built the frontend; typechecked both projects; computed the route
 reachability graph; cross-checked every SQL statement against `schema.sql`; cross-checked every

@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-25
 **Supersedes:** the roadmap and feature sections of `PLAN.md` (kept for history)
-**Companion:** `docs/CODE-AUDIT-2026-07-25.md` — verified current state
+**Companion:** `docs/CODE-AUDIT-2026-07-25.md` — the original audit, left unedited as the record of how things stood
 **Blocked work:** `docs/HANDOFF-LOCAL-SESSION.md` — steps a cloud session cannot do
 **Audience:** decided 2026-07-25 — a small group of close friends, non-commercial (§4)
 **Budget:** decided 2026-07-25 — $0/month, treated as a hard constraint (§5)
@@ -17,30 +17,53 @@ real cost, and says plainly what is in, what is out, and why.
 
 ## 1. What is actually true today
 
-Measured 2026-07-25 against a local D1 with the schema applied and the user row
-seeded (Stage 1 of the audit remediation, commit `8ef0dc8`):
+**Revised 2026-07-25 after Stages 1–6.** The version of this section written
+before that work described a backend that could not serve a request; it is
+superseded by what follows. `docs/CODE-AUDIT-2026-07-25.md` holds the original
+measurements and is left unedited as the record of how things stood.
 
-**Working — 11 of 19 endpoints return 200:** auth profile, assessment submit and
-results, progress scores, learning lessons and flashcards, memorization surahs,
-tajweed rules and mastery, grammar mastery and conjugations, certificate export,
-tutor history.
+Measured against a local D1 with all nine migrations applied and content seeded,
+served through the production path (`_worker.js` on a single Pages origin):
 
-**Broken — 4 root causes, confirmed by D1's own error text:**
-`no such column: user_id` (`lesson_progress` never had one), `no such table:
-quran_verses` (referenced twice, never created), `table memorization has no
-column named interval`, `Wrong number of parameter bindings` (`tutor.ts:31`).
+**All 36 endpoints resolve.** A sweep returns no 5xx. The six that used to fail —
+`/api/progress/dashboard`, `/api/learning/next`, `/api/memorization/review/today`,
+`/api/tajweed/verses/:surahId`, `POST /api/tutor/chat` and
+`POST /api/memorization/add` — were failing on four schema defects, all fixed by
+migrations 0002–0009. One question outstanding: `/api/auth/whoami` answers through
+`wrangler dev` but 404s through `wrangler pages dev`; see the handoff §3.
 
-**Content:** 10 vocabulary words in a file called `core-100.json`, 5 lessons,
-18 assessment questions that nothing loads (the app asks 7 hardcoded ones).
+**The core loop closes.** A lesson can be answered and graded (it scored 0%
+unconditionally before, so nothing could ever complete), completion is sticky with
+a best-score, and `/api/learning/next` advances. The 18-question placement
+assessment runs end to end and assigns a path that is stored and displayed rather
+than re-derived.
 
-**Honest module status:** scaffolding, tajweed mastery tracking, grammar
-conjugation tables and the scoring algorithm are real. Assessment is a stub.
-Learning delivers content but grades everything 0%. Memorization has no
-data-entry path. Dashboard and onboarding exist only as unrouted files. The "AI
-tutor" is a five-branch keyword matcher.
+**Quality gates exist.** 39 unit tests, both projects typechecking, and ESLint —
+all three enforced in CI ahead of deploy. None of them existed before; the Worker
+alone had 69 type errors that nothing was checking.
 
-**Deployment:** frontend on Cloudflare Pages via GitHub Actions; Worker deployed
-by hand. Both now typecheck in CI. Total cost $0 — everything fits free tiers.
+**Content is still the thin part:** 10 vocabulary words, 5 lessons, 18 assessment
+questions, and **0 Quran verses**. The ingest script is written and gated but needs
+a file this environment cannot fetch (handoff §4). The morphology corpus, which
+F4/F8/F9 depend on, is likewise unreachable (handoff §5).
+
+**Honest module status:**
+
+| Module | State |
+|---|---|
+| 00 scaffolding | Real. One origin, migrations, CI gates. |
+| 01 data layer | Schema now matches its queries. Content volume is the gap. |
+| 02 assessment | Works end to end on the real 18-question bank. No audio module, by decision (§8.4). |
+| 03 learning | Grading, progression and streaks work. 5 lessons is not a curriculum. |
+| 04 memorization | Scheduler and API work; **no UI adds an ayah**, so still unusable. The largest gap between "marked complete" and "usable". |
+| 05 dashboard | Routed at `/dashboard` and rendering real data for the first time. |
+| 06 tajweed | Mastery works. Verse rendering waits on the text ingest. |
+| 07 grammar | Parser and conjugations work. Deep-dive still ignores its `category` param. |
+| 08 AI tutor | Still a five-branch keyword matcher. Its redesign is blocked on the corpus, not on a model. |
+
+**Deployment:** one Pages origin serving both the static export and the API.
+**Nothing is live yet** — CI is red on a missing `API_TOKEN` secret and the remote
+database has no migrations applied. Total cost remains $0.
 
 ---
 
@@ -468,17 +491,34 @@ green build** — that rule is what produced eleven false ✅s.
 | Stage | Work | Done when |
 |---|---|---|
 | **1 ✅** | Frontend↔Worker wiring, user row, CORS, fail-closed auth, CI typecheck | `GET /api/auth/profile` returns the user row through the deployed site. *Verified locally; awaiting secrets for remote.* |
-| **2** | §9.1–9.4, 8.6–8.9 + `tutor.ts:31` binding + `learning.ts:111` SQL. Migrations table. | All 19 endpoints return non-5xx against a seeded DB; every user-scoped query filters by `user_id` |
-| **2a** | **One origin (§5):** move the Hono app to `functions/api/[[route]].ts` via `hono/cloudflare-pages`; bind D1/R2 in Pages; retire the standalone Worker deploy (keep a small cron Worker for exports). Route files unchanged. | `/api/auth/profile` answers on the Pages hostname; CORS code deleted |
-| **2b** | **Identity (§4):** Access application over the Pages hostname *and* its preview subdomain, JWT verification via `jose`, just-in-time user provisioning from the JWT e-mail. Retire `NEXT_PUBLIC_API_TOKEN`. | Two different people log in and see two different, private profiles; an un-invited address is refused; preview URLs are not open |
-| **3** | Lesson-grading contract; assessment result DTO; `error.tsx` | Submit a lesson, see a real score; kill the API, see an error not a blank |
-| **4** | Font `@import` order, Reem Kufi, `ProgressBar`/`Badge` static classes, logo viewBox, button contrast; pick one design system | Fonts load in devtools; progress bars visibly fill; contrast ≥ 4.5:1 |
-| **5** | Delete or route the 17 orphans — decides Module 05's real status; reset `PLAN.md` checkboxes | No unreachable component; docs match code |
-| **6** | Fix the 3 Arabic content errors; load `placement-test.json`; ingest pinned Tanzil + tajweed + corpus | Reader renders an ayah with correct morphology and tajweed from the DB |
+| **2 ✅** | §9.1–9.4, 8.6–8.9 + `tutor.ts:31` binding + `learning.ts:111` SQL. Migrations table. | All 19 endpoints return non-5xx against a seeded DB; every user-scoped query filters by `user_id` |
+| **2a ✅** | **One origin (§5):** move the Hono app to `functions/api/[[route]].ts` via `hono/cloudflare-pages`; bind D1/R2 in Pages; retire the standalone Worker deploy (keep a small cron Worker for exports). Route files unchanged. | `/api/auth/profile` answers on the Pages hostname; CORS code deleted |
+| **2b ✅** | **Identity (§4):** Access application over the Pages hostname *and* its preview subdomain, JWT verification via `jose`, just-in-time user provisioning from the JWT e-mail. Retire `NEXT_PUBLIC_API_TOKEN`. | Two different people log in and see two different, private profiles; an un-invited address is refused; preview URLs are not open |
+| **3 ✅** | Lesson-grading contract; assessment result DTO; `error.tsx` | Submit a lesson, see a real score; kill the API, see an error not a blank |
+| **4 ✅** | Font `@import` order, Reem Kufi, `ProgressBar`/`Badge` static classes, logo viewBox, button contrast; pick one design system | Fonts load in devtools; progress bars visibly fill; contrast ≥ 4.5:1 |
+| **5 ✅** | Delete or route the 17 orphans — decides Module 05's real status; reset `PLAN.md` checkboxes | No unreachable component; docs match code |
+| **6 partial** | Fix the 3 Arabic content errors; load `placement-test.json`; ingest pinned Tanzil + tajweed + corpus | Reader renders an ayah with correct morphology and tajweed from the DB |
 | **7** | F1 Reader, F2 hifz + FSRS, F3 scoped vocabulary | Memorise an ayah; its words appear in the vocabulary queue |
 | **8** | F4 generated checks, F5 placement, F7 progress | Placement assigns a path; dashboard shows real numbers |
 | **9** | F6 tajweed track, F8 grounded explanations, F9 pattern drills | Explanation cites the corpus record; refuses when unannotated |
 | **10** | F10 recording, F11 balagha, F13 certificate | — |
+
+**Status as of 2026-07-25: Stages 1 through 6 are done**, except the parts that
+need a file this environment cannot fetch — the Quran text and morphology ingest
+in Stage 6, tracked in `docs/HANDOFF-LOCAL-SESSION.md`. Stage 2b's code is
+written and unit-tested but the real Access handshake is unverified, because
+creating the Zero Trust application needs Cloudflare dashboard access.
+
+Two things Stage 6 turned up that were not in the original plan, both now fixed:
+`/tajweed` showed "Loading…" permanently because `loading` was initialised true
+while its fetch only ran for one tab, and `/progress` overflowed a 375px
+viewport. Neither was visible by reading the code — both were found by driving
+the built app in a browser, which is the argument for §11's first rule.
+
+**Next, in order:** the three deploy steps in the handoff §1 (nothing is live
+until those are done), then **Stage 7's memorization entry UI** — the API,
+scheduler and migration all work and no UI calls `POST /api/memorization/add`,
+which needs no Quran text and is the shortest path to something genuinely usable.
 
 Stage 2b is deliberately early. Identity is the one thing that gets more
 expensive the longer it waits — every row written under the shared

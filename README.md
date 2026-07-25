@@ -12,25 +12,38 @@ A web application for learning Classical Arabic with focus on Quran comprehensio
 
 ## ✨ Features
 
-- **Diagnostic Assessment** — 30-45 minute test across 4 domains (literacy, comprehension, grammar, memorization)
-- **Adaptive Learning Paths** — Personalized curriculum based on weakest areas
-- **Spaced Repetition** — Smart review scheduling for memorization
-- **Tajweed Visualization** — Color-coded Quran text with functional rule colors
-- **AI Tutor** — Interactive grammar explanations and practice
+What works today, honestly — see `docs/APPLICATION-PLAN-v2.md` §1 for the
+per-module detail:
+
+- **Placement assessment** — 18 questions across literacy, comprehension, grammar
+  and memorization, about 15 minutes. Text only; there is no audio module, by
+  decision.
+- **Adaptive paths** — the assessment assigns one of three curricula from your
+  weakest domain, and the result is stored rather than re-derived.
+- **Learning** — lessons with graded exercises, sticky completion, best-of
+  scoring, and a flashcard queue.
+- **Spaced repetition** — an SM-2 scheduler for memorization. Working API; **no UI
+  adds an ayah yet**, which is the next thing to build.
+- **Tajweed** — per-rule mastery tracking works. Colour-coded verse rendering
+  waits on the text ingest (`docs/HANDOFF-LOCAL-SESSION.md` §4).
+- **Grammar** — sentence parsing and conjugation tables.
+- **Tutor** — currently a keyword matcher, not a model. Its redesign is blocked on
+  the morphology corpus, not on an AI provider.
 
 ## 🛠 Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 14, React 18, TypeScript |
-| Styling | Tailwind CSS, Lucide React icons |
-| Design System | DESIGN.md token spec + globals.css + verification page |
-| Backend | Cloudflare Workers (Hono framework) |
-| Database | Cloudflare D1 (SQLite) |
-| Storage | Cloudflare R2 (audio, images) |
-| Auth | Bearer token today; Cloudflare Access next (see plan §4) |
-| Build | Wrangler 3 |
+| Frontend | Next.js 14 static export, React 18, TypeScript |
+| Styling | Tailwind CSS; Lucide icons; fonts self-hosted via `next/font` |
+| Design tokens | `src/app/styles/globals.css` → `tailwind.config.ts` (no CSS component layer) |
+| Backend | Hono, bundled as `_worker.js` inside the Pages output — one origin |
+| Database | Cloudflare D1, with `wrangler d1 migrations` |
+| Storage | Cloudflare R2 |
+| Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
+| Tests | Vitest (39 cases) + ESLint + `tsc`, all gated in CI |
 | CI/CD | GitHub Actions → Cloudflare Pages |
+| Cost | $0/month — a hard constraint, see plan §5 |
 
 ## 📦 Project Structure
 
@@ -41,7 +54,7 @@ languagebuilder/
 │   ├── grammar/       # Grammar curriculum
 │   ├── assessments/   # Diagnostic test questions
 │   └── tajweed/       # Tajweed rule definitions
-├── scripts/           # Dev scripts (seed-db.ts)
+├── scripts/           # seed-db, gen-assessment, ingest-quran, verify-access-jwt
 ├── src/
 │   ├── app/           # Next.js app
 │   │   ├── app/       # App Router pages
@@ -52,8 +65,10 @@ languagebuilder/
 ├── workers/           # Cloudflare Workers backend
 │   ├── src/
 │   │   ├── routes/    # API route handlers
-│   │   ├── lib/       # Auth, DB wrapper, scoring, Quran service
-│   │   └── db/        # Database schema
+│   │   ├── lib/       # identity (Access JWT), DB wrapper, scoring, SM-2
+│   │   ├── db/        # migrations/ (applied in order) + seed-user.sql
+│   │   └── pages-entry.ts  # bundled to _worker.js — routes /api/* into Hono
+│   └── test/          # vitest
 │   └── wrangler.toml  # Workers config
 ├── .github/workflows/ # CI/CD pipeline
 │   └── deploy.yml     # Auto-deploy to Cloudflare Pages on push to main
@@ -121,10 +136,39 @@ languagebuilder/
    ```bash
    npx tsx scripts/seed-db.ts
    ```
-   Note: this script currently only writes vocabulary and lessons — its
-   assessment and tajweed steps print success without inserting anything, and it
-   seeds vocabulary against a different user id than the API reads. See
-   `docs/CODE-AUDIT-2026-07-25.md` §7.
+   This emits SQL on stdout for wrangler to apply, and reports on stderr which
+   steps it does *not* cover (the assessment bank has no table yet; tajweed rules
+   come from migration 0001):
+   ```bash
+   npx tsx scripts/seed-db.ts > /tmp/seed.sql
+   cd workers && npx wrangler d1 execute languagebuilder --local --file=/tmp/seed.sql
+   ```
+
+## ✅ Checks
+
+All three are enforced in CI ahead of the deploy job, and none of them existed
+before 2026-07-25 — the Worker alone had 69 type errors that nothing was checking.
+
+```bash
+cd workers   && npx tsc --noEmit && npm test    # 39 vitest cases
+cd src/app   && npx tsc --noEmit && npm run lint
+```
+
+The tests cover grading, Arabic normalisation, assessment scoring, path
+assignment, the SM-2 scheduler and the Quran ingest alignment gate. Every case
+corresponds to a bug that shipped or a behaviour that had only been checked by
+hand once.
+
+Reproducing production locally — one origin, no CORS:
+
+```bash
+cd src/app && NEXT_PUBLIC_API_TOKEN=<value from workers/.dev.vars> npm run build
+cd ../../workers && npm run build:pages
+npx wrangler pages dev ../src/app/out \
+  --d1 DB=6216c466-c244-4c16-8569-c7281585fbc6 --persist-to .wrangler/state
+```
+
+---
 
 ## 🌐 Deployment
 
@@ -227,34 +271,56 @@ Status now lives in one place, measured rather than asserted:
 - **`docs/APPLICATION-PLAN-v2.md` §10** — the staged roadmap
 - **`docs/CODE-AUDIT-2026-07-25.md`** — the audit these came from
 
-Done so far: Stage 1 (frontend↔API wiring, fail-closed auth, CI typechecks),
-Stage 2 (schema reconciled with the queries, migrations adopted), Stage 2a (one
-origin), Stage 3 (grading contract, result DTO, error boundaries), Stage 4
-(design system rebuilt), Stage 6 partial (the three Arabic content errors).
+Stages 1 through 6 are done, bar the parts that need a file this environment
+could not fetch:
 
-Next: Stage 2b (Cloudflare Access identity), Stage 5 (orphaned components),
-Stage 6 remainder (load the question bank, ingest Quran text + morphology).
+| Stage | |
+|---|---|
+| 1 · frontend↔API wiring, fail-closed auth, CI typechecks | ✅ |
+| 2 · schema reconciled with its queries; nine migrations | ✅ |
+| 2a · one origin (`_worker.js` in the Pages output) | ✅ |
+| 2b · Cloudflare Access identity | ✅ code; the real handshake is unverified |
+| 3 · grading contract, result DTO, error boundaries | ✅ |
+| 4 · design system, self-hosted fonts | ✅ |
+| 5 · orphans 17 → 4, dashboard routed, docs reconciled | ✅ |
+| 6 · Arabic content errors, 18-question bank | partial — the Quran text and morphology ingest are blocked |
+
+**Nothing is deployed yet.** CI is red on a missing `API_TOKEN` secret and the
+remote database has no migrations applied — three steps, in
+`docs/HANDOFF-LOCAL-SESSION.md` §1.
+
+**Next after that:** the memorization entry UI. The API, the SM-2 scheduler and
+migration 0005 all work, and no UI calls `POST /api/memorization/add` — so the
+tracker cannot be used at all. It needs no Quran text, which makes it the
+shortest path to something genuinely usable.
 
 A note on process, because it is the reason for the rewrite above: **a green
 build is not evidence a feature works.** See §11 of the plan for what "done"
 requires.
 
-## 🔧 Recent Critical Fixes
-
-1. **Tailwind CSS Bug** — Fixed `tailwind.config.ts` content paths (`./src/app/...` → `./app/...`), restoring 40KB CSS with all utility classes
-2. **globals.css Corruption** — Restored from git (had repeated `}` characters breaking CSS parser)
-3. **Frontend Token Mismatch** — Updated all components to use `dev-token-change-in-production`
-4. **Missing Nav Component** — Created `src/app/components/layout/Nav.tsx`
-5. **Responsive Grid** — Added `md:grid-cols-2` to GoalSelection page
-6. **CI/CD Pipeline** — Configured GitHub Actions for auto-deployment to Cloudflare Pages
-
 ## 📚 Documentation
 
-- `PLAN.md` — Master plan with 12-module roadmap
-- `AGENTS.md` — Project instructions, coding standards, API spec
-- `RESUME.md` — Current state and recent activity
-- `src/styles/DESIGN.md` — Design token specification (source of truth for all visual decisions)
-- `modules/` — Detailed module specifications
+Three current documents, in reading order:
+
+- **`docs/APPLICATION-PLAN-v2.md`** — the plan in force. §1 is measured current
+  state, §10 the staged roadmap, §11 what "done" requires.
+- **`docs/HANDOFF-LOCAL-SESSION.md`** — what is blocked and on whom. Start at §1
+  if you are picking this up on a local machine.
+- **`docs/CODE-AUDIT-2026-07-25.md`** — historical. The audit those two came from;
+  most findings are resolved, and its header says which.
+
+Also:
+
+- `AGENTS.md` — coding standards, the real endpoint list, agent workflow notes
+- `src/styles/DESIGN.md` — design token specification
+- `PLAN.md` — superseded; kept for its research summary and content sources
+- `modules/` — per-module design documentation from the original planning
+
+**One convention worth knowing**, because it is why the docs above exist: *a green
+build is not evidence a feature works.* This repo previously marked eleven modules
+complete while six endpoints returned 500 and the frontend could not reach the
+backend at all. Plan §11 sets out what to check instead — a real request, a visible
+failure path, a reachable file, passing types and tests.
 
 ## 🔐 Security
 
