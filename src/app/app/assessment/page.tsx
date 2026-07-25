@@ -10,6 +10,10 @@ export default function AssessmentPage() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Without this, a stored result made the flow permanently unreachable:
+  // /assessment returned results whenever any existed, so retaking was
+  // impossible and the "Retake Assessment" button had no handler anyway.
+  const [retaking, setRetaking] = useState(false);
 
   useEffect(() => {
     // Check if assessment is already completed
@@ -31,14 +35,14 @@ export default function AssessmentPage() {
     );
   }
 
-  if (result) {
+  if (result && !retaking) {
     return (
       <div>
         <PageHeader
           title="Assessment"
           subtitle="Your diagnostic results and learning path"
         />
-        <AssessmentResults result={result} />
+        <AssessmentResults result={result} onRetake={() => setRetaking(true)} />
       </div>
     );
   }
@@ -55,10 +59,16 @@ export default function AssessmentPage() {
   return (
     <div>
       <PageHeader
-        title="Diagnostic Assessment"
-        subtitle="Take a 30-45 minute test to determine your level and create a personalized learning path"
+        eyebrow="Diagnostic"
+        title="Placement assessment"
+        subtitle="18 questions across reading, comprehension, grammar and memorisation — about 15 minutes, no recording."
       />
-      <AssessmentFlow onComplete={setResult} />
+      <AssessmentFlow
+        onComplete={(r) => {
+          setResult(r);
+          setRetaking(false);
+        }}
+      />
     </div>
   );
 }

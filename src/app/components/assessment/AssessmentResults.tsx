@@ -32,7 +32,14 @@ interface AssessmentResult {
   };
 }
 
-export function AssessmentResults({ result }: { result: AssessmentResult }) {
+export function AssessmentResults({
+  result,
+  onRetake,
+}: {
+  result: AssessmentResult;
+  /** Omit to hide the retake action. */
+  onRetake?: () => void;
+}) {
   // Prefer the server's composite; recompute only as a fallback.
   const compositeScore =
     result.composite_score ??
@@ -121,10 +128,18 @@ export function AssessmentResults({ result }: { result: AssessmentResult }) {
         </div>
       </Card>
 
-      {/* Next Steps */}
-      <div className="flex gap-3">
-        <Button>Continue to Learning</Button>
-        <Button variant="secondary">Retake Assessment</Button>
+      {/* Next steps. Both of these had no handler: "Continue to Learning" was
+        * inert, and because /assessment shows results whenever any exist,
+        * retaking was impossible once a single result was stored. */}
+      <div className="flex flex-wrap gap-3">
+        <Button onClick={() => { window.location.href = '/learning'; }}>
+          Continue to learning
+        </Button>
+        {onRetake && (
+          <Button variant="secondary" onClick={onRetake}>
+            Retake assessment
+          </Button>
+        )}
       </div>
     </div>
   );

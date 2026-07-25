@@ -4,31 +4,11 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { apiPost } from '@/lib/api';
-
-interface AssessmentModule {
-  id: string;
-  title: string;
-  description: string;
-  duration_minutes: number;
-  questions: AssessmentQuestion[];
-}
-
-interface AssessmentQuestion {
-  id: string;
-  type: string;
-  text: string;
-  options?: string[];
-  correctAnswer?: string;
-}
+import { ASSESSMENT_MODULES } from './questions.generated';
+import { apiPost, apiErrorMessage } from '@/lib/api';
 
 interface AssessmentProps {
-  onComplete: (scores: {
-    literacy: number;
-    comprehension: number;
-    grammar: number;
-    memorization: number;
-  }) => void;
+  onComplete: (result: unknown) => void;
 }
 
 export function AssessmentFlow({ onComplete }: AssessmentProps) {
@@ -37,109 +17,13 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isComplete, setIsComplete] = useState(false);
   const [scores, setScores] = useState<Record<string, number>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const modules: AssessmentModule[] = [
-    {
-      id: 'literacy',
-      title: 'Arabic Script Literacy',
-      description: 'Identify letters, recognize vowels, and read words',
-      duration_minutes: 10,
-      questions: [
-        {
-          id: 'lit-01',
-          type: 'multiple-choice',
-          text: 'Which letter is this: ب',
-          options: ['ب (ba)', 'ت (ta)', 'ث (tha)', 'ن (nun)'],
-          correctAnswer: 'ب (ba)',
-        },
-        {
-          id: 'lit-02',
-          type: 'multiple-choice',
-          text: 'What vowel sound does this diacritic represent: َ',
-          options: ['Fatha (a)', 'Kasra (i)', 'Damma (u)', 'Sukun (no vowel)'],
-          correctAnswer: 'Fatha (a)',
-        },
-      ],
-    },
-    {
-      id: 'comprehension',
-      title: 'Classical Arabic Comprehension',
-      description: 'Understand Quranic passages and classical text',
-      duration_minutes: 15,
-      questions: [
-        {
-          id: 'comp-01',
-          type: 'multiple-choice',
-          text: "What does 'الرَّحْمَٰنِ الرَّحِيمِ' mean?",
-          // Was keyed to "The Merciful, The Forgiving" — الرحيم is "the
-          // Merciful"; "the Forgiving" is الغفور. The correct gloss was not
-          // even among the options.
-          options: [
-            'The Entirely Merciful, the Especially Merciful',
-            'The Merciful, The Forgiving',
-            'The King, The Powerful',
-            'The Creator, The Sustainer',
-          ],
-          correctAnswer: 'The Entirely Merciful, the Especially Merciful',
-        },
-        {
-          id: 'comp-02',
-          type: 'multiple-choice',
-          text: "In Al-Fatiha, what does 'مَالِكِ يَوْمِ الدِّينِ' mean?",
-          options: [
-            'Master of the Day of Judgment',
-            'King of the Day of Prayer',
-            'Creator of the Day of Rest',
-          ],
-          correctAnswer: 'Master of the Day of Judgment',
-        },
-      ],
-    },
-    {
-      id: 'grammar',
-      title: 'Arabic Grammar Knowledge',
-      description: 'Test your understanding of nahw, sarf, and balagha',
-      duration_minutes: 15,
-      questions: [
-        {
-          id: 'gram-01',
-          type: 'multiple-choice',
-          text: 'Is كِتَاب definite or indefinite?',
-          options: ['Definite (مَعْرِفَة)', 'Indefinite (نَكِرَة)', 'Proper noun (عَلَم)'],
-          correctAnswer: 'Indefinite (نَكِرَة)',
-        },
-        {
-          id: 'gram-02',
-          type: 'multiple-choice',
-          text: 'What verb form is كَتَبَ?',
-          // The distractors had Form II and Form III patterns swapped, and
-          // Form II was malformed: Form II is فَعَّلَ (shadda on the middle
-          // radical), Form III is فَاعَلَ (long vowel after the first).
-          options: ['Form I (فَعَلَ)', 'Form II (فَعَّلَ)', 'Form III (فَاعَلَ)'],
-          correctAnswer: 'Form I (فَعَلَ)',
-        },
-      ],
-    },
-    {
-      id: 'memorization',
-      title: 'Memorization Baseline',
-      description: 'Test your Quran memorization knowledge',
-      duration_minutes: 10,
-      questions: [
-        {
-          id: 'mem-01',
-          type: 'multiple-choice',
-          text: 'What follows "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ" in Al-Fatiha?',
-          options: [
-            'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ',
-            'الرَّحْمَٰنِ الرَّحِيمِ',
-            'مَالِكِ يَوْمِ الدِّينِ',
-          ],
-          correctAnswer: 'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ',
-        },
-      ],
-    },
-  ];
+  // 18 questions from content/assessments/placement-test.json, generated into a
+  // module by scripts/gen-assessment.mjs. This replaces 7 questions that were
+  // hardcoded here, had drifted from the bank, and carried their own copy of the
+  // الرحيم mistranslation.
+  const modules = ASSESSMENT_MODULES;
 
   const currentModule = modules[currentModuleIndex];
   const currentQuestion = currentModule.questions[currentQuestionIndex];
@@ -189,14 +73,10 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
       });
       onComplete?.(data.data as never);
     } catch (error) {
+      // Previously this reported all-zero scores as though the assessment had
+      // been submitted, so a network failure looked like a genuine result.
       console.error('Failed to submit assessment:', error);
-      const fallbackScores = {
-        literacy: 0,
-        comprehension: 0,
-        grammar: 0,
-        memorization: 0,
-      };
-      onComplete?.(fallbackScores);
+      setSubmitError(apiErrorMessage(error));
     }
   };
 
@@ -204,7 +84,16 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
     return (
       <div className="page-transition">
         <Card className="max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6">Assessment Complete!</h2>
+          <h2 className="text-2xl font-bold mb-6">Assessment complete</h2>
+
+          {submitError && (
+            <div className="mb-6 rounded-md border border-error/40 bg-error/10 p-4">
+              <p className="text-sm font-medium text-error">
+                Your answers were scored locally but could not be saved.
+              </p>
+              <p className="mt-1 text-sm text-ground-300">{submitError}</p>
+            </div>
+          )}
 
           <div className="space-y-6">
             {Object.entries(scores).map(([module, score]) => (
@@ -218,12 +107,26 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
             ))}
           </div>
 
-          <div className="mt-8 p-4 bg-gray-800 rounded-lg">
-            <h3 className="font-semibold mb-2">Your Learning Path</h3>
-            <p className="text-gray-400 text-sm">
-              Based on your assessment, we recommend starting with foundational skills and progressing to advanced comprehension.
-            </p>
-          </div>
+          {(() => {
+            // Was a fixed paragraph shown regardless of scores, on the screen
+            // whose entire purpose is adaptivity. Name the weakest domain, which
+            // is what the path is actually chosen from.
+            const entries = Object.entries(scores);
+            if (!entries.length) return null;
+            const [weakest] = entries.sort((a, b) => a[1] - b[1])[0];
+            return (
+              <div className="mt-8 rounded-md border border-ground-800 bg-ground-950 p-4">
+                <div className="text-xs font-semibold uppercase tracking-label text-gold-400">
+                  Where to start
+                </div>
+                <p className="mt-2 text-sm text-ground-300">
+                  Your lowest domain is <span className="capitalize text-ground-50">{weakest}</span>,
+                  so your path leads with that. Full results and the assigned path are on the
+                  assessment page.
+                </p>
+              </div>
+            );
+          })()}
         </Card>
       </div>
     );
@@ -243,8 +146,18 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
       {/* Question */}
       <Card>
         <h2 className={`text-xl font-semibold mb-4 ${
-          /[\u0600-\u06FF]/.test(currentQuestion.text) ? 'text-right arabic-text' : ''
-        }`}>{currentQuestion.text}</h2>
+          /[\u0600-\u06FF]/.test(currentQuestion.instruction) ? 'text-right arabic-text' : ''
+        }`}>{currentQuestion.instruction}</h2>
+
+        {currentQuestion.display && (
+          <p
+            lang="ar"
+            dir="rtl"
+            className="mb-6 rounded-md border border-ground-800 bg-ground-950 py-6 text-center font-arabic text-4xl leading-arabic text-ground-50"
+          >
+            {currentQuestion.display}
+          </p>
+        )}
 
         <div className="space-y-3">
           {currentQuestion.options?.map((option, i) => (

@@ -9,8 +9,11 @@ import { apiFetch } from '@/lib/api';
 export function AdvancedMemorizationTools() {
   const [audioTesting, setAudioTesting] = useState(false);
   const [currentAyah, setCurrentAyah] = useState<any>(null);
-  const [score, setScore] = useState(0);
-  const [total, setTotal] = useState(0);
+  // No score here on purpose: grading a recalled ayah needs the ayah text, and
+  // quran_verses is empty until the ingest runs. A count of attempts is true; a
+  // score would not be.
+  const [attempted, setAttempted] = useState(0);
+  const [notice, setNotice] = useState<string | null>(null);
   const [userAnswer, setUserAnswer] = useState('');
   const [certificate, setCertificate] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -24,7 +27,7 @@ export function AdvancedMemorizationTools() {
         setCurrentAyah(data.due[0]);
       } else {
         // Show inline error instead of alert
-        alert('No ayahs due for review today. Complete some reviews first!');
+        setNotice('No ayahs are due for review today. Add some memorisation first.');
       }
     } catch (error) {
       console.error('Audio test error:', error);
@@ -36,13 +39,14 @@ export function AdvancedMemorizationTools() {
   const handleAnswer = async () => {
     if (!currentAyah || !userAnswer.trim()) return;
 
-    setTotal((prev) => prev + 1);
     setUserAnswer('');
 
-    // In production, compare against correct ayah text
-    // For MVP, award point for any attempt to encourage practice
-    const correct = userAnswer.trim().length > 5;
-    if (correct) setScore((prev) => prev + 1);
+    // This used to award a point for any input longer than five characters,
+    // which made the score meaningless. Grading needs the ayah text, which is
+    // not loaded yet (quran_verses is empty until the ingest runs — see
+    // docs/HANDOFF-LOCAL-SESSION.md), so count attempts instead of pretending
+    // to mark them.
+    setAttempted((prev) => prev + 1);
 
     // Load next ayah
     try {
@@ -59,20 +63,9 @@ export function AdvancedMemorizationTools() {
   };
 
   // Get cross-references for a surah
-  const getCrossReferences = async (surahId: number) => {
-    try {
-      // Cross-references would come from the quran.ts service
-      // For MVP, show placeholder data
-      const refs = [
-        { surah: 1, ayah: 1, theme: 'Praise & Guidance', text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ' },
-        { surah: 112, ayah: 1, theme: 'Oneness of God', text: 'قُلْ هُوَ اللَّهُ أَحَدٌ' },
-      ];
-      // In production: fetch from API with theme matching
-      alert(`Cross-references for Surah ${surahId} would show related themes across other surahs.`);
-    } catch (error) {
-      console.error('Cross-reference error:', error);
-    }
-  };
+  // Cross-references need a theme dataset that does not exist yet (plan F12).
+  // This previously built an unused array and then alert()ed a description of
+  // what the feature would do, which read as a working feature.
 
   // Generate certificate
   const generateCertificate = async () => {
@@ -89,6 +82,12 @@ export function AdvancedMemorizationTools() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Advanced Memorization Tools</h1>
+
+      {notice && (
+        <div className="rounded-md border border-ground-700 bg-ground-900 p-4 text-sm text-ground-300">
+          {notice}
+        </div>
+      )}
 
       {/* Audio testing */}
       <Card>
@@ -113,7 +112,7 @@ export function AdvancedMemorizationTools() {
                     Surah {currentAyah.surah_id}, Ayah {currentAyah.ayah_from}
                   </span>
                   <Badge variant="default">
-                    Score: {score}/{total}
+                    Attempts: {attempted}
                   </Badge>
                 </div>
                 <audio
@@ -155,24 +154,9 @@ export function AdvancedMemorizationTools() {
       </Card>
 
       {/* Cross-reference */}
-      <Card>
-        <h2 className="text-lg font-bold mb-3">🔗 Cross-Reference Memorization</h2>
-        <p className="text-gray-400 text-sm mb-4">
-          Find related themes and verses across different surahs.
-        </p>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            placeholder="Surah number"
-            className="flex-1 p-2 bg-gray-800 border border-gray-700 rounded-lg text-ground-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-leaf-500/50"
-            min="1"
-            max="114"
-          />
-          <Button onClick={() => getCrossReferences(1)} className="px-4">
-            Find
-          </Button>
-        </div>
-      </Card>
+      {/* Cross-reference memorisation (plan F12) is not built: it needs a theme
+          dataset that does not exist yet. The card here previously alert()ed a
+          description of the feature, which read as a working one. */}
 
       {/* Certificate */}
       <Card>

@@ -131,7 +131,58 @@ licence is low-risk (R3 was downgraded), but attribution is still required.
 
 ---
 
-## 5. Also unverified from here
+## 5. Done in the cloud session since this doc was written
+
+Recorded so the local session does not redo it:
+
+- **Test suite added** — 39 vitest cases over grading, `normalizeArabic`,
+  assessment scoring, path assignment, the SM-2 scheduler and the ingest
+  alignment gate, wired into CI ahead of deploy. Adding them found a live bug:
+  at quality 3 the scheduler computed `round(interval * 1.2)`, and
+  `round(1 * 1.2)` is 1, so a learner answering "OK" every time never advanced
+  past a one-day interval. Fixed.
+- **Fonts self-hosted** with `next/font` instead of an `@import` — 26 woff2
+  files, 66 inlined `@font-face` rules, zero external references. Verified in a
+  proxied browser: Amiri renders the Arabic (277px vs 394px for generic serif on
+  the same string), Reem Kufi the display type.
+- **Placement bank loaded** — the app asked 7 questions hardcoded in
+  `AssessmentFlow.tsx` while an 18-question bank sat unused, and the hardcoded
+  copy carried its own version of the الرحيم error.
+  `scripts/gen-assessment.mjs` generates a module from the JSON (it lives outside
+  the Next root so it cannot be imported directly). Walked all 18 in a browser.
+- **Retaking the assessment is possible again.** `/assessment` returned results
+  whenever any existed, and both buttons on the results screen had no handler, so
+  a single stored result locked the flow away permanently.
+- **Fake scoring removed.** `/advanced` awarded a point for any input longer than
+  five characters. Grading a recalled ayah needs the ayah text, which is not
+  loaded, so it now counts attempts — true, rather than a meaningless score. The
+  cross-reference card, which `alert()`ed a description of an unbuilt feature, is
+  gone. No `alert()` calls remain anywhere.
+- **Dashboard routed** at `/dashboard` — Module 05's component had been unreachable.
+
+---
+
+## 6. Still open, and doable anywhere
+
+Not blocked by this environment; just not done yet.
+
+- **10 components remain unreachable** (439 LOC), each waiting on a named
+  feature: `AudioPlayer` + `useAudioRecorder` → F10 self-recording;
+  `Input`/`Select` → forms; `EmptyState`/`Skeleton` → loading and empty states;
+  `QuizQuestion`/`LessonCard`/`MemorizationEntry` → F1/F2/F4. Route them with
+  their feature or delete them; leaving them is the state the audit criticised.
+- **No ESLint config**, so `npm run lint` prompts for setup.
+- **Accessibility**: tab switchers on `/learning`, `/memorization` and `/tajweed`
+  are not keyboard-operable (no `role="tablist"`, no arrow keys); the mobile menu
+  has `aria-expanded` but no focus trap; the tutor input is always RTL.
+- **No `loading.tsx`**, so route transitions have no skeleton.
+- **The tutor is still a keyword matcher.** The plan's F8 design — render the
+  corpus record and let a model only narrate it — needs the morphology corpus
+  (§4), so it is blocked on that rather than on the model.
+
+---
+
+## 7. Also unverified from here
 
 - **The deployed site.** Every claim about production is inferred from the built
   output and local runs. Once CI is green, load the site and check: fonts
