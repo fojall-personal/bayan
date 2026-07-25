@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 
@@ -23,7 +24,7 @@ export default function ProgressPage() {
   const fetchScores = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/progress/scores', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -53,9 +54,14 @@ export default function ProgressPage() {
       <Card>
         <h2 className="text-xl font-bold mb-4">Score History</h2>
         {scores.length === 0 ? (
-          <p className="text-gray-400">
-            No assessment data yet. Take the diagnostic assessment to get started.
-          </p>
+          <div>
+            <p className="text-gray-400 mb-4">
+              No assessment data yet. Take the diagnostic assessment to get started.
+            </p>
+            <Link href="/assessment" className="inline-block text-primary-500 hover:text-primary-400 font-medium">
+              Take Diagnostic Assessment →
+            </Link>
+          </div>
         ) : (
           <div className="space-y-4">
             {scores.map((score, i) => (

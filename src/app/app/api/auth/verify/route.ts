@@ -3,7 +3,7 @@
 
 export async function GET() {
   try {
-    const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production';
+    const token = process.env.NEXT_PUBLIC_API_TOKEN;
 
     const res = await fetch('https://languagebuilder.fojall.workers.dev/health', {
       headers: {

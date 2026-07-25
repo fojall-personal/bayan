@@ -41,7 +41,7 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const [lessonsRes, masteryRes] = await Promise.all([
         fetch(`/api/grammar/deepdive/${category}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -65,7 +65,7 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
 
   const handleParse = async () => {
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/grammar/parse', {
         method: 'POST',
         headers: {

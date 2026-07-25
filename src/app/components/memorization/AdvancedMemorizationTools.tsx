@@ -18,7 +18,7 @@ export function AdvancedMemorizationTools() {
   const startAudioTest = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/memorization/review/today', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -26,6 +26,7 @@ export function AdvancedMemorizationTools() {
       if (data.data?.due.length > 0) {
         setCurrentAyah(data.data.due[0]);
       } else {
+        // Show inline error instead of alert
         alert('No ayahs due for review today. Complete some reviews first!');
       }
     } catch (error) {
@@ -48,7 +49,7 @@ export function AdvancedMemorizationTools() {
 
     // Load next ayah
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/memorization/review/today', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -83,7 +84,7 @@ export function AdvancedMemorizationTools() {
   // Generate certificate
   const generateCertificate = async () => {
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/certificate/export', {
         headers: { Authorization: `Bearer ${token}` },
       });

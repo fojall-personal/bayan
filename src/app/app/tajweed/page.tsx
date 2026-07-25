@@ -32,7 +32,7 @@ export default function TajweedPage() {
   const fetchMastery = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/tajweed/mastery', {
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -14,7 +14,7 @@ export default function GoalSelection() {
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center">
       <div className="w-full max-w-2xl space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
@@ -58,6 +58,7 @@ export default function GoalSelection() {
               ? 'bg-primary-500 text-gray-950 hover:bg-primary-400 shadow-glow'
               : 'bg-gray-700 text-gray-500 cursor-not-allowed'
           }`}
+          aria-label="Continue to assessment"
         >
           Continue
         </Link>

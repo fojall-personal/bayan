@@ -41,7 +41,7 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production'}`
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}`
       },
       body: JSON.stringify({ quality }),
     })

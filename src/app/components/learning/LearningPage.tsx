@@ -65,7 +65,7 @@ export function LearningPage({ userId }: LearningPageProps) {
   const fetchNextLesson = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/learning/next', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -99,7 +99,7 @@ export function LearningPage({ userId }: LearningPageProps) {
     if (!lesson) return;
 
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch(`/api/learning/lessons/${lesson.id}/submit`, {
         method: 'POST',
         headers: {

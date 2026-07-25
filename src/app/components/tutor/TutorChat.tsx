@@ -34,12 +34,12 @@ export function TutorChat() {
     setLoading(true);
 
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/tutor/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           message: userMessage.content,

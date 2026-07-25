@@ -11,7 +11,7 @@ export default function AssessmentPage() {
 
   useEffect(() => {
     // Check if assessment is already completed
-    const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production';
+    const token = process.env.NEXT_PUBLIC_API_TOKEN;
     fetch('/api/assessment/results', {
       headers: { Authorization: `Bearer ${token}` },
     })

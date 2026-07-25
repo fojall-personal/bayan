@@ -17,7 +17,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   const handleStartAssessment = async () => {
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/auth/onboarding', {
         method: 'POST',
         headers: {

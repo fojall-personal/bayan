@@ -18,7 +18,7 @@ export default function LearningPageRoute() {
 
   const fetchUserProfile = async () => {
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/auth/profile', {
         headers: { Authorization: `Bearer ${token}` },
       });

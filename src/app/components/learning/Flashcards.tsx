@@ -29,7 +29,7 @@ export function Flashcards({ userId }: FlashcardsProps) {
   const fetchFlashcards = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/learning/flashcards', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -50,7 +50,7 @@ export function Flashcards({ userId }: FlashcardsProps) {
 
     const card = cards[currentIndex];
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       await fetch('/api/learning/flashcards/review', {
         method: 'POST',
         headers: {

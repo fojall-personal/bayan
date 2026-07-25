@@ -173,12 +173,12 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
 
     // Submit to backend
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token-change-in-production';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/assessment/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           literacy_score: moduleScores.literacy || 0,

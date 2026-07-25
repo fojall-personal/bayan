@@ -40,7 +40,7 @@ export default function MemorizationPage() {
   const fetchSurahs = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/memorization/surahs', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -59,7 +59,7 @@ export default function MemorizationPage() {
   const fetchTodayReview = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN || 'dev-token';
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
       const res = await fetch('/api/memorization/review/today', {
         headers: { Authorization: `Bearer ${token}` },
       });
