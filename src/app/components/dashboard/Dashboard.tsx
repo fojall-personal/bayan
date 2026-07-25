@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Onboarding } from '@/components/onboarding/Onboarding';
+import { BookOpen, BookMarked, TestTube, Flame } from 'lucide-react';
 
 interface DashboardData {
   user: {
@@ -77,7 +78,7 @@ export function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-gray-400">Loading dashboard...</div>
+        <div className="text-muted">Loading dashboard...</div>
       </div>
     );
   }
@@ -94,13 +95,13 @@ export function Dashboard() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">Welcome back!</h1>
-          <p className="text-gray-400 mt-1">
+          <p className="text-muted mt-1">
             {pathName ? `Path: ${pathName.name}` : 'Your personalized learning path'}
           </p>
         </div>
         {data.streak > 0 && (
-          <div className="flex items-center gap-2 bg-green-500/10 px-4 py-2 rounded-full">
-            <span className="text-xl">🔥</span>
+          <div className="flex items-center gap-2 bg-primary-500/10 px-4 py-2 rounded-full">
+            <Flame className="w-5 h-5 text-primary-400" />
             <span className="font-bold">{data.streak} day streak</span>
           </div>
         )}
@@ -108,20 +109,20 @@ export function Dashboard() {
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <a href="/learning" className="p-4 bg-green-500/10 border border-green-500 rounded-lg hover:bg-green-500/20 transition-colors">
-          <div className="text-2xl mb-2">📖</div>
+        <a href="/learning" className="p-4 bg-primary-500/10 border border-primary-500 rounded-lg hover:bg-primary-500/20 transition-colors">
+          <BookOpen className="w-6 h-6 text-primary-400 mb-2" />
           <div className="font-semibold">Continue Lesson</div>
-          <div className="text-sm text-gray-400">Grammar-05 (20 min)</div>
+          <div className="text-sm text-muted">Grammar-05 (20 min)</div>
         </a>
-        <a href="/memorization" className="p-4 bg-blue-500/10 border border-blue-500 rounded-lg hover:bg-blue-500/20 transition-colors">
-          <div className="text-2xl mb-2">🕌</div>
+        <a href="/memorization" className="p-4 bg-secondary-500/10 border border-secondary-500 rounded-lg hover:bg-secondary-500/20 transition-colors">
+          <BookMarked className="w-6 h-6 text-secondary-400 mb-2" />
           <div className="font-semibold">Memorization Review</div>
-          <div className="text-sm text-gray-400">{data.todayReview.length} ayahs due</div>
+          <div className="text-sm text-muted">{data.todayReview.length} ayahs due</div>
         </a>
-        <a href="/assessment" className="p-4 bg-purple-500/10 border border-purple-500 rounded-lg hover:bg-purple-500/20 transition-colors">
-          <div className="text-2xl mb-2">📝</div>
+        <a href="/assessment" className="p-4 bg-info/10 border border-info rounded-lg hover:bg-info/20 transition-colors">
+          <TestTube className="w-6 h-6 text-info mb-2" />
           <div className="font-semibold">Quick Quiz</div>
-          <div className="text-sm text-gray-400">Test your knowledge</div>
+          <div className="text-sm text-muted">Test your knowledge</div>
         </a>
       </div>
 
@@ -188,7 +189,7 @@ function ModuleProgress({
   color: string;
 }) {
   const colorMap: Record<string, string> = {
-    green: 'bg-green-500',
+    green: 'bg-primary-500',
     blue: 'bg-blue-500',
     purple: 'bg-purple-500',
     orange: 'bg-orange-500',
@@ -197,12 +198,12 @@ function ModuleProgress({
   return (
     <div>
       <div className="flex justify-between text-sm mb-1">
-        <span className="text-gray-400">{label}</span>
+        <span className="text-muted">{label}</span>
         <span className="font-bold">{score}%</span>
       </div>
       <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
         <div
-          className={`h-full ${colorMap[color] || 'bg-green-500'} transition-all duration-500`}
+          className={`h-full ${colorMap[color] || 'bg-primary-500'} transition-all duration-500`}
           style={{ width: `${score}%` }}
         />
       </div>
@@ -223,7 +224,7 @@ function WeeklyStat({
 
   return (
     <div>
-      <div className="text-sm text-gray-400 mb-1">{label}</div>
+      <div className="text-sm text-muted mb-1">{label}</div>
       <div className="flex items-baseline gap-2">
         <span className="text-2xl font-bold">{current}</span>
         <span className="text-gray-500">/ {target}</span>
