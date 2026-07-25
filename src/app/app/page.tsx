@@ -29,7 +29,7 @@ export default function GoalSelection() {
         {/* Goal Selection */}
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-gray-50 text-center">What&apos;s your goal?</h2>
-          <div className="grid gap-3">
+          <div className="grid md:grid-cols-2 gap-3">
             {goals.map((goal) => (
               <button
                 key={goal.id}
