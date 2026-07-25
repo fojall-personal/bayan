@@ -36,6 +36,7 @@ function BayanLogo() {
 }
 
 const LINKS = [
+  { href: '/dashboard', label: 'Dashboard' },
   { href: '/learning', label: 'Learn' },
   { href: '/memorization', label: 'Memorize' },
   { href: '/tajweed', label: 'Tajweed' },

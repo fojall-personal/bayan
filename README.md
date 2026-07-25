@@ -28,8 +28,7 @@ A web application for learning Classical Arabic with focus on Quran comprehensio
 | Backend | Cloudflare Workers (Hono framework) |
 | Database | Cloudflare D1 (SQLite) |
 | Storage | Cloudflare R2 (audio, images) |
-| Cache | Cloudflare KV (sessions, lookups) |
-| Auth | Bearer token (single-user, self-hosted) |
+| Auth | Bearer token today; Cloudflare Access next (see plan §4) |
 | Build | Wrangler 3 |
 | CI/CD | GitHub Actions → Cloudflare Pages |
 
@@ -77,12 +76,14 @@ languagebuilder/
    cd ../src/app && npm install
    ```
 
-2. **Create D1 database and apply the schema**
+2. **Create the D1 database and apply migrations**
    ```bash
    cd workers
    wrangler d1 create languagebuilder
-   npx wrangler d1 execute languagebuilder --local --file=src/db/schema.sql
+   npx wrangler d1 migrations apply languagebuilder --local
    ```
+   Migrations live in `src/db/migrations/` and are applied in order. `0001` is an
+   idempotent baseline, so this is safe against an existing database.
 
 3. **Provision the single user** — required. Nothing else creates this row, and
    without it `/api/auth/profile` returns 404 and every insert that references
@@ -129,9 +130,9 @@ languagebuilder/
 
 ### One-time setup
 
-The frontend is a **static export** — it has no server, so it calls the Worker
-by absolute URL. Both values are inlined at build time, so they must exist in the
-CI environment, not at runtime.
+The site and the API share **one origin**: CI bundles `_worker.js` into the Pages
+output, which routes `/api/*` into Hono and everything else to static assets. So
+there is no CORS and no absolute API URL to configure.
 
 1. **Worker secret** (not a `[vars]` entry — a var overwrites a same-named secret
    on every deploy):
@@ -141,13 +142,14 @@ CI environment, not at runtime.
 2. **GitHub Actions secrets** — Settings → Secrets and variables → Actions:
    - `API_TOKEN` — same value as step 1. The build fails loudly without it.
    - `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` — for the Pages deploy.
-3. **Optional repo variable** `NEXT_PUBLIC_API_URL` if the Worker moves off
-   `languagebuilder.fojall.workers.dev`.
-4. **Seed the user row on the remote database**, once:
+3. **Apply migrations and seed the user row on the remote database**, once:
    ```bash
-   cd workers && npx wrangler d1 execute languagebuilder --remote --file=src/db/seed-user.sql
+   cd workers
+   npx wrangler d1 migrations apply languagebuilder --remote
+   npx wrangler d1 execute languagebuilder --remote --file=src/db/seed-user.sql
    ```
-5. Add any new frontend origin to `ALLOWED_ORIGINS` in `workers/wrangler.toml`.
+   Leave `NEXT_PUBLIC_API_URL` unset — same origin. `ALLOWED_ORIGINS` in
+   `workers/wrangler.toml` only matters for the standalone Worker.
 
 ### Frontend (Cloudflare Pages)
 Deploys automatically on push to `main`. CI typechecks the Worker and the
@@ -159,14 +161,11 @@ git push origin main
 
 **Production URL:** https://languagebuilder-frontend.pages.dev
 
-### Backend (Cloudflare Workers)
-Still deployed by hand — CI typechecks it but does not ship it:
-
-```bash
-cd workers && npx wrangler deploy
-```
-
-**Production URL:** https://languagebuilder.fojall.workers.dev
+### Backend
+Deployed *with* the frontend as `_worker.js` inside the Pages output — no
+separate deploy step. The standalone Worker in `workers/` is still useful for
+local development (`npx wrangler dev`) and can be deployed independently, but
+production does not use it.
 
 ### Verifying a deploy
 
@@ -174,48 +173,35 @@ A green Actions run only proves the build compiled. To prove the two halves are
 connected:
 
 ```bash
-curl https://languagebuilder.fojall.workers.dev/health
+curl https://languagebuilder-frontend.pages.dev/health
 curl -H "Authorization: Bearer $API_TOKEN" \
-  https://languagebuilder.fojall.workers.dev/api/auth/profile
+  https://languagebuilder-frontend.pages.dev/api/auth/profile
 ```
 
 Then load the site and confirm a data-backed page renders rather than showing an
 error card.
 
-## 📊 Current Progress
+## 📊 Current status
 
-### Phase 0: Design Foundation ✅
-- [x] Design System (`src/styles/DESIGN.md`, `src/app/styles/globals.css`, `src/app/tailwind.config.ts`)
-- [x] Component Library (18+ components across ui/, layout/, dashboard/, learning/, memorization/, assessment/, audio/)
-- [x] Project Scaffolding (Next.js app, Workers backend, D1 schema)
-- [x] Visual Verification Page (`src/styles/design-system-verification.html`)
+The module checkboxes that used to live here marked eleven modules complete while
+six endpoints returned 500 and the frontend could not reach the backend at all.
+Status now lives in one place, measured rather than asserted:
 
-### Design System Overhaul ✅
-- [x] Added `lucide-react` dependency for icon system
-- [x] Replaced all emoji icons with Lucide React icons (Sidebar, MobileNav, Onboarding, Dashboard)
-- [x] Fixed globals.css anti-slop guard reference (MODULE-09 → DESIGN.md)
-- [x] Added `.leading-arabic` utility class
-- [x] Verified no hardcoded colors remain in components
-- [x] Build succeeds with all changes
+- **`docs/APPLICATION-PLAN-v2.md` §1–2** — what actually works, per module
+- **`docs/APPLICATION-PLAN-v2.md` §10** — the staged roadmap
+- **`docs/CODE-AUDIT-2026-07-25.md`** — the audit these came from
 
-### Phase 1: MVP Feature Modules ✅
-- [x] 01: Database Schema & Data Layer
-- [x] 02: Assessment Engine
-- [x] 03: Learning Engine
-- [x] 04: Memorization Tracker
-- [x] 05: Progress Dashboard & Onboarding
+Done so far: Stage 1 (frontend↔API wiring, fail-closed auth, CI typechecks),
+Stage 2 (schema reconciled with the queries, migrations adopted), Stage 2a (one
+origin), Stage 3 (grading contract, result DTO, error boundaries), Stage 4
+(design system rebuilt), Stage 6 partial (the three Arabic content errors).
 
-### Phase 2: Enhancement ✅
-- [x] 06: Tajweed Visualization
-- [x] 07: Grammar Deep-Dive
+Next: Stage 2b (Cloudflare Access identity), Stage 5 (orphaned components),
+Stage 6 remainder (load the question bank, ingest Quran text + morphology).
 
-### Phase 3: Advanced Features
-- [ ] 08: AI Tutor + Advanced Features (Not started)
-
-### UI/UX Audit
-- [x] Slice 1: React Rendering Verification
-- [x] Slice 2: Visual Design Compliance
-- [ ] Slice 3-8: User Flow, Accessibility, Mobile, Backend Integration, Content, Documentation
+A note on process, because it is the reason for the rewrite above: **a green
+build is not evidence a feature works.** See §11 of the plan for what "done"
+requires.
 
 ## 🔧 Recent Critical Fixes
 
