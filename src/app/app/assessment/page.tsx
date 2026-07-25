@@ -4,25 +4,23 @@ import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { AssessmentFlow } from '@/components/assessment/AssessmentFlow';
 import { AssessmentResults } from '@/components/assessment/AssessmentResults';
+import { apiFetch, apiErrorMessage } from '@/lib/api';
 
 export default function AssessmentPage() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if assessment is already completed
-    const token = process.env.NEXT_PUBLIC_API_TOKEN;
-    fetch('/api/assessment/results', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
+    apiFetch<{ data: unknown }>('/api/assessment/results')
       .then((data) => {
         if (data.data) {
           setResult(data.data);
         }
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => setError(apiErrorMessage(err)))
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
@@ -41,6 +39,15 @@ export default function AssessmentPage() {
           subtitle="Your diagnostic results and learning path"
         />
         <AssessmentResults result={result} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-xl mx-auto text-center py-16">
+        <h2 className="text-2xl font-bold mb-3">Couldn&apos;t reach the assessment API</h2>
+        <p className="text-gray-400">{error}</p>
       </div>
     );
   }

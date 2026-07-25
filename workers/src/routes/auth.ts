@@ -1,24 +1,15 @@
 import { Hono } from 'hono';
-import { Database } from '../lib/db';
-import { getCurrentUser } from '../index';
+import type { AppEnv } from '../lib/context';
+import { getDb } from '../lib/db';
+import type { Database } from '../lib/db';
 
-export const authRoutes = new Hono<{ Bindings: { DB: any } }>();
-
-function getDB(c: any) {
-  // Accept either a raw D1 binding or a wrapped Database instance
-  const raw = c.env.DB;
-  if (raw && typeof raw.prepare === 'function') {
-    return new Database(raw);
-  }
-  // Already wrapped
-  return raw;
-}
+export const authRoutes = new Hono<AppEnv>();
 
 // GET /api/auth/profile — Return user profile
 authRoutes.get('/profile', async (c) => {
   try {
-    const { id: userId } = getCurrentUser();
-    const db = getDB(c);
+    const userId = c.get('userId');
+    const db = getDb(c);
 
     try {
       const user = await db.get<Record<string, unknown>>(
@@ -43,8 +34,8 @@ authRoutes.get('/profile', async (c) => {
 
 // POST /api/auth/onboarding — Complete onboarding and save preferences
 authRoutes.post('/onboarding', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
   const { goal, readingAbility, memorizedSurahs, challenge } = await c.req.json();
 
   try {

@@ -1,18 +1,11 @@
 import { Hono } from 'hono';
-import { Database } from '../lib/db';
-import { getCurrentUser } from '../index';
-
-function getDB(c: any) {
-  const raw = c.env.DB;
-  if (raw && typeof raw.prepare === 'function') {
-    return new Database(raw);
-  }
-  return raw;
-}
+import type { AppEnv } from '../lib/context';
+import { getDb } from '../lib/db';
+import type { Database } from '../lib/db';
 
 import { calculateCompositeScore, assignLearningPath, generateAssessmentResult } from '../lib/scoring';
 
-export const assessmentRoutes = new Hono<{ Bindings: { DB: Database } }>();
+export const assessmentRoutes = new Hono<AppEnv>();
 
 // GET /api/assessment/start — Get assessment questions
 assessmentRoutes.get('/start', async (c) => {
@@ -28,8 +21,8 @@ assessmentRoutes.get('/start', async (c) => {
 
 // POST /api/assessment/submit — Submit assessment answers
 assessmentRoutes.post('/submit', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
   const { literacy_score, comprehension_score, grammar_score, memorization_score } =
     await c.req.json();
 
@@ -85,8 +78,8 @@ assessmentRoutes.post('/submit', async (c) => {
 
 // GET /api/assessment/results — Get latest assessment results
 assessmentRoutes.get('/results', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     const result = await db.get<Record<string, unknown>>(

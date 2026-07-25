@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
 
 interface Lesson {
   id: string;
@@ -65,24 +66,18 @@ export function LearningPage({ userId }: LearningPageProps) {
   const fetchNextLesson = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/learning/next', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to fetch lesson');
-      }
-
-      const data = await res.json();
+      const data = await apiFetch<{ lesson: Lesson | null; message?: string }>(
+        '/api/learning/next'
+      );
       if (data.lesson) {
         setLesson(data.lesson);
+        setError(null);
         setResult(null);
       } else {
         setError(data.message || 'No more lessons available');
       }
     } catch (err) {
-      setError('Failed to load lesson. Check API connection.');
+      setError(apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -99,25 +94,17 @@ export function LearningPage({ userId }: LearningPageProps) {
     if (!lesson) return;
 
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch(`/api/learning/lessons/${lesson.id}/submit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      const data = await apiPost<{ data: typeof result }>(
+        `/api/learning/lessons/${lesson.id}/submit`,
+        {
           answers: Object.entries(answers).map(([k, v]) => ({ index: Number(k), answer: v })),
           exerciseIndex: currentExerciseIndex,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setResult(data.data);
-      }
+        }
+      );
+      setResult(data.data);
     } catch (err) {
       console.error('Failed to submit:', err);
+      setError(apiErrorMessage(err));
     }
   };
 

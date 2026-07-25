@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
+import { apiPost } from '@/lib/api';
 
 interface Message {
   id: string;
@@ -34,23 +35,15 @@ export function TutorChat() {
     setLoading(true);
 
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/tutor/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          message: userMessage.content,
-          conversationHistory: messages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
+      const data = await apiPost<{
+        data?: { response?: string; topics?: string[] };
+      }>('/api/tutor/chat', {
+        message: userMessage.content,
+        conversationHistory: messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
       });
-
-      const data = await res.json();
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),

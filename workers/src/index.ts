@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
-import { verifyAuth } from './lib/auth';
-import { Database } from './lib/db';
+import { cors } from 'hono/cors';
+import type { AppEnv } from './lib/context';
+import { SINGLE_USER_ID } from './lib/context';
 import { authRoutes } from './routes/auth';
 import { assessmentRoutes } from './routes/assessment';
 import { learningRoutes } from './routes/learning';
@@ -11,69 +12,56 @@ import { grammarRoutes } from './routes/grammar';
 import { tutorRoutes } from './routes/tutor';
 import { certificateRoutes } from './routes/certificate';
 
-interface Env {
-  DB: Database;
-  API_TOKEN: string;
-}
+const app = new Hono<AppEnv>();
 
-// Shared variable to pass userId across route boundaries
-let currentUser: { id: string } | null = null;
+/** Origins allowed when ALLOWED_ORIGINS is not set. */
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://languagebuilder-frontend.pages.dev',
+  'http://localhost:3000',
+];
 
-export function getCurrentUser() {
-  if (!currentUser) {
-    throw new Error('Not authenticated');
-  }
-  return currentUser;
-}
-
-export function setCurrentUser(user: { id: string } | null) {
-  currentUser = user;
-}
-
-const app = new Hono<{ Bindings: Env }>();
-
-// Health check
+// Health check — public, no auth. Used to verify the Worker is reachable.
 app.get('/health', (c) =>
   c.json({ status: 'ok', timestamp: new Date().toISOString() })
 );
 
-// Auth middleware — all /api/* routes require bearer token
+// CORS must run before auth so preflight requests are answered rather than
+// rejected with 401. The frontend is a static export on a different origin, so
+// every authorized request is preceded by an OPTIONS preflight.
+app.use('/api/*', (c, next) => {
+  const configured = c.env.ALLOWED_ORIGINS?.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  const allowed = configured?.length ? configured : DEFAULT_ALLOWED_ORIGINS;
+
+  return cors({
+    origin: (origin) => (allowed.includes(origin) ? origin : null),
+    allowMethods: ['GET', 'POST', 'OPTIONS'],
+    allowHeaders: ['Authorization', 'Content-Type'],
+    maxAge: 86400,
+  })(c, next);
+});
+
+// Auth — all /api/* routes require the shared bearer token.
 app.use('/api/*', async (c, next) => {
-  try {
-    // Debug: Check if c.env exists
-    if (!c.env) {
-      console.log('c.env is undefined!');
-      return c.json({ error: 'Environment bindings not available' }, 500);
-    }
-    
-    const API_TOKEN = c.env.API_TOKEN || 'dev-token-change-in-production';
-    const auth = c.req.raw.headers.get('authorization');
-    
-    if (!auth || auth !== `Bearer ${API_TOKEN}`) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-    
-    // For single-user app, always use the same user ID
-    setCurrentUser({ id: 'test-user-1' });
-    console.log('Middleware: currentUser set to', getCurrentUser());
-    await next();
-  } catch (error) {
-    console.error('Middleware error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+  const expected = c.env.API_TOKEN;
+
+  // Fail closed. An unset token previously fell back to a literal published in
+  // the README, which meant a misconfigured deploy was silently world-readable.
+  if (!expected) {
+    console.error('API_TOKEN is not configured for this Worker');
+    return c.json({ error: 'Server misconfigured' }, 500);
   }
+
+  const auth = c.req.header('authorization');
+  if (auth !== `Bearer ${expected}`) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  c.set('userId', SINGLE_USER_ID);
+  await next();
 });
 
-// Debug endpoint to test getCurrentUser
-app.get('/api/debug/user', (c) => {
-  try {
-    const user = getCurrentUser();
-    return c.json({ success: true, user });
-  } catch (error) {
-    return c.json({ success: false, error: (error as Error).message }, 500);
-  }
-});
-
-// Mount route handlers with the shared currentUser helper
 app.route('/api/auth', authRoutes);
 app.route('/api/assessment', assessmentRoutes);
 app.route('/api/learning', learningRoutes);

@@ -1,22 +1,14 @@
 import { Hono } from 'hono';
-import { Database } from '../lib/db';
-import { getCurrentUser } from '../index';
+import type { AppEnv } from '../lib/context';
+import { getDb } from '../lib/db';
+import type { Database } from '../lib/db';
 
-function getDB(c: any) {
-  const raw = c.env.DB;
-  if (raw && typeof raw.prepare === 'function') {
-    return new Database(raw);
-  }
-  return raw;
-}
-
-
-export const progressRoutes = new Hono<{ Bindings: { DB: Database } }>();
+export const progressRoutes = new Hono<AppEnv>();
 
 // GET /api/progress/dashboard — Complete dashboard data
 progressRoutes.get('/dashboard', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     // Fetch all dashboard data
@@ -99,8 +91,8 @@ progressRoutes.get('/dashboard', async (c) => {
 
 // GET /api/progress/scores — Score history for charts
 progressRoutes.get('/scores', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     const history = await db.query<Record<string, unknown>>(

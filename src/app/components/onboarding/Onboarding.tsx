@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BookOpen, Brain, BookMarked, Sparkles } from 'lucide-react';
+import { apiPost } from '@/lib/api';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -25,19 +26,13 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   const handleStartAssessment = async () => {
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/auth/onboarding', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ goal, readingAbility, memorizedSurahs, challenge }),
+      await apiPost('/api/auth/onboarding', {
+        goal,
+        readingAbility,
+        memorizedSurahs,
+        challenge,
       });
-
-      if (res.ok) {
-        window.location.href = '/assessment';
-      }
+      window.location.href = '/assessment';
     } catch (error) {
       console.error('Onboarding error:', error);
     }

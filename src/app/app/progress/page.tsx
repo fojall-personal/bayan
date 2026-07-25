@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { apiFetch, apiErrorMessage } from '@/lib/api';
 
 interface ScoreEntry {
   literacy_score: number;
@@ -16,6 +17,7 @@ interface ScoreEntry {
 export default function ProgressPage() {
   const [scores, setScores] = useState<ScoreEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchScores();
@@ -24,17 +26,12 @@ export default function ProgressPage() {
   const fetchScores = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/progress/scores', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setScores(data.data || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch scores:', error);
+      const data = await apiFetch<{ data: ScoreEntry[] }>('/api/progress/scores');
+      setScores(data.data || []);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch scores:', err);
+      setError(apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -51,6 +48,19 @@ export default function ProgressPage() {
   return (
     <div className="page-transition max-w-4xl mx-auto space-y-6">
       {/* Score history */}
+      {error && (
+        <Card>
+          <h2 className="text-xl font-bold mb-2">Couldn&apos;t load your progress</h2>
+          <p className="text-gray-400 mb-4">{error}</p>
+          <button
+            onClick={fetchScores}
+            className="text-primary-500 hover:text-primary-400 font-medium"
+          >
+            Try again
+          </button>
+        </Card>
+      )}
+
       <Card>
         <h2 className="text-xl font-bold mb-4">Score History</h2>
         {scores.length === 0 ? (

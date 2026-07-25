@@ -56,6 +56,18 @@ export interface Lesson {
   estimated_minutes: number;
 }
 
+/** A `lessons` row exactly as D1 returns it — the JSON columns are still strings. */
+export interface LessonRow {
+  id: string;
+  title: string;
+  module: string;
+  level: number;
+  content: string;
+  exercises: string;
+  prerequisites: string;
+  estimated_minutes: number;
+}
+
 export interface QuizAttempt {
   id: string;
   user_id: string;

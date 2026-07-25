@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -11,9 +12,30 @@ permissions:
   deployments: write
 
 jobs:
+  # The Worker is deployed by hand (`cd workers && npx wrangler deploy`) and
+  # wrangler uses esbuild, which does not typecheck. Nothing was verifying it, so
+  # 69 type errors accumulated unnoticed. Gate it here.
+  typecheck-workers:
+    runs-on: ubuntu-latest
+    name: Typecheck Workers
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: workers/package-lock.json
+      - name: Install dependencies
+        working-directory: workers
+        run: npm ci
+      - name: tsc --noEmit
+        working-directory: workers
+        run: npx tsc --noEmit
+
   deploy:
     runs-on: ubuntu-latest
     name: Deploy to Cloudflare Pages
+    needs: typecheck-workers
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,15 +51,32 @@ jobs:
         working-directory: src/app
         run: npm ci
 
+      - name: Typecheck
+        working-directory: src/app
+        run: npx tsc --noEmit
+
       - name: Build
         working-directory: src/app
-        run: npm run build
+        # NEXT_PUBLIC_* values are inlined into the bundle at build time, so they
+        # must be present here — not at runtime. Without them the static export
+        # ships `Bearer undefined` and calls a relative /api path that does not
+        # exist on the Pages origin.
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://languagebuilder.fojall.workers.dev' }}
+          NEXT_PUBLIC_API_TOKEN: ${{ secrets.API_TOKEN }}
+        run: |
+          if [ -z "$NEXT_PUBLIC_API_TOKEN" ]; then
+            echo "::error::secrets.API_TOKEN is not set — the build would ship 'Bearer undefined'."
+            echo "Add it under Settings -> Secrets and variables -> Actions, matching the value"
+            echo "given to 'wrangler secret put API_TOKEN' in workers/."
+            exit 1
+          fi
+          npm run build
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        if: github.event_name != 'pull_request'
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: languagebuilder-frontend
-          directory: src/app/out
-          branch: main
+          command: pages deploy src/app/out --project-name=languagebuilder-frontend --branch=main

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { apiPost } from '@/lib/api';
 
 interface MemorizationEntry {
   id: string;
@@ -37,18 +38,8 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
   const handleRate = (quality: number) => {
     setSelfRating(quality);
     // Submit review result
-    fetch(`/api/memorization/${entry.id}/review`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}`
-      },
-      body: JSON.stringify({ quality }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        onComplete(data.nextReview);
-      })
+    apiPost(`/api/memorization/${entry.id}/review`, { quality })
+      .then(() => onComplete(quality))
       .catch(console.error);
   };
 

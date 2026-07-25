@@ -2,8 +2,19 @@ name = "languagebuilder"
 main = "src/index.ts"
 compatibility_date = "2026-07-01"
 
+# API_TOKEN is deliberately NOT declared here. A [vars] entry deploys as a
+# plaintext environment variable and overwrites a same-named secret on every
+# deploy, so keeping it here would silently defeat `wrangler secret put`.
+#
+# Set it once per environment instead:
+#   npx wrangler secret put API_TOKEN
+#
+# Local dev reads it from workers/.dev.vars. The auth middleware fails closed
+# (500) when it is missing rather than falling back to a published default.
+
 [vars]
-API_TOKEN = "dev-token-change-in-production"
+# Origins permitted to call /api/*. Comma-separated. Add your custom domain here.
+ALLOWED_ORIGINS = "https://languagebuilder-frontend.pages.dev,http://localhost:3000"
 
 [[d1_databases]]
 binding = "DB"

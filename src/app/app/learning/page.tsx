@@ -6,11 +6,13 @@ import { LearningPage } from '@/components/learning/LearningPage';
 import { Flashcards } from '@/components/learning/Flashcards';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { apiFetch, apiErrorMessage } from '@/lib/api';
 
 export default function LearningPageRoute() {
   const [view, setView] = useState<'lesson' | 'flashcards'>('lesson');
   const [user, setUser] = useState<{ id: string; current_path: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUserProfile();
@@ -18,17 +20,14 @@ export default function LearningPageRoute() {
 
   const fetchUserProfile = async () => {
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/auth/profile', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
+      const data = await apiFetch<{ data: { id: string; current_path: string } }>(
+        '/api/auth/profile'
+      );
+      setUser(data.data);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch user:', err);
+      setError(apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -38,6 +37,16 @@ export default function LearningPageRoute() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-gray-400">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <div className="max-w-xl mx-auto text-center py-16">
+        <h2 className="text-2xl font-bold mb-3">Couldn&apos;t load your profile</h2>
+        <p className="text-gray-400 mb-6">{error ?? 'No profile found for this account.'}</p>
+        <Button onClick={fetchUserProfile}>Try again</Button>
       </div>
     );
   }

@@ -1,21 +1,13 @@
 import { Hono } from 'hono';
-import { Database } from '../lib/db';
-import { getCurrentUser } from '../index';
+import type { AppEnv } from '../lib/context';
+import { getDb } from '../lib/db';
+import type { Database } from '../lib/db';
 
-function getDB(c: any) {
-  const raw = c.env.DB;
-  if (raw && typeof raw.prepare === 'function') {
-    return new Database(raw);
-  }
-  return raw;
-}
-
-
-export const tajweedRoutes = new Hono<{ Bindings: { DB: Database } }>();
+export const tajweedRoutes = new Hono<AppEnv>();
 
 // GET /api/tajweed/rules — Get all tajweed rules with examples
 tajweedRoutes.get('/rules', async (c) => {
-  const db = getDB(c);
+  const db = getDb(c);
 
   try {
     const rules = await db.query<Record<string, unknown>>(
@@ -40,7 +32,7 @@ tajweedRoutes.get('/rules', async (c) => {
 // GET /api/tajweed/verses/:surahId — Get verses with tajweed tags for a surah
 tajweedRoutes.get('/verses/:surahId', async (c) => {
   const { surahId } = c.req.param();
-  const db = getDB(c);
+  const db = getDb(c);
 
   try {
     const verses = await db.query<Record<string, unknown>>(
@@ -69,8 +61,8 @@ tajweedRoutes.get('/verses/:surahId', async (c) => {
 
 // GET /api/tajweed/mastery — Get user's tajweed mastery by rule
 tajweedRoutes.get('/mastery', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     const mastery = await db.query<Record<string, unknown>>(
@@ -107,8 +99,8 @@ tajweedRoutes.get('/mastery', async (c) => {
 // POST /api/tajweed/practice/:ruleId/submit — Submit practice result
 tajweedRoutes.post('/practice/:ruleId/submit', async (c) => {
   const { ruleId } = c.req.param();
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
   const { wordId, correct, timeSpent } = await c.req.json();
 
   try {
@@ -127,12 +119,12 @@ tajweedRoutes.post('/practice/:ruleId/submit', async (c) => {
       [userId, ruleId]
     );
 
-    const mastery = totalAttempts?.count
-      ? Math.round(((correctAttempts?.count || 0) / totalAttempts.count) * 100)
-      : 0;
+    const total = (totalAttempts?.count as number) || 0;
+    const correctCount = (correctAttempts?.count as number) || 0;
+    const mastery = total > 0 ? Math.round((correctCount / total) * 100) : 0;
 
     return c.json({
-      data: { success: true, mastery, totalAttempts: totalAttempts?.count || 0 },
+      data: { success: true, mastery, totalAttempts: total },
     });
   } catch (error) {
     console.error('Tajweed practice submit error:', error);

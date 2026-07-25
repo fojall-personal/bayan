@@ -1,13 +1,15 @@
 // SM-2 Spaced Repetition Algorithm for Memorization
 // Adapted from SuperMemo algorithm for Quran hifz tracking
 
+export type MemorizationStatus = 'new' | 'learning' | 'reviewing' | 'mastered';
+
 interface MemorizationEntry {
   id: string;
   quality: number;
   interval: number;
   ease_factor: number;
   reviews_count: number;
-  status: 'new' | 'learning' | 'reviewing' | 'mastered';
+  status: MemorizationStatus;
   next_review: string;
 }
 
@@ -15,7 +17,7 @@ interface SM2Result {
   nextReview: string;
   interval: number;
   easeFactor: number;
-  status: 'new' | 'learning' | 'reviewing' | 'mastered';
+  status: MemorizationStatus;
 }
 
 // SM-2 spaced repetition algorithm

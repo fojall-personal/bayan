@@ -77,35 +77,81 @@ languagebuilder/
    cd ../src/app && npm install
    ```
 
-2. **Create D1 database**
+2. **Create D1 database and apply the schema**
    ```bash
+   cd workers
    wrangler d1 create languagebuilder
-   wrangler d1 execute languagebuilder --local --file=workers/src/db/schema.sql
+   npx wrangler d1 execute languagebuilder --local --file=src/db/schema.sql
    ```
 
-3. **Seed content**
+3. **Provision the single user** — required. Nothing else creates this row, and
+   without it `/api/auth/profile` returns 404 and every insert that references
+   `users(id)` fails its foreign key.
+   ```bash
+   npx wrangler d1 execute languagebuilder --local --file=src/db/seed-user.sql
+   ```
+
+4. **Set the local API token**
+
+   `workers/.dev.vars` supplies `API_TOKEN` for `wrangler dev`. The auth
+   middleware fails closed (500) if it is missing — there is no default.
+   ```
+   API_TOKEN=<any value you like for local dev>
+   ```
+
+5. **Run development servers**
+   ```bash
+   # Workers (backend) — http://localhost:8787
+   cd workers && npx wrangler dev
+
+   # Next.js (frontend) — http://localhost:3000
+   cd src/app && \
+     NEXT_PUBLIC_API_URL=http://localhost:8787 \
+     NEXT_PUBLIC_API_TOKEN=<same value as .dev.vars> \
+     npm run dev
+   ```
+
+   Verify the two halves are talking:
+   ```bash
+   curl -H "Authorization: Bearer $API_TOKEN" http://localhost:8787/api/auth/profile
+   ```
+
+6. **Seed content (optional)**
    ```bash
    npx tsx scripts/seed-db.ts
    ```
-
-4. **Run development servers**
-   ```bash
-   # Workers (backend)
-   cd workers && npx wrangler dev
-
-   # Next.js (frontend)
-   cd src/app && npm run dev
-   ```
-
-5. **Set environment variables**
-   - `CLOUDFLARE_API_TOKEN` — Cloudflare API token with Pages/Workers permissions
-   - `CLOUDFLARE_ACCOUNT_ID` — Your Cloudflare account ID
-   - `AUTH_TOKEN` — API bearer token for authentication
+   Note: this script currently only writes vocabulary and lessons — its
+   assessment and tajweed steps print success without inserting anything, and it
+   seeds vocabulary against a different user id than the API reads. See
+   `docs/CODE-AUDIT-2026-07-25.md` §7.
 
 ## 🌐 Deployment
 
+### One-time setup
+
+The frontend is a **static export** — it has no server, so it calls the Worker
+by absolute URL. Both values are inlined at build time, so they must exist in the
+CI environment, not at runtime.
+
+1. **Worker secret** (not a `[vars]` entry — a var overwrites a same-named secret
+   on every deploy):
+   ```bash
+   cd workers && npx wrangler secret put API_TOKEN
+   ```
+2. **GitHub Actions secrets** — Settings → Secrets and variables → Actions:
+   - `API_TOKEN` — same value as step 1. The build fails loudly without it.
+   - `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` — for the Pages deploy.
+3. **Optional repo variable** `NEXT_PUBLIC_API_URL` if the Worker moves off
+   `languagebuilder.fojall.workers.dev`.
+4. **Seed the user row on the remote database**, once:
+   ```bash
+   cd workers && npx wrangler d1 execute languagebuilder --remote --file=src/db/seed-user.sql
+   ```
+5. Add any new frontend origin to `ALLOWED_ORIGINS` in `workers/wrangler.toml`.
+
 ### Frontend (Cloudflare Pages)
-The frontend automatically deploys when you push to the `main` branch:
+Deploys automatically on push to `main`. CI typechecks the Worker and the
+frontend first, and refuses to build without `API_TOKEN`.
 
 ```bash
 git push origin main
@@ -114,13 +160,27 @@ git push origin main
 **Production URL:** https://languagebuilder-frontend.pages.dev
 
 ### Backend (Cloudflare Workers)
-Deploy the backend manually or via CI/CD:
+Still deployed by hand — CI typechecks it but does not ship it:
 
 ```bash
 cd workers && npx wrangler deploy
 ```
 
 **Production URL:** https://languagebuilder.fojall.workers.dev
+
+### Verifying a deploy
+
+A green Actions run only proves the build compiled. To prove the two halves are
+connected:
+
+```bash
+curl https://languagebuilder.fojall.workers.dev/health
+curl -H "Authorization: Bearer $API_TOKEN" \
+  https://languagebuilder.fojall.workers.dev/api/auth/profile
+```
+
+Then load the site and confirm a data-backed page renders rather than showing an
+error card.
 
 ## 📊 Current Progress
 

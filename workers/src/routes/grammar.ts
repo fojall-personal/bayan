@@ -1,24 +1,17 @@
 import { Hono } from 'hono';
-import { Database } from '../lib/db';
-import { getCurrentUser } from '../index';
-
-function getDB(c: any) {
-  const raw = c.env.DB;
-  if (raw && typeof raw.prepare === 'function') {
-    return new Database(raw);
-  }
-  return raw;
-}
+import type { AppEnv } from '../lib/context';
+import { getDb } from '../lib/db';
+import type { Database } from '../lib/db';
 
 import { parseArabicSentence, checkGrammarErrors, VERB_CONJUGATIONS } from '../lib/grammar-parser';
 
-export const grammarRoutes = new Hono<{ Bindings: { DB: Database } }>();
+export const grammarRoutes = new Hono<AppEnv>();
 
 // GET /api/grammar/deepdive/:category — Get deep-dive content for nahw/sarf/balagha
 grammarRoutes.get('/deepdive/:category', async (c) => {
   const { category } = c.req.param();
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     const mastery = await db.get<Record<string, unknown>>(
@@ -57,7 +50,7 @@ grammarRoutes.get('/deepdive/:category', async (c) => {
 
 // POST /api/grammar/parse — Parse an Arabic sentence
 grammarRoutes.post('/parse', async (c) => {
-  const { id: userId } = getCurrentUser();
+  const userId = c.get('userId');
   const { sentence } = await c.req.json();
 
   try {
@@ -89,8 +82,8 @@ grammarRoutes.get('/conjugations', async (c) => {
 
 // POST /api/grammar/exercise — Submit grammar exercise answer
 grammarRoutes.post('/exercise', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
   const { exerciseId, answer, correct } = await c.req.json();
 
   try {
@@ -127,8 +120,8 @@ grammarRoutes.post('/exercise', async (c) => {
 
 // GET /api/grammar/mastery — Get grammar mastery by category
 grammarRoutes.get('/mastery', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     const mastery = await db.query<Record<string, unknown>>(
@@ -142,8 +135,8 @@ grammarRoutes.get('/mastery', async (c) => {
         masteryLevel: m.mastery_level,
         totalAttempts: m.total_attempts,
         correctAttempts: m.correct_attempts,
-        percentage: m.total_attempts > 0
-          ? Math.round(((m.correct_attempts as number) / m.total_attempts) * 100)
+        percentage: (m.total_attempts as number) > 0
+          ? Math.round(((m.correct_attempts as number) / (m.total_attempts as number)) * 100)
           : 0,
       })),
     });

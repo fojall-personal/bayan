@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { apiPost } from '@/lib/api';
 
 interface AssessmentModule {
   id: string;
@@ -173,25 +174,13 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
 
     // Submit to backend
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/assessment/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          literacy_score: moduleScores.literacy || 0,
-          comprehension_score: moduleScores.comprehension || 0,
-          grammar_score: moduleScores.grammar || 0,
-          memorization_score: moduleScores.memorization || 0,
-        }),
+      const data = await apiPost<{ data: unknown }>('/api/assessment/submit', {
+        literacy_score: moduleScores.literacy || 0,
+        comprehension_score: moduleScores.comprehension || 0,
+        grammar_score: moduleScores.grammar || 0,
+        memorization_score: moduleScores.memorization || 0,
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        onComplete?.(data.data);
-      }
+      onComplete?.(data.data as never);
     } catch (error) {
       console.error('Failed to submit assessment:', error);
       const fallbackScores = {

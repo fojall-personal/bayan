@@ -1,24 +1,18 @@
 import { Hono } from 'hono';
-import { Database } from '../lib/db';
-import { getCurrentUser } from '../index';
-
-function getDB(c: any) {
-  const raw = c.env.DB;
-  if (raw && typeof raw.prepare === 'function') {
-    return new Database(raw);
-  }
-  return raw;
-}
+import type { AppEnv } from '../lib/context';
+import { getDb } from '../lib/db';
+import type { Database } from '../lib/db';
 
 import { applySM2 } from '../lib/space-repetition';
+import type { MemorizationStatus } from '../lib/space-repetition';
 
-export const memorizationRoutes = new Hono<{ Bindings: { DB: Database } }>();
+export const memorizationRoutes = new Hono<AppEnv>();
 
 // GET /api/memorization/surah/:surahId — Get surah progress
 memorizationRoutes.get('/surah/:surahId', async (c) => {
   const { surahId } = c.req.param();
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     const entries = await db.query<Record<string, unknown>>(
@@ -35,8 +29,8 @@ memorizationRoutes.get('/surah/:surahId', async (c) => {
 
 // GET /api/memorization/all — Get all memorization entries for user
 memorizationRoutes.get('/all', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     const all = await db.query<Record<string, unknown>>(
@@ -54,8 +48,8 @@ memorizationRoutes.get('/all', async (c) => {
 
 // POST /api/memorization/add — Add a new memorization entry
 memorizationRoutes.post('/add', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
   const { surahId, ayahFrom, ayahTo } = await c.req.json();
 
   try {
@@ -88,8 +82,8 @@ memorizationRoutes.post('/add', async (c) => {
 // POST /api/memorization/:id/review — Review a memorization entry (SM-2)
 memorizationRoutes.post('/:id/review', async (c) => {
   const { id } = c.req.param();
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
   const { quality } = await c.req.json();
 
   try {
@@ -109,7 +103,7 @@ memorizationRoutes.post('/:id/review', async (c) => {
       interval: (entry.interval as number) || 0,
       ease_factor: (entry.ease_factor as number) || 2.5,
       reviews_count: (entry.revision_count as number) || 0,
-      status: (entry.status as string) || 'learning',
+      status: (entry.status as MemorizationStatus) || 'learning',
       next_review: (entry.next_review as string) || '',
     };
 
@@ -152,8 +146,8 @@ memorizationRoutes.post('/:id/review', async (c) => {
 // POST /api/memorization/:id/recall — Next-ayah recall exercise
 memorizationRoutes.post('/:id/recall', async (c) => {
   const { id } = c.req.param();
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
   const { recalledAyah } = await c.req.json();
 
   try {
@@ -180,7 +174,7 @@ memorizationRoutes.post('/:id/recall', async (c) => {
       interval: (entry.interval as number) || 0,
       ease_factor: (entry.ease_factor as number) || 2.5,
       reviews_count: (entry.revision_count as number) || 0,
-      status: (entry.status as string) || 'learning',
+      status: (entry.status as MemorizationStatus) || 'learning',
       next_review: (entry.next_review as string) || '',
     };
 
@@ -217,8 +211,8 @@ memorizationRoutes.post('/:id/recall', async (c) => {
 
 // GET /api/memorization/review/today — Get today's review targets
 memorizationRoutes.get('/review/today', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     const due = await db.query<Record<string, unknown>>(
@@ -241,8 +235,8 @@ memorizationRoutes.get('/review/today', async (c) => {
 
 // GET /api/memorization/surahs — Get all surahs with memorization status
 memorizationRoutes.get('/surahs', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     const surahs = await db.query<Record<string, unknown>>(

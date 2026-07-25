@@ -7,6 +7,7 @@ import { MakharijDiagram } from '@/components/tajweed/MakharijDiagram';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { apiFetch, apiErrorMessage } from '@/lib/api';
 
 interface TajweedRule {
   id: string;
@@ -22,6 +23,7 @@ export default function TajweedPage() {
   const [view, setView] = useState<'viewer' | 'makharij' | 'mastery'>('viewer');
   const [rules, setRules] = useState<TajweedRule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (view === 'mastery') {
@@ -32,17 +34,12 @@ export default function TajweedPage() {
   const fetchMastery = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/tajweed/mastery', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setRules(data.data || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch mastery:', error);
+      const data = await apiFetch<{ data: TajweedRule[] }>('/api/tajweed/mastery');
+      setRules(data.data || []);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch mastery:', err);
+      setError(apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -58,6 +55,14 @@ export default function TajweedPage() {
 
   return (
     <div>
+      {error && (
+        <Card className="mb-6">
+          <h2 className="text-lg font-bold mb-2">Couldn&apos;t load tajweed mastery</h2>
+          <p className="text-gray-400 mb-4">{error}</p>
+          <Button variant="secondary" onClick={fetchMastery}>Try again</Button>
+        </Card>
+      )}
+
       <PageHeader
         title="Tajweed"
         subtitle="Color-coded Quran text with rule visualization"

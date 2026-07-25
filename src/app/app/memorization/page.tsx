@@ -7,6 +7,15 @@ import { ReviewSession } from '@/components/memorization/ReviewSession';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { apiFetch, apiErrorMessage } from '@/lib/api';
+
+interface SurahSummary {
+  surah_id: number;
+  mastered: number;
+  learning: number;
+  reviewing: number;
+  new_ayahs: number;
+}
 
 interface MemorizationEntry {
   id: string;
@@ -24,10 +33,11 @@ interface MemorizationEntry {
 
 export default function MemorizationPage() {
   const [view, setView] = useState<'surahs' | 'review'>('surahs');
-  const [surahs, setSurahs] = useState<any[]>([]);
+  const [surahs, setSurahs] = useState<SurahSummary[]>([]);
   const [dueEntries, setDueEntries] = useState<MemorizationEntry[]>([]);
   const [currentEntry, setCurrentEntry] = useState<MemorizationEntry | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (view === 'surahs') {
@@ -40,17 +50,12 @@ export default function MemorizationPage() {
   const fetchSurahs = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/memorization/surahs', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setSurahs(data.surahs || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch surahs:', error);
+      const data = await apiFetch<{ surahs: SurahSummary[] }>('/api/memorization/surahs');
+      setSurahs(data.surahs || []);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch surahs:', err);
+      setError(apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -59,17 +64,14 @@ export default function MemorizationPage() {
   const fetchTodayReview = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/memorization/review/today', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setDueEntries(data.due || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch today review:', error);
+      const data = await apiFetch<{ due: MemorizationEntry[] }>(
+        '/api/memorization/review/today'
+      );
+      setDueEntries(data.due || []);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch today review:', err);
+      setError(apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -110,6 +112,14 @@ export default function MemorizationPage() {
 
   return (
     <div>
+      {error && (
+        <Card className="mb-6">
+          <h2 className="text-lg font-bold mb-2">Couldn&apos;t load your memorization data</h2>
+          <p className="text-gray-400 mb-4">{error}</p>
+          <Button variant="secondary" onClick={() => (view === 'surahs' ? fetchSurahs() : fetchTodayReview())}>Try again</Button>
+        </Card>
+      )}
+
       <PageHeader
         title="Memorization"
         subtitle="Track your Quran memorization progress"

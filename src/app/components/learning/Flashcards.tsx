@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { apiFetch, apiPost } from '@/lib/api';
 
 interface Flashcard {
   word: string;
@@ -29,15 +30,8 @@ export function Flashcards({ userId }: FlashcardsProps) {
   const fetchFlashcards = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/learning/flashcards', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setCards(data.data || []);
-      }
+      const data = await apiFetch<{ data: Flashcard[] }>('/api/learning/flashcards');
+      setCards(data.data || []);
     } catch (error) {
       console.error('Failed to fetch flashcards:', error);
     } finally {
@@ -50,17 +44,9 @@ export function Flashcards({ userId }: FlashcardsProps) {
 
     const card = cards[currentIndex];
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      await fetch('/api/learning/flashcards/review', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          word: card.word,
-          quality,
-        }),
+      await apiPost('/api/learning/flashcards/review', {
+        word: card.word,
+        quality,
       });
 
       // Move to next card

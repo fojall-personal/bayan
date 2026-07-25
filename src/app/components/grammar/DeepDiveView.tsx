@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Layout, Beaker, Feather } from 'lucide-react';
+import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
 
 interface Lesson {
   id: string;
@@ -34,6 +35,7 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
   const [parseResult, setParseResult] = useState<any>(null);
   const [mastery, setMastery] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -42,23 +44,15 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const [lessonsRes, masteryRes] = await Promise.all([
-        fetch(`/api/grammar/deepdive/${category}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch('/api/grammar/mastery', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
-
-      if (lessonsRes.ok) {
-        const data = await lessonsRes.json();
-        setLessons(data.data?.lessons || []);
-        setMastery(data.data?.mastery || null);
-      }
-    } catch (error) {
-      console.error('Failed to fetch grammar data:', error);
+      const data = await apiFetch<{
+        data: { lessons?: Lesson[]; mastery?: unknown };
+      }>(`/api/grammar/deepdive/${category}`);
+      setLessons(data.data?.lessons || []);
+      setMastery(data.data?.mastery || null);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch grammar data:', err);
+      setError(apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -66,22 +60,13 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
 
   const handleParse = async () => {
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/grammar/parse', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ sentence: userInput }),
+      const data = await apiPost<{ data: unknown }>('/api/grammar/parse', {
+        sentence: userInput,
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        setParseResult(data.data);
-      }
-    } catch (error) {
-      console.error('Parse error:', error);
+      setParseResult(data.data);
+    } catch (err) {
+      console.error('Parse error:', err);
+      setError(apiErrorMessage(err));
     }
   };
 
@@ -90,6 +75,16 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-gray-400">Loading...</div>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <h2 className="text-lg font-bold mb-2">Couldn&apos;t load grammar content</h2>
+        <p className="text-gray-400 mb-4">{error}</p>
+        <Button variant="secondary" onClick={fetchData}>Try again</Button>
+      </Card>
     );
   }
 

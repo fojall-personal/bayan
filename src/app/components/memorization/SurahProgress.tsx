@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { apiFetch } from '@/lib/api';
 
 interface MemorizationEntry {
   id: string;
@@ -36,15 +37,10 @@ export function SurahProgress({ surahId, surahName, totalAyahs }: SurahProgressP
   const fetchSurahProgress = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch(`/api/memorization/surah/${surahId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setEntries(data.entries || []);
-      }
+      const data = await apiFetch<{ entries: MemorizationEntry[] }>(
+        `/api/memorization/surah/${surahId}`
+      );
+      setEntries(data.entries || []);
     } catch (error) {
       console.error('Failed to fetch surah progress:', error);
     } finally {

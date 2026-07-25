@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { apiFetch } from '@/lib/api';
 
 export function AdvancedMemorizationTools() {
   const [audioTesting, setAudioTesting] = useState(false);
@@ -18,13 +19,9 @@ export function AdvancedMemorizationTools() {
   const startAudioTest = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/memorization/review/today', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.data?.due.length > 0) {
-        setCurrentAyah(data.data.due[0]);
+      const data = await apiFetch<{ due: unknown[] }>('/api/memorization/review/today');
+      if (data.due?.length > 0) {
+        setCurrentAyah(data.due[0]);
       } else {
         // Show inline error instead of alert
         alert('No ayahs due for review today. Complete some reviews first!');
@@ -49,13 +46,9 @@ export function AdvancedMemorizationTools() {
 
     // Load next ayah
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/memorization/review/today', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.data?.due.length > 0) {
-        setCurrentAyah(data.data.due[0]);
+      const data = await apiFetch<{ due: unknown[] }>('/api/memorization/review/today');
+      if (data.due?.length > 0) {
+        setCurrentAyah(data.due[0]);
       } else {
         setCurrentAyah(null);
         setAudioTesting(false);
@@ -84,11 +77,9 @@ export function AdvancedMemorizationTools() {
   // Generate certificate
   const generateCertificate = async () => {
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/certificate/export', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const data = await apiFetch<{ data: { certificate: unknown } }>(
+        '/api/certificate/export'
+      );
       setCertificate(data.data?.certificate);
     } catch (error) {
       console.error('Certificate error:', error);

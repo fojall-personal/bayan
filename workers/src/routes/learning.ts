@@ -1,21 +1,15 @@
 import { Hono } from 'hono';
-import { Database } from '../lib/db';
-import { getCurrentUser } from '../index';
+import type { AppEnv } from '../lib/context';
+import { getDb } from '../lib/db';
+import type { Database } from '../lib/db';
+import type { LessonRow } from '../types';
 
-function getDB(c: any) {
-  const raw = c.env.DB;
-  if (raw && typeof raw.prepare === 'function') {
-    return new Database(raw);
-  }
-  return raw;
-}
-
-export const learningRoutes = new Hono<{ Bindings: { DB: Database } }>();
+export const learningRoutes = new Hono<AppEnv>();
 
 // GET /api/learning/next — Get next available lesson based on learning path
 learningRoutes.get('/next', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     // Get user's current path
@@ -29,14 +23,14 @@ learningRoutes.get('/next', async (c) => {
     }
 
     // Get all lessons ordered by level and ID
-    const allLessons = await db.query<Record<string, unknown>>(
+    const allLessons = await db.query<LessonRow>(
       `SELECT * FROM lessons ORDER BY level ASC, id ASC`
     );
 
     // Parse prerequisites for each lesson
     const lessonsWithPrereqs = allLessons.map((lesson) => ({
       ...lesson,
-      prerequisites: JSON.parse((lesson.prerequisites as string) || '[]'),
+      prerequisites: JSON.parse(lesson.prerequisites || '[]') as string[],
     }));
 
     // Get completed lesson IDs
@@ -57,8 +51,7 @@ learningRoutes.get('/next', async (c) => {
     const pathOrder: string[] = ['literacy', 'grammar', 'vocabulary', 'tajweed'];
     const nextLesson = availableLessons.find(
       (lesson) =>
-        pathOrder.includes(lesson.module as string) &&
-        !completedIds.includes(lesson.id as string)
+        pathOrder.includes(lesson.module) && !completedIds.includes(lesson.id)
     );
 
     if (!nextLesson) {
@@ -79,8 +72,8 @@ learningRoutes.get('/next', async (c) => {
     return c.json({
       lesson: {
         ...nextLesson,
-        content: JSON.parse((nextLesson.content as string) || '[]'),
-        exercises: JSON.parse((nextLesson.exercises as string) || '[]'),
+        content: JSON.parse(nextLesson.content || '[]'),
+        exercises: JSON.parse(nextLesson.exercises || '[]'),
       },
       progress: progress
         ? {
@@ -101,7 +94,7 @@ learningRoutes.get('/next', async (c) => {
 
 // GET /api/learning/lessons — Get all lessons (or filtered by module/level)
 learningRoutes.get('/lessons', async (c) => {
-  const db = getDB(c);
+  const db = getDb(c);
   const { module: mod, level } = c.req.query();
 
   try {
@@ -135,9 +128,9 @@ learningRoutes.get('/lessons', async (c) => {
 
 // GET /api/learning/lessons/:id — Get single lesson with progress
 learningRoutes.get('/lessons/:id', async (c) => {
-  const { id: userId } = getCurrentUser();
+  const userId = c.get('userId');
   const lessonId = c.req.param('id');
-  const db = getDB(c);
+  const db = getDb(c);
 
   try {
     const lesson = await db.get<Record<string, unknown>>(
@@ -178,9 +171,9 @@ learningRoutes.get('/lessons/:id', async (c) => {
 
 // POST /api/learning/lessons/:id/submit — Submit exercise answers
 learningRoutes.post('/lessons/:id/submit', async (c) => {
-  const { id: userId } = getCurrentUser();
+  const userId = c.get('userId');
   const lessonId = c.req.param('id');
-  const db = getDB(c);
+  const db = getDb(c);
   const { answers, score, exerciseIndex } = await c.req.json();
 
   try {
@@ -279,8 +272,8 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
 
 // GET /api/learning/flashcards — Get vocabulary flashcards for review
 learningRoutes.get('/flashcards', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     const dueCards = await db.query<Record<string, unknown>>(
@@ -309,8 +302,8 @@ learningRoutes.get('/flashcards', async (c) => {
 
 // POST /api/learning/flashcards/review — Submit flashcard review
 learningRoutes.post('/flashcards/review', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
   const { word, quality } = await c.req.json();
 
   try {

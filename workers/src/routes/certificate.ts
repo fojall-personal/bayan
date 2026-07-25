@@ -1,21 +1,14 @@
 import { Hono } from 'hono';
-import { Database } from '../lib/db';
-import { getCurrentUser } from '../index';
+import type { AppEnv } from '../lib/context';
+import { getDb } from '../lib/db';
+import type { Database } from '../lib/db';
 
-function getDB(c: any) {
-  const raw = c.env.DB;
-  if (raw && typeof raw.prepare === 'function') {
-    return new Database(raw);
-  }
-  return raw;
-}
-
-export const certificateRoutes = new Hono<{ Bindings: { DB: Database } }>();
+export const certificateRoutes = new Hono<AppEnv>();
 
 // GET /api/certificate/export — Generate memorization certificate data
 certificateRoutes.get('/export', async (c) => {
-  const { id: userId } = getCurrentUser();
-  const db = getDB(c);
+  const userId = c.get('userId');
+  const db = getDb(c);
 
   try {
     // Get user info

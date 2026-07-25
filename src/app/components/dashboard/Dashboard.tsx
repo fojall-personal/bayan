@@ -9,6 +9,7 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Onboarding } from '@/components/onboarding/Onboarding';
 import { BookOpen, BookMarked, TestTube, Flame } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 interface DashboardData {
   user: {
@@ -59,15 +60,8 @@ export function Dashboard() {
   const fetchDashboard = async () => {
     setLoading(true);
     try {
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
-      const res = await fetch('/api/progress/dashboard', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        setData(json.data);
-      }
+      const json = await apiFetch<{ data: DashboardData }>('/api/progress/dashboard');
+      setData(json.data);
     } catch (error) {
       console.error('Dashboard fetch error:', error);
     } finally {
