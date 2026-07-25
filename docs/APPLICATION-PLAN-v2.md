@@ -3,6 +3,7 @@
 **Date:** 2026-07-25
 **Supersedes:** the roadmap and feature sections of `PLAN.md` (kept for history)
 **Companion:** `docs/CODE-AUDIT-2026-07-25.md` — verified current state
+**Blocked work:** `docs/HANDOFF-LOCAL-SESSION.md` — steps a cloud session cannot do
 **Audience:** decided 2026-07-25 — a small group of close friends, non-commercial (§4)
 **Budget:** decided 2026-07-25 — $0/month, treated as a hard constraint (§5)
 
