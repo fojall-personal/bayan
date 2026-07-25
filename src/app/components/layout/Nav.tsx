@@ -14,11 +14,11 @@ export function Nav() {
   ];
 
   return (
-    <nav className="bg-gray-900 border-b border-gray-800">
+    <nav className="bg-gray-950/80 backdrop-blur border-b border-gray-800/60 fixed top-0 left-0 right-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold text-primary-500">
+            <Link href="/" className="text-xl font-semibold text-primary-500 font-arabic tracking-tight">
               Language Builder
             </Link>
           </div>

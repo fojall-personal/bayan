@@ -146,36 +146,7 @@ export default function GoalSelection() {
       {/* Geometric star texture */}
       <StarPattern />
 
-      {/* Nav — reuse existing Nav component is fine, but this is a standalone
-          onboarding page. Keep nav minimal to match the variant's quiet tone. */}
-      <nav className="relative z-10 flex items-center justify-between px-12 py-5 border-b border-gray-800">
-        <Link
-          href="/"
-          className="text-[1.15rem] font-semibold text-primary-500 font-arabic tracking-tight"
-        >
-          Language Builder
-        </Link>
-        <ul className="hidden md:flex items-center gap-8 list-none">
-          {[
-            { href: '/assessment', label: 'Assessment' },
-            { href: '/learning', label: 'Learning' },
-            { href: '/memorization', label: 'Memorization' },
-            { href: '/progress', label: 'Progress' },
-          ].map((link) => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                className="text-sm text-gray-500 hover:text-gray-300 transition-colors uppercase tracking-wide font-medium"
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      {/* Main content — centered editorial column */}
-      <main className="relative z-10 mx-auto max-w-[640px] px-6 py-20 sm:px-8 sm:py-28">
+      <main className="relative z-10 mx-auto max-w-[640px] px-6 py-20 sm:px-8 sm:py-28 pt-28">
         <StepIndicator />
 
         {/* Bismillah verse — gold Amiri */}
