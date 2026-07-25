@@ -27,19 +27,24 @@ assessmentRoutes.post('/submit', async (c) => {
     await c.req.json();
 
   try {
+    // Scores arrive from the client, so clamp them. Previously any number was
+    // stored verbatim, including negatives and values over 100.
+    const clamp = (v: unknown) =>
+      Math.max(0, Math.min(100, Number.isFinite(Number(v)) ? Number(v) : 0));
+
     const scores = {
-      literacy: literacy_score || 0,
-      comprehension: comprehension_score || 0,
-      grammar: grammar_score || 0,
-      memorization: memorization_score || 0,
+      literacy: clamp(literacy_score),
+      comprehension: clamp(comprehension_score),
+      grammar: clamp(grammar_score),
+      memorization: clamp(memorization_score),
     };
 
     const result = generateAssessmentResult(scores, userId);
 
     // Save to database
     await db.run(
-      `INSERT INTO assessment_results (id, user_id, completed_at, literacy_score, comprehension_score, grammar_score, memorization_score, level, details)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO assessment_results (id, user_id, completed_at, literacy_score, comprehension_score, grammar_score, memorization_score, level, path, details)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         result.id,
         userId,
@@ -49,6 +54,7 @@ assessmentRoutes.post('/submit', async (c) => {
         result.grammar_score,
         result.memorization_score,
         result.level,
+        result.path,
         JSON.stringify(result.details),
       ]
     );
@@ -59,15 +65,22 @@ assessmentRoutes.post('/submit', async (c) => {
       [result.path, userId]
     );
 
+    // Return the full stored row. The old response was a summary that the
+    // results screen then tried to read as a full row, producing NaN% for the
+    // composite and "Invalid Date" for the timestamp.
     return c.json({
       data: {
         id: result.id,
+        user_id: userId,
+        completed_at: result.completed_at,
+        literacy_score: result.literacy_score,
+        comprehension_score: result.comprehension_score,
+        grammar_score: result.grammar_score,
+        memorization_score: result.memorization_score,
         level: result.level,
         path: result.path,
         composite_score: result.composite_score,
-        weakest_area: result.details.weakest_area,
-        strongest_area: result.details.strongest_area,
-        path_description: result.details.paths[result.path].description,
+        details: result.details,
       },
     });
   } catch (error) {

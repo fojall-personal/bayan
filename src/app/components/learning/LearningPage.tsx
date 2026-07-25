@@ -56,7 +56,7 @@ export function LearningPage({ userId }: LearningPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<Record<number, string | number>>({});
   const [result, setResult] = useState<{ score: number; correct: number; total: number; completed: boolean } | null>(null);
 
   useEffect(() => {
@@ -83,23 +83,26 @@ export function LearningPage({ userId }: LearningPageProps) {
     }
   };
 
-  const handleAnswer = (exerciseIndex: number, answer: string) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [exerciseIndex]: answer,
-    }));
+  const handleAnswer = (exerciseIndex: number, answer: string | number) => {
+    setAnswers((prev) => ({ ...prev, [exerciseIndex]: answer }));
   };
+
+  const gradable = (lesson?.exercises ?? []).filter((e) => e.type !== 'match');
+  const isLastExercise =
+    !!lesson && currentExerciseIndex >= lesson.exercises.length - 1;
 
   const handleSubmit = async () => {
     if (!lesson) return;
 
     try {
+      // Positional: answers[i] is the response to exercises[i]. This used to
+      // send [{index, answer}] objects, which the server compared against
+      // scalars — so every lesson scored 0% and none could ever complete.
+      const positional = lesson.exercises.map((_, i) => answers[i] ?? null);
+
       const data = await apiPost<{ data: typeof result }>(
         `/api/learning/lessons/${lesson.id}/submit`,
-        {
-          answers: Object.entries(answers).map(([k, v]) => ({ index: Number(k), answer: v })),
-          exerciseIndex: currentExerciseIndex,
-        }
+        { answers: positional }
       );
       setResult(data.data);
     } catch (err) {
@@ -112,6 +115,7 @@ export function LearningPage({ userId }: LearningPageProps) {
     setLesson(null);
     setResult(null);
     setAnswers({});
+    setCurrentExerciseIndex(0);
     fetchNextLesson();
   };
 
@@ -156,8 +160,13 @@ export function LearningPage({ userId }: LearningPageProps) {
 
       {/* Progress Bar */}
       <ProgressBar
-        progress={((currentExerciseIndex + 1) / lesson.exercises.length) * 100}
-        label="Exercise Progress"
+        progress={
+          lesson.exercises.length
+            ? ((currentExerciseIndex + 1) / lesson.exercises.length) * 100
+            : 0
+        }
+        label={`Exercise ${currentExerciseIndex + 1} of ${lesson.exercises.length}`}
+        tone="leaf"
       />
 
       {/* Lesson Content */}
@@ -270,13 +279,11 @@ export function LearningPage({ userId }: LearningPageProps) {
                       (option, i) => (
                         <button
                           key={i}
-                          onClick={() =>
-                            handleAnswer(currentExerciseIndex, option)
-                          }
-                          className={`w-full p-4 text-left rounded-lg border transition-all ${
-                            answers[currentExerciseIndex] === option
+                          onClick={() => handleAnswer(currentExerciseIndex, i)}
+                          className={`w-full rounded-md border p-4 text-left transition-colors ${
+                            answers[currentExerciseIndex] === i
                               ? 'border-gold-500 bg-gold-500/10 text-gold-400'
-                              : 'border-gray-700 hover:border-gray-600'
+                              : 'border-ground-700 hover:border-ground-600 hover:bg-ground-800'
                           }`}
                         >
                           {option}
@@ -324,10 +331,37 @@ export function LearningPage({ userId }: LearningPageProps) {
                   </div>
                 )}
 
-              {/* Submit Button */}
-              <Button onClick={handleSubmit} disabled={!answers[currentExerciseIndex]}>
-                Check Answer
-              </Button>
+              {/* Advance through the exercises, then grade the lot. The
+                * index was previously never incremented, so only the first
+                * exercise was ever reachable. */}
+              <div className="flex items-center gap-3">
+                {isLastExercise ? (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={answers[currentExerciseIndex] === undefined}
+                  >
+                    Finish lesson
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => setCurrentExerciseIndex((i) => i + 1)}
+                    disabled={answers[currentExerciseIndex] === undefined}
+                  >
+                    Next exercise
+                  </Button>
+                )}
+                {currentExerciseIndex > 0 && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setCurrentExerciseIndex((i) => i - 1)}
+                  >
+                    Back
+                  </Button>
+                )}
+                <span className="ml-auto text-sm text-ground-400">
+                  {gradable.length} graded
+                </span>
+              </div>
             </div>
           )}
         </Card>

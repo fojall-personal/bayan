@@ -12,10 +12,22 @@
           "instruction": "Which letter is this?",
           "display": "ب",
           "options": [
-            {"text": "ب (ba)", "correct": true},
-            {"text": "ت (ta)", "correct": false},
-            {"text": "ث (tha)", "correct": false},
-            {"text": "ن (nun)", "correct": false}
+            {
+              "text": "ب (ba)",
+              "correct": true
+            },
+            {
+              "text": "ت (ta)",
+              "correct": false
+            },
+            {
+              "text": "ث (tha)",
+              "correct": false
+            },
+            {
+              "text": "ن (nun)",
+              "correct": false
+            }
           ]
         },
         {
@@ -24,10 +36,22 @@
           "instruction": "Which letter is this?",
           "display": "م",
           "options": [
-            {"text": "م (mim)", "correct": true},
-            {"text": "ن (nun)", "correct": false},
-            {"text": "ر (ra)", "correct": false},
-            {"text": "ل (lam)", "correct": false}
+            {
+              "text": "م (mim)",
+              "correct": true
+            },
+            {
+              "text": "ن (nun)",
+              "correct": false
+            },
+            {
+              "text": "ر (ra)",
+              "correct": false
+            },
+            {
+              "text": "ل (lam)",
+              "correct": false
+            }
           ]
         },
         {
@@ -35,10 +59,22 @@
           "type": "vowel_recognition",
           "instruction": "Select the correct diacritical marks for: ك _ ت _ ب",
           "options": [
-            {"text": "كِتَاب (book)", "correct": true},
-            {"text": "كَتَبَ (he wrote)", "correct": false},
-            {"text": "كُتُب (books)", "correct": false},
-            {"text": "كَتّاب (writers)", "correct": false}
+            {
+              "text": "كِتَاب (book)",
+              "correct": true
+            },
+            {
+              "text": "كَتَبَ (he wrote)",
+              "correct": false
+            },
+            {
+              "text": "كُتُب (books)",
+              "correct": false
+            },
+            {
+              "text": "كَتّاب (writers)",
+              "correct": false
+            }
           ]
         },
         {
@@ -46,10 +82,22 @@
           "type": "word_reading",
           "instruction": "Read this word: الْكِتَاب",
           "options": [
-            {"text": "al-kitāb (the book)", "correct": true},
-            {"text": "al-kataba (he wrote)", "correct": false},
-            {"text": "al-kutub (the books)", "correct": false},
-            {"text": "al-kattāb (the writer)", "correct": false}
+            {
+              "text": "al-kitāb (the book)",
+              "correct": true
+            },
+            {
+              "text": "al-kataba (he wrote)",
+              "correct": false
+            },
+            {
+              "text": "al-kutub (the books)",
+              "correct": false
+            },
+            {
+              "text": "al-kattāb (the writer)",
+              "correct": false
+            }
           ]
         },
         {
@@ -58,10 +106,22 @@
           "instruction": "Which letter is this?",
           "display": "س",
           "options": [
-            {"text": "س (sin)", "correct": true},
-            {"text": "ش (shin)", "correct": false},
-            {"text": "ص (sad)", "correct": false},
-            {"text": "ز (zay)", "correct": false}
+            {
+              "text": "س (sin)",
+              "correct": true
+            },
+            {
+              "text": "ش (shin)",
+              "correct": false
+            },
+            {
+              "text": "ص (sad)",
+              "correct": false
+            },
+            {
+              "text": "ز (zay)",
+              "correct": false
+            }
           ]
         }
       ]
@@ -79,10 +139,22 @@
           "ayah_range": "1-7",
           "instruction": "Read Al-Fatiha and answer: What does 'الرَّحْمَٰنِ الرَّحِيمِ' mean?",
           "options": [
-            {"text": "The Merciful, The Forgiving", "correct": true},
-            {"text": "The King, The Powerful", "correct": false},
-            {"text": "The Creator, The Sustainer", "correct": false},
-            {"text": "The Guide, The Protector", "correct": false}
+            {
+              "text": "The Entirely Merciful, the Especially Merciful",
+              "correct": true
+            },
+            {
+              "text": "The Merciful, The Forgiving",
+              "correct": false
+            },
+            {
+              "text": "The King, The Powerful",
+              "correct": false
+            },
+            {
+              "text": "The Creator, The Sustainer",
+              "correct": false
+            }
           ],
           "difficulty": 1
         },
@@ -93,10 +165,22 @@
           "ayah_range": "1-7",
           "instruction": "What does 'مَالِكِ يَوْمِ الدِّينِ' mean?",
           "options": [
-            {"text": "Master of the Day of Judgment", "correct": true},
-            {"text": "King of the Day of Prayer", "correct": false},
-            {"text": "Creator of the Day of Rest", "correct": false},
-            {"text": "Lord of the Day of Trial", "correct": false}
+            {
+              "text": "Master of the Day of Judgment",
+              "correct": true
+            },
+            {
+              "text": "King of the Day of Prayer",
+              "correct": false
+            },
+            {
+              "text": "Creator of the Day of Rest",
+              "correct": false
+            },
+            {
+              "text": "Lord of the Day of Trial",
+              "correct": false
+            }
           ],
           "difficulty": 1
         },
@@ -107,10 +191,22 @@
           "ayah_range": "1-5",
           "instruction": "What does the Quran say about the Muttaqeen (God-conscious)?",
           "options": [
-            {"text": "They are the successful ones", "correct": true},
-            {"text": "They are the wealthy ones", "correct": false},
-            {"text": "They are the powerful ones", "correct": false},
-            {"text": "They are the learned ones", "correct": false}
+            {
+              "text": "They are the successful ones",
+              "correct": true
+            },
+            {
+              "text": "They are the wealthy ones",
+              "correct": false
+            },
+            {
+              "text": "They are the powerful ones",
+              "correct": false
+            },
+            {
+              "text": "They are the learned ones",
+              "correct": false
+            }
           ],
           "difficulty": 2
         },
@@ -119,10 +215,22 @@
           "type": "vocabulary_in_context",
           "instruction": "In the verse 'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ', what does نَعْبُدُ mean?",
           "options": [
-            {"text": "We worship", "correct": true},
-            {"text": "We ask for help", "correct": false},
-            {"text": "We guide", "correct": false},
-            {"text": "We thank", "correct": false}
+            {
+              "text": "We worship",
+              "correct": true
+            },
+            {
+              "text": "We ask for help",
+              "correct": false
+            },
+            {
+              "text": "We guide",
+              "correct": false
+            },
+            {
+              "text": "We thank",
+              "correct": false
+            }
           ],
           "difficulty": 1
         },
@@ -133,10 +241,22 @@
           "ayah_range": "1-4",
           "instruction": "What is the main message of Surah Al-Ikhlas?",
           "options": [
-            {"text": "The Oneness of God", "correct": true},
-            {"text": "The Creation of the World", "correct": false},
-            {"text": "The Day of Judgment", "correct": false},
-            {"text": "The Prophets' Stories", "correct": false}
+            {
+              "text": "The Oneness of God",
+              "correct": true
+            },
+            {
+              "text": "The Creation of the World",
+              "correct": false
+            },
+            {
+              "text": "The Day of Judgment",
+              "correct": false
+            },
+            {
+              "text": "The Prophets' Stories",
+              "correct": false
+            }
           ],
           "difficulty": 1
         }
@@ -153,10 +273,22 @@
           "type": "identification",
           "instruction": "Identify the type of noun: كِتَاب",
           "options": [
-            {"text": "Definite noun (مَعْرِفَة)", "correct": false},
-            {"text": "Indefinite noun (نَكِرَة)", "correct": true},
-            {"text": "Proper noun (عَلَم)", "correct": false},
-            {"text": "Pronoun (ضَمِير)", "correct": false}
+            {
+              "text": "Definite noun (مَعْرِفَة)",
+              "correct": false
+            },
+            {
+              "text": "Indefinite noun (نَكِرَة)",
+              "correct": true
+            },
+            {
+              "text": "Proper noun (عَلَم)",
+              "correct": false
+            },
+            {
+              "text": "Pronoun (ضَمِير)",
+              "correct": false
+            }
           ],
           "explanation": "كِتَاب without ال is indefinite (نَكِرَة)."
         },
@@ -165,10 +297,22 @@
           "type": "pattern_recognition",
           "instruction": "What verb pattern is كَتَبَ?",
           "options": [
-            {"text": "فَعَلَ (Form I, past tense)", "correct": true},
-            {"text": "فَاعَلَ (Form II, past tense)", "correct": false},
-            {"text": "فَعِّلَ (Form III, past tense)", "correct": false},
-            {"text": "أَفْعَلَ (Form IV, past tense)", "correct": false}
+            {
+              "text": "فَعَلَ (Form I, past tense)",
+              "correct": true
+            },
+            {
+              "text": "فَاعَلَ (Form II, past tense)",
+              "correct": false
+            },
+            {
+              "text": "فَعِّلَ (Form III, past tense)",
+              "correct": false
+            },
+            {
+              "text": "أَفْعَلَ (Form IV, past tense)",
+              "correct": false
+            }
           ]
         },
         {
@@ -176,10 +320,22 @@
           "type": "identification",
           "instruction": "In the sentence 'الْكِتَابُ مَفْتُوحٌ', what is the grammatical role of الْمَفْتُوحُ؟",
           "options": [
-            {"text": "مبتدأ (subject)", "correct": false},
-            {"text": "خبر (predicate)", "correct": true},
-            {"text": "فاعل (doer)", "correct": false},
-            {"text": "مفعول به (object)", "correct": false}
+            {
+              "text": "مبتدأ (subject)",
+              "correct": false
+            },
+            {
+              "text": "خبر (predicate)",
+              "correct": true
+            },
+            {
+              "text": "فاعل (doer)",
+              "correct": false
+            },
+            {
+              "text": "مفعول به (object)",
+              "correct": false
+            }
           ]
         },
         {
@@ -187,9 +343,18 @@
           "type": "case_ending",
           "instruction": "What is the case ending of the subject in 'جَاءَ الْرَّجُلُ'?",
           "options": [
-            {"text": "ـُ (damma — nominative)", "correct": true},
-            {"text": "ـَ (fatha — accusative)", "correct": false},
-            {"text": "ـِ (kasra — genitive)", "correct": false}
+            {
+              "text": "ـُ (damma — nominative)",
+              "correct": true
+            },
+            {
+              "text": "ـَ (fatha — accusative)",
+              "correct": false
+            },
+            {
+              "text": "ـِ (kasra — genitive)",
+              "correct": false
+            }
           ]
         },
         {
@@ -197,10 +362,22 @@
           "type": "pattern_recognition",
           "instruction": "Which of these is a sun letter?",
           "options": [
-            {"text": "ت", "correct": true},
-            {"text": "ب", "correct": false},
-            {"text": "ج", "correct": false},
-            {"text": "ح", "correct": false}
+            {
+              "text": "ت",
+              "correct": true
+            },
+            {
+              "text": "ب",
+              "correct": false
+            },
+            {
+              "text": "ج",
+              "correct": false
+            },
+            {
+              "text": "ح",
+              "correct": false
+            }
           ]
         }
       ]
@@ -216,10 +393,22 @@
           "type": "next_ayah",
           "instruction": "What is the next ayah after: بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
           "options": [
-            {"text": "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ", "correct": true},
-            {"text": "الرَّحْمَٰنِ الرَّحِيمِ", "correct": false},
-            {"text": "مَالِكِ يَوْمِ الدِّينِ", "correct": false},
-            {"text": "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ", "correct": false}
+            {
+              "text": "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ",
+              "correct": true
+            },
+            {
+              "text": "الرَّحْمَٰنِ الرَّحِيمِ",
+              "correct": false
+            },
+            {
+              "text": "مَالِكِ يَوْمِ الدِّينِ",
+              "correct": false
+            },
+            {
+              "text": "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ",
+              "correct": false
+            }
           ],
           "surah": 1,
           "ayah": 2
@@ -229,10 +418,22 @@
           "type": "complete_verse",
           "instruction": "Complete: الْحَمْدُ لِلَّهِ رَبِّ ___",
           "options": [
-            {"text": "الْعَالَمِينَ", "correct": true},
-            {"text": "الْرَّحِيمِ", "correct": false},
-            {"text": "الدِّينِ", "correct": false},
-            {"text": "الْعَظِيمِ", "correct": false}
+            {
+              "text": "الْعَالَمِينَ",
+              "correct": true
+            },
+            {
+              "text": "الْرَّحِيمِ",
+              "correct": false
+            },
+            {
+              "text": "الدِّينِ",
+              "correct": false
+            },
+            {
+              "text": "الْعَظِيمِ",
+              "correct": false
+            }
           ],
           "surah": 1,
           "ayah": 2
@@ -242,10 +443,22 @@
           "type": "next_ayah",
           "instruction": "What is the last ayah of Surah Al-Ikhlas?",
           "options": [
-            {"text": "وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ", "correct": true},
-            {"text": "اللَّهُ الصَّمَدُ", "correct": false},
-            {"text": "لَمْ يَلِدْ وَلَمْ يُولَدْ", "correct": false},
-            {"text": "قُلْ هُوَ اللَّهُ أَحَدٌ", "correct": false}
+            {
+              "text": "وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ",
+              "correct": true
+            },
+            {
+              "text": "اللَّهُ الصَّمَدُ",
+              "correct": false
+            },
+            {
+              "text": "لَمْ يَلِدْ وَلَمْ يُولَدْ",
+              "correct": false
+            },
+            {
+              "text": "قُلْ هُوَ اللَّهُ أَحَدٌ",
+              "correct": false
+            }
           ],
           "surah": 112,
           "ayah": 4

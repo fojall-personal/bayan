@@ -4,6 +4,57 @@ import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 import type { LessonRow } from '../types';
 
+interface Exercise {
+  type: 'multiple_choice' | 'fill_blank' | 'match' | string;
+  question?: string;
+  options?: string[];
+  correct?: string | number;
+  pairs?: Array<{ item: string; answer: string }>;
+}
+
+/**
+ * Strip Arabic diacritics and tatweel, and normalise alef variants, so a
+ * fill-in-the-blank answer is not marked wrong for a missing harakah. Requiring
+ * byte-exact vowelled input would fail almost every learner typing on a plain
+ * keyboard.
+ */
+function normalizeArabic(input: string): string {
+  return input
+    .normalize('NFC')
+    .replace(/[\u064B-\u0652\u0670\u06D6-\u06ED\u0640]/g, '')
+    .replace(/[\u0622\u0623\u0625]/g, '\u0627')
+    .replace(/\u0649/g, '\u064A')
+    .replace(/\u0629/g, '\u0647')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isAnswerCorrect(exercise: Exercise, given: unknown): boolean {
+  if (exercise.correct === undefined || exercise.correct === null) return false;
+
+  if (exercise.type === 'multiple_choice') {
+    // Content stores the option index. Accept the option text too, so a client
+    // that sends the label still grades correctly.
+    if (typeof given === 'number') return given === Number(exercise.correct);
+    if (typeof given === 'string') {
+      if (/^\d+$/.test(given)) return Number(given) === Number(exercise.correct);
+      const idx = exercise.options?.indexOf(given) ?? -1;
+      return idx >= 0 && idx === Number(exercise.correct);
+    }
+    return false;
+  }
+
+  if (exercise.type === 'fill_blank') {
+    if (typeof given !== 'string') return false;
+    return (
+      normalizeArabic(given).toLowerCase() ===
+      normalizeArabic(String(exercise.correct)).toLowerCase()
+    );
+  }
+
+  return false;
+}
+
 export const learningRoutes = new Hono<AppEnv>();
 
 // GET /api/learning/next — Get next available lesson based on learning path
@@ -192,30 +243,35 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
       return c.json({ error: 'Lesson not found' }, 404);
     }
 
-    const exercises = JSON.parse((lesson.exercises as string) || '[]');
-    const totalExercises = exercises.length;
+    const exercises: Exercise[] = JSON.parse((lesson.exercises as string) || '[]');
 
-    // Calculate correct count from answers
+    // The contract: `answers` is positional — answers[i] is the response to
+    // exercises[i]. Multiple choice sends the selected option's INDEX, matching
+    // how the seeded content stores `correct`; fill-in-the-blank sends the text.
+    //
+    // Previously the client sent [{index, answer}] objects while this compared
+    // them to scalars, so every comparison was false, every lesson scored 0%,
+    // and nothing could ever reach the 70% completion threshold.
+    const responses: unknown[] = Array.isArray(answers) ? answers : [];
+
     let correctCount = 0;
-    if (Array.isArray(answers)) {
-      for (let i = 0; i < answers.length; i++) {
-        const exercise = exercises[i];
-        if (!exercise) continue;
+    let gradedCount = 0;
 
-        let isCorrect = false;
-        if (exercise.type === 'multiple_choice') {
-          isCorrect = answers[i] === exercise.correct;
-        } else if (exercise.type === 'fill_blank') {
-          isCorrect = answers[i]?.toLowerCase() === exercise.correct?.toLowerCase();
-        } else if (exercise.type === 'match') {
-          // For match exercises, check if pairs are correct
-          isCorrect = true; // Simplified — full match logic would compare pairs
-        }
+    for (let i = 0; i < exercises.length; i++) {
+      const exercise = exercises[i];
+      const given = responses[i];
+      if (!exercise || given === undefined || given === null || given === '') continue;
 
-        if (isCorrect) correctCount++;
-      }
+      // `match` has no grading implementation, so it is excluded from the
+      // denominator rather than silently counted correct — which is what the
+      // old `isCorrect = true` did, inflating every score containing one.
+      if (exercise.type === 'match') continue;
+
+      gradedCount++;
+      if (isAnswerCorrect(exercise, given)) correctCount++;
     }
 
+    const totalExercises = gradedCount;
     const finalScore = totalExercises > 0 ? Math.round((correctCount / totalExercises) * 100) : 0;
     const isCompleted = finalScore >= 70;
 
@@ -226,8 +282,11 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
        VALUES (?, ?, ?, ?, ?, 1, datetime('now'), datetime('now', '+1 day'),
          CASE WHEN ? = 1 THEN 1 ELSE 0 END)
        ON CONFLICT(user_id, lesson_id) DO UPDATE SET
-         completed = ?,
-         score = ?,
+         -- Completion is sticky and the score is a personal best. A failed
+         -- retry previously overwrote both, so revisiting a passed lesson and
+         -- slipping once un-completed it and wiped the score.
+         completed = MAX(completed, ?),
+         score = MAX(score, ?),
          attempts = attempts + 1,
          last_practiced = datetime('now'),
          next_review = datetime('now', '+1 day'),

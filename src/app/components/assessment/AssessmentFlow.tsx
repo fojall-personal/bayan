@@ -71,12 +71,16 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
           id: 'comp-01',
           type: 'multiple-choice',
           text: "What does 'الرَّحْمَٰنِ الرَّحِيمِ' mean?",
+          // Was keyed to "The Merciful, The Forgiving" — الرحيم is "the
+          // Merciful"; "the Forgiving" is الغفور. The correct gloss was not
+          // even among the options.
           options: [
+            'The Entirely Merciful, the Especially Merciful',
             'The Merciful, The Forgiving',
             'The King, The Powerful',
             'The Creator, The Sustainer',
           ],
-          correctAnswer: 'The Merciful, The Forgiving',
+          correctAnswer: 'The Entirely Merciful, the Especially Merciful',
         },
         {
           id: 'comp-02',
@@ -108,7 +112,10 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
           id: 'gram-02',
           type: 'multiple-choice',
           text: 'What verb form is كَتَبَ?',
-          options: ['Form I (فَعَلَ)', 'Form II (فَاعَلَ)', 'Form III (فَعِّلَ)'],
+          // The distractors had Form II and Form III patterns swapped, and
+          // Form II was malformed: Form II is فَعَّلَ (shadda on the middle
+          // radical), Form III is فَاعَلَ (long vowel after the first).
+          options: ['Form I (فَعَلَ)', 'Form II (فَعَّلَ)', 'Form III (فَاعَلَ)'],
           correctAnswer: 'Form I (فَعَلَ)',
         },
       ],

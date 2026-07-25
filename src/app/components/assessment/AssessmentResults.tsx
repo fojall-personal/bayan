@@ -15,6 +15,9 @@ interface AssessmentResult {
   grammar_score: number;
   memorization_score: number;
   level: 'beginner' | 'intermediate' | 'advanced';
+  /** The path assignLearningPath() actually assigned, as stored. */
+  path?: string;
+  composite_score?: number;
   details: {
     weakest_area: string;
     strongest_area: string;
@@ -30,14 +33,20 @@ interface AssessmentResult {
 }
 
 export function AssessmentResults({ result }: { result: AssessmentResult }) {
-  const compositeScore = Math.round(
-    (result.literacy_score * 0.20 +
-      result.comprehension_score * 0.30 +
-      result.grammar_score * 0.25 +
-      result.memorization_score * 0.25)
-  );
+  // Prefer the server's composite; recompute only as a fallback.
+  const compositeScore =
+    result.composite_score ??
+    Math.round(
+      result.literacy_score * 0.2 +
+        result.comprehension_score * 0.3 +
+        result.grammar_score * 0.25 +
+        result.memorization_score * 0.25
+    );
 
-  const path = result.details?.paths?.[result.level === 'advanced' ? 'path3' : result.level === 'intermediate' ? 'path2' : 'path1'];
+  // Read the assigned path. This used to re-derive one from `level`
+  // (advanced->path3, intermediate->path2, else path1) using different logic
+  // than the server's, so the path shown could contradict the path assigned.
+  const path = result.path ? result.details?.paths?.[result.path] : undefined;
 
   return (
     <div className="page-transition max-w-4xl mx-auto space-y-6">

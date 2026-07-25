@@ -206,8 +206,8 @@ function generateTutorResponse(message: string, context: any): string {
     return `Great question about Madd! Since you're working on ${context.weakAreas.includes('grammar') ? 'grammar' : 'memorization'}, let me explain this in context.\n\nThere are three main types:\n1. **Madd Tabi'i** — 2 counts, like قَالَ\n2. **Madd Wajib** — 4-5 counts, like السَّآمَّة\n3. **Madd Lazim** — 6 counts, like الْحَآئِرِينَ\n\nWould you like practice exercises on Madd?`;
   }
 
-  if (msg.includes('grammar') || msg.includes('nahw') || msg.includes('سرف')) {
-    return `Let's focus on grammar! Based on your recent attempts, you're doing well with basic nouns but could use more verb conjugation practice.\n\nTry this: هُوَ ___ الكِتَابَ\nOptions: أَكَلَ / كَتَبَ / قَرَأَ / ذَهَبَ\n\nThe answer is كَتَبَ (he wrote). You may be confusing verb patterns between Form I (فَعَلَ) and Form II (فَاعَلَ).`;
+  if (msg.includes('grammar') || msg.includes('nahw') || msg.includes('صرف') || msg.includes('نحو')) {
+    return `Let's focus on grammar! Based on your recent attempts, you're doing well with basic nouns but could use more verb conjugation practice.\n\nTry this: هُوَ ___ الكِتَابَ\nOptions: أَكَلَ / كَتَبَ / قَرَأَ / ذَهَبَ\n\nThe answer is كَتَبَ (he wrote). You may be confusing verb patterns between Form I (فَعَلَ) and Form II (فَعَّلَ).`;
   }
 
   if (msg.includes('memoriz') || msg.includes('hifz') || msg.includes('حفظ')) {
@@ -232,8 +232,8 @@ function extractTopics(message: string): string[] {
   if (msg.includes('grammar') || msg.includes('nahw') || msg.includes('نحو')) topics.push('grammar');
   if (msg.includes('memoriz') || msg.includes('hifz') || msg.includes('حفظ')) topics.push('memorization');
   if (msg.includes('tajweed') || msg.includes('تجويد')) topics.push('tajweed');
-  if (msg.includes('conjugat') || msg.includes('سرف')) topics.push('conjugation');
-  if (msg.includes('balagha') || msg.includes('بلاغه')) topics.push('balagha');
+  if (msg.includes('conjugat') || msg.includes('صرف')) topics.push('conjugation');
+  if (msg.includes('balagha') || msg.includes('بلاغة')) topics.push('balagha');
 
   return topics.length > 0 ? topics : ['general'];
 }
