@@ -65,8 +65,8 @@ learningRoutes.get('/next', async (c) => {
 
     // Get current progress for this lesson
     const progress = await db.get<Record<string, unknown>>(
-      `SELECT * FROM lesson_progress WHERE lesson_id = ?`,
-      [nextLesson.id]
+      `SELECT * FROM lesson_progress WHERE user_id = ? AND lesson_id = ?`,
+      [userId, nextLesson.id]
     );
 
     return c.json({
@@ -98,17 +98,22 @@ learningRoutes.get('/lessons', async (c) => {
   const { module: mod, level } = c.req.query();
 
   try {
-    let sql = 'SELECT * FROM lessons';
+    const where: string[] = [];
     const params: unknown[] = [];
 
     if (mod) {
-      sql += ' WHERE module = ?';
+      where.push('module = ?');
       params.push(mod);
     }
     if (level) {
-      sql += level ? ' AND level = ?' : '';
+      where.push('level = ?');
       params.push(level);
     }
+
+    const sql =
+      'SELECT * FROM lessons' +
+      (where.length ? ` WHERE ${where.join(' AND ')}` : '') +
+      ' ORDER BY level ASC, id ASC';
 
     const lessons = await db.query<Record<string, unknown>>(sql, params);
 
@@ -143,8 +148,8 @@ learningRoutes.get('/lessons/:id', async (c) => {
     }
 
     const progress = await db.get<Record<string, unknown>>(
-      `SELECT * FROM lesson_progress WHERE lesson_id = ?`,
-      [lessonId]
+      `SELECT * FROM lesson_progress WHERE user_id = ? AND lesson_id = ?`,
+      [userId, lessonId]
     );
 
     return c.json({
@@ -216,25 +221,24 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
 
     // Upsert lesson progress
     await db.run(
-      `INSERT INTO lesson_progress (lesson_id, module, completed, score, attempts, last_practiced, next_review, streak)
-       VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now', '+1 day'),
-         CASE WHEN ? = 1 THEN
-           (SELECT COALESCE(streak, 0) FROM lesson_progress WHERE lesson_id = ?) + 1
-         ELSE 1 END)
-       ON CONFLICT(lesson_id) DO UPDATE SET
+      `INSERT INTO lesson_progress
+         (user_id, lesson_id, module, completed, score, attempts, last_practiced, next_review, streak)
+       VALUES (?, ?, ?, ?, ?, 1, datetime('now'), datetime('now', '+1 day'),
+         CASE WHEN ? = 1 THEN 1 ELSE 0 END)
+       ON CONFLICT(user_id, lesson_id) DO UPDATE SET
          completed = ?,
          score = ?,
          attempts = attempts + 1,
          last_practiced = datetime('now'),
          next_review = datetime('now', '+1 day'),
-         streak = CASE WHEN ? = 1 THEN streak + 1 ELSE 1 END`,
+         streak = CASE WHEN ? = 1 THEN streak + 1 ELSE 0 END`,
       [
+        userId,
         lessonId,
         lesson.module,
         isCompleted ? 1 : 0,
         finalScore,
         isCompleted ? 1 : 0,
-        lessonId,
         isCompleted ? 1 : 0,
         finalScore,
         isCompleted ? 1 : 0,

@@ -20,6 +20,9 @@ ALLOWED_ORIGINS = "https://languagebuilder-frontend.pages.dev,http://localhost:3
 binding = "DB"
 database_name = "languagebuilder"
 database_id = "6216c466-c244-4c16-8569-c7281585fbc6"
+# Applied in order with `wrangler d1 migrations apply languagebuilder`.
+# 0001 is an idempotent baseline, so it is a no-op on the existing database.
+migrations_dir = "src/db/migrations"
 
 [[r2_buckets]]
 bucket_name = "languagebuilder-assets"

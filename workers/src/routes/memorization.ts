@@ -217,8 +217,8 @@ memorizationRoutes.get('/review/today', async (c) => {
   try {
     const due = await db.query<Record<string, unknown>>(
       `SELECT m.*,
-              q.verse_text as ayah_text,
-              q.verse_simple as verse_simple
+              q.text_uthmani AS ayah_text,
+              q.text_simple  AS text_simple
        FROM memorization m
        LEFT JOIN quran_verses q ON m.surah_id = q.surah AND m.ayah_to = q.ayah
        WHERE m.user_id = ? AND m.next_review <= datetime('now')

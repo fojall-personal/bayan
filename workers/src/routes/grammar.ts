@@ -89,8 +89,8 @@ grammarRoutes.post('/exercise', async (c) => {
   try {
     await db.run(
       `INSERT INTO grammar_exercises (id, user_id, exercise_id, answer, correct, answered_at)
-       VALUES (randomblob(16), ?, ?, ?, ?, datetime('now'))`,
-      [userId, exerciseId, answer, correct ? 1 : 0]
+       VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+      [crypto.randomUUID(), userId, exerciseId, answer, correct ? 1 : 0]
     );
 
     // Update mastery

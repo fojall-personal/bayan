@@ -20,7 +20,7 @@ tutorRoutes.post('/chat', async (c) => {
           [userId]
         ),
         db.get<Record<string, unknown>>(
-          `SELECT * FROM assessment_results ORDER BY completed_at DESC LIMIT 1`,
+          `SELECT * FROM assessment_results WHERE user_id = ? ORDER BY completed_at DESC LIMIT 1`,
           [userId]
         ),
         db.query<Record<string, unknown>>(
@@ -72,8 +72,8 @@ tutorRoutes.post('/chat', async (c) => {
     // Save conversation
     await db.run(
       `INSERT INTO tutor_conversations (id, user_id, user_message, assistant_message, created_at)
-       VALUES (randomblob(16), ?, ?, ?, datetime('now'))`,
-      [userId, message, response]
+       VALUES (?, ?, ?, ?, datetime('now'))`,
+      [crypto.randomUUID(), userId, message, response]
     );
 
     // Extract topics
@@ -81,8 +81,8 @@ tutorRoutes.post('/chat', async (c) => {
     for (const topic of topics) {
       await db.run(
         `INSERT OR IGNORE INTO tutor_topic_history (id, user_id, topic, discussed_at)
-         VALUES (randomblob(16), ?, ?, datetime('now'))`,
-        [userId, topic]
+         VALUES (?, ?, ?, datetime('now'))`,
+        [crypto.randomUUID(), userId, topic]
       );
     }
 
