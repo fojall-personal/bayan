@@ -3,13 +3,13 @@ import '@/styles/globals.css';
 import { Nav } from '@/components/layout/Nav';
 
 export const metadata: Metadata = {
-  title: 'Language Builder — Arabic Comprehension & Quran Learning',
+  title: 'Bayan — Classical Arabic & Quran Learning',
   description: 'Learn Classical Arabic, master Quran grammar, and track your memorization',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Language Builder',
+    title: 'Bayan',
   },
 };
 

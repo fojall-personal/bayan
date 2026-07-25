@@ -1,6 +1,6 @@
 {
-  "name": "Language Builder",
-  "short_name": "ArabicBuilder",
+  "name": "Bayan",
+  "short_name": "Bayan",
   "description": "Learn Classical Arabic, master Quran grammar, and track your memorization",
   "start_url": "/",
   "display": "standalone",
