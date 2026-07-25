@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { AppEnv } from './lib/context';
 import { SINGLE_USER_ID } from './lib/context';
+import { IdentityError, resolveUser, verifyAccessJwt } from './lib/identity';
 import { authRoutes } from './routes/auth';
 import { assessmentRoutes } from './routes/assessment';
 import { learningRoutes } from './routes/learning';
@@ -42,25 +43,73 @@ app.use('/api/*', (c, next) => {
   })(c, next);
 });
 
-// Auth — all /api/* routes require the shared bearer token.
+// Auth. Two modes, and the choice is made by configuration rather than by a
+// request header, so a caller cannot pick the weaker one.
+//
+//   Access mode  — ACCESS_TEAM_DOMAIN and ACCESS_AUD are set. Every request
+//                  carries a signed Access JWT; each person gets their own
+//                  user row. This is the mode production runs in (plan §4).
+//   Token mode   — neither is set. One shared bearer token resolves every
+//                  request to SINGLE_USER_ID. For local development only: the
+//                  token ships in the JS bundle, so with more than one real
+//                  user it would let any of them read any other's data.
 app.use('/api/*', async (c, next) => {
+  const teamDomain = c.env.ACCESS_TEAM_DOMAIN;
+  const aud = c.env.ACCESS_AUD;
+
+  if (teamDomain && aud) {
+    const assertion = c.req.header('cf-access-jwt-assertion');
+    if (!assertion) {
+      // Reaching the origin without an assertion means the request did not come
+      // through Access — either the application is misconfigured or something is
+      // bypassing it. Either way, refuse.
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    try {
+      const email = await verifyAccessJwt(assertion, teamDomain, aud);
+      const identity = await resolveUser(c, email);
+      c.set('userId', identity.userId);
+      c.set('userEmail', identity.email);
+    } catch (err) {
+      if (err instanceof IdentityError) {
+        console.error(err.message);
+        return c.json({ error: 'Unauthorized' }, 401);
+      }
+      console.error('Identity resolution failed:', err);
+      return c.json({ error: 'Internal server error' }, 500);
+    }
+
+    return next();
+  }
+
   const expected = c.env.API_TOKEN;
 
   // Fail closed. An unset token previously fell back to a literal published in
   // the README, which meant a misconfigured deploy was silently world-readable.
   if (!expected) {
-    console.error('API_TOKEN is not configured for this Worker');
+    console.error('Neither Access (ACCESS_TEAM_DOMAIN + ACCESS_AUD) nor API_TOKEN is configured');
     return c.json({ error: 'Server misconfigured' }, 500);
   }
 
-  const auth = c.req.header('authorization');
-  if (auth !== `Bearer ${expected}`) {
+  if (c.req.header('authorization') !== `Bearer ${expected}`) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
   c.set('userId', SINGLE_USER_ID);
   await next();
 });
+
+// Who am I — useful for confirming Access is wired up correctly.
+app.get('/api/auth/whoami', (c) =>
+  c.json({
+    data: {
+      userId: c.get('userId'),
+      email: c.get('userEmail') ?? null,
+      mode: c.env.ACCESS_TEAM_DOMAIN && c.env.ACCESS_AUD ? 'access' : 'shared-token',
+    },
+  })
+);
 
 app.route('/api/auth', authRoutes);
 app.route('/api/assessment', assessmentRoutes);

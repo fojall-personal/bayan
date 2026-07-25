@@ -13,8 +13,20 @@ compatibility_date = "2026-07-01"
 # (500) when it is missing rather than falling back to a published default.
 
 [vars]
-# Origins permitted to call /api/*. Comma-separated. Add your custom domain here.
+# Origins permitted to call /api/*. Only relevant for the standalone Worker;
+# production is same-origin (see src/pages-entry.ts), so nothing needs CORS.
 ALLOWED_ORIGINS = "https://languagebuilder-frontend.pages.dev,http://localhost:3000"
+
+# Cloudflare Access identity. Set BOTH to switch from the shared bearer token to
+# per-user identity — the middleware chooses by configuration, not by request
+# header, so a caller cannot select the weaker mode. Set them on the *Pages*
+# project (Settings -> Environment variables), since that is what serves the API.
+#
+#   ACCESS_TEAM_DOMAIN = "<your-team>.cloudflareaccess.com"
+#   ACCESS_AUD         = "<the Access application's Audience tag>"
+#
+# The AUD tag matters: without it, a valid token for ANY Access application in
+# any account would be accepted.
 
 [[d1_databases]]
 binding = "DB"

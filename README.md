@@ -181,6 +181,42 @@ curl -H "Authorization: Bearer $API_TOKEN" \
 Then load the site and confirm a data-backed page renders rather than showing an
 error card.
 
+### Per-user identity (Cloudflare Access)
+
+The shared bearer token resolves every request to one user and ships in the JS
+bundle, so with more than one real person it lets any of them read any other's
+data. Cloudflare Access replaces it — free to 50 seats, no passwords, no sign-up
+flow. The Access policy *is* the invite list.
+
+One-time setup:
+
+1. Zero Trust dashboard → **Access → Applications → Add → Self-hosted**.
+2. Public hostname: `languagebuilder-frontend.pages.dev`. **Delete the `*` from
+   the Subdomain field** — leaving it protects only preview URLs. Add a second
+   application for `*.languagebuilder-frontend.pages.dev` so previews are covered
+   too, or they stay open.
+3. Policy: Action *Allow*, rule *Emails* → the addresses of your group. Pick an
+   identity provider; **One-time PIN** needs nothing from anyone but an inbox.
+4. Copy the application's **Audience (AUD)** tag.
+5. Pages project → Settings → Environment variables:
+   - `ACCESS_TEAM_DOMAIN` = `<your-team>.cloudflareaccess.com`
+   - `ACCESS_AUD` = the AUD tag from step 4
+6. Pages project → Settings → General → re-enable the access policy.
+
+Setting both variables switches the API to Access mode; the shared token stops
+working, which is the intended outcome. Confirm with:
+
+```bash
+curl -s https://languagebuilder-frontend.pages.dev/api/auth/whoami   # 401 outside a browser
+```
+
+then load the site in a browser, log in, and visit `/api/auth/whoami` — it should
+report `"mode":"access"` and your e-mail. Users are provisioned on first request,
+so nobody needs to be added to the database by hand.
+
+The AUD tag is not optional: without it a valid token for *any* Access
+application, in any Cloudflare account, would be accepted.
+
 ## 📊 Current status
 
 The module checkboxes that used to live here marked eleven modules complete while

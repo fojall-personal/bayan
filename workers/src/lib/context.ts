@@ -12,10 +12,20 @@ export type AppEnv = {
     API_TOKEN: string;
     /** Comma-separated list of origins allowed to call /api/*. */
     ALLOWED_ORIGINS?: string;
+    /**
+     * Cloudflare Access team domain, e.g. "fojall.cloudflareaccess.com".
+     * When set (together with ACCESS_AUD), Access identity replaces the shared
+     * bearer token and every request resolves to its own user.
+     */
+    ACCESS_TEAM_DOMAIN?: string;
+    /** The Access application's Audience (AUD) tag. */
+    ACCESS_AUD?: string;
     languagebuilder_assets?: R2Bucket;
   };
   Variables: {
     userId: string;
+    /** Present only under Access; absent under shared-token auth. */
+    userEmail?: string;
   };
 };
 
