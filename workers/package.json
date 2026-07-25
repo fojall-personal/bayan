@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "build:pages": "esbuild src/pages-entry.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=../src/app/out/_worker.js"
+    "build:pages": "esbuild src/pages-entry.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=../src/app/out/_worker.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "hono": "^4.5.0",
@@ -16,6 +18,7 @@
     "@cloudflare/workers-types": "^4.20240718.0",
     "esbuild": "^0.28.1",
     "typescript": "^5.4.0",
+    "vitest": "^4.1.10",
     "wrangler": "^3.60.0"
   }
 }

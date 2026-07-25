@@ -17,7 +17,7 @@ jobs:
   # 69 type errors accumulated unnoticed. Gate it here.
   typecheck-workers:
     runs-on: ubuntu-latest
-    name: Typecheck Workers
+    name: Typecheck & test Workers
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,6 +31,14 @@ jobs:
       - name: tsc --noEmit
         working-directory: workers
         run: npx tsc --noEmit
+
+      # 39 tests over grading, scoring, the SM-2 scheduler and the Quran ingest
+      # alignment gate. Every case corresponds to a bug that shipped or a
+      # behaviour previously checked only by hand. Adding them found a live one:
+      # the scheduler could not advance past a one-day interval at quality 3.
+      - name: Unit tests
+        working-directory: workers
+        run: npm test
 
   deploy:
     runs-on: ubuntu-latest

@@ -33,8 +33,12 @@ export function applySM2(entry: MemorizationEntry, quality: number): SM2Result {
     interval = 1;
     ease_factor = Math.max(1.3, ease_factor - 0.2);
   } else if (quality === 3) {
-    // OK recall — small interval increase
-    interval = Math.round(interval * 1.2);
+    // OK recall — small interval increase.
+    //
+    // Math.round(1 * 1.2) is 1, so this used to leave a one-day interval
+    // unchanged: a learner answering "OK" every time never advanced, and the
+    // item resurfaced daily forever. Guarantee at least a day of progress.
+    interval = Math.max(interval + 1, Math.round(interval * 1.2));
   } else if (quality === 4) {
     // Good recall — double interval
     interval = Math.round(interval * 2);

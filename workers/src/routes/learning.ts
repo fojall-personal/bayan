@@ -4,7 +4,7 @@ import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 import type { LessonRow } from '../types';
 
-interface Exercise {
+export interface Exercise {
   type: 'multiple_choice' | 'fill_blank' | 'match' | string;
   question?: string;
   options?: string[];
@@ -18,7 +18,7 @@ interface Exercise {
  * byte-exact vowelled input would fail almost every learner typing on a plain
  * keyboard.
  */
-function normalizeArabic(input: string): string {
+export function normalizeArabic(input: string): string {
   return input
     .normalize('NFC')
     .replace(/[\u064B-\u0652\u0670\u06D6-\u06ED\u0640]/g, '')
@@ -29,7 +29,7 @@ function normalizeArabic(input: string): string {
     .trim();
 }
 
-function isAnswerCorrect(exercise: Exercise, given: unknown): boolean {
+export function isAnswerCorrect(exercise: Exercise, given: unknown): boolean {
   if (exercise.correct === undefined || exercise.correct === null) return false;
 
   if (exercise.type === 'multiple_choice') {
