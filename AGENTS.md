@@ -4,7 +4,7 @@
 
 **Language Builder** is a web application for learning Classical Arabic with a focus on Quran comprehension, grammar (nahw, sarf, balagha), and memorization (hifz). The app integrates diagnostic assessment, adaptive learning paths, spaced repetition memorization, tajweed visualization, and AI tutoring.
 
-**Status:** MVP design complete (Phase 1 modules documented). Development phase.
+**Status:** All Phase 0, 1, and 2 modules built and deployed. Now working on Phase 3 advanced features.
 
 ---
 
@@ -28,12 +28,28 @@ languagebuilder/
 │   ├── 10-ux-design-specification.md
 │   ├── 11-component-library.md
 │   └── 12-page-ui-specifications.md
-├── src/                   # (Future) Source code
+├── src/                   # Source code
 │   ├── app/               # Next.js 14 app directory
-│   ├── components/        # React components
-│   ├── lib/               # Utilities, API clients, database
-│   └── types/             # TypeScript type definitions
-└── public/                # Static assets
+│   │   ├── app/           # App Router pages
+│   │   ├── components/    # React components
+│   │   ├── hooks/         # Custom hooks
+│   │   ├── styles/        # Global CSS, design system
+│   │   ├── tailwind.config.ts
+│   │   ├── next.config.js
+│   │   ├── package.json
+│   │   └── postcss.config.js
+│   └── ...                # Additional source files
+├── workers/               # Cloudflare Workers backend
+│   ├── src/
+│   │   ├── routes/        # API route handlers
+│   │   ├── lib/           # Auth, DB wrapper, scoring, Quran service
+│   │   └── db/            # Database schema
+│   └── wrangler.toml      # Workers config
+├── .github/workflows/     # CI/CD pipeline
+│   └── deploy.yml         # Auto-deploy to Cloudflare Pages
+├── content/               # Static content data
+├── scripts/               # Dev scripts
+└── modules/               # Design documentation per module
 ```
 
 ---
@@ -52,6 +68,7 @@ languagebuilder/
 | TTS | Cloudflare Workers AI or external API |
 | STT | Cloudflare Workers AI (Whisper) or Azure |
 | Quran Data | Quran.com API + Tanzil.net |
+| CI/CD | GitHub Actions → Cloudflare Pages |
 
 ---
 
@@ -74,30 +91,29 @@ See `modules/09-design-system.md` and `modules/10-ux-design-specification.md`.
 
 Modules are grouped into phases. Each phase must be completed before the next begins.
 
-#### Phase 0: Design Foundation (1 week)
-
+#### Phase 0: Design Foundation ✅ COMPLETE
 These modules are **buildable artifacts**, not documentation. They establish the visual and structural layer that every subsequent module builds on.
 
-1. **09-design-system** — Tailwind config, CSS custom properties, color tokens, typography, spacing, shadows, radius, motion, anti-slop checklist. Applied to `tailwind.config.ts` and global CSS.
-2. **11-component-library** — 15+ React components (`Card`, `Button`, `ProgressBar`, `Badge`, `Input`, `Select`, `StatCard`, `LessonCard`, `MemorizationEntry`, `QuizQuestion`, `AudioPlayer`, `EmptyState`, `AppShell`, `Sidebar`, `MobileNav`, `PageHeader`). Implemented in `src/components/`.
-3. **00-project-scaffolding** — Next.js app structure, routing, auth, shared types. Built on top of the design system and components.
+1. ✅ **09-design-system** — Tailwind config, CSS custom properties, color tokens, typography, spacing, shadows, radius, motion, anti-slop checklist. Applied to `tailwind.config.ts` and global CSS.
+2. ✅ **11-component-library** — 18+ React components (`Card`, `Button`, `ProgressBar`, `Badge`, `Input`, `Select`, `StatCard`, `LessonCard`, `MemorizationEntry`, `QuizQuestion`, `AudioPlayer`, `EmptyState`, `AppShell`, `Sidebar`, `MobileNav`, `PageHeader`). Implemented in `src/app/components/`.
+3. ✅ **00-project-scaffolding** — Next.js app structure, routing, auth, shared types. Built on top of the design system and components.
 
-#### Phase 1: MVP Feature Modules (8 weeks)
+#### Phase 1: MVP Feature Modules ✅ COMPLETE
 
 Each module is built on the completed design system and component library from Phase 0.
 
-1. **01-database-schema-and-data-layer** — D1 schema, seed data, API layer
-2. **02-assessment-engine** — Diagnostic test, scoring algorithm, path assignment
-3. **03-learning-engine** — Lessons, exercises, flashcards, grammar drills
-4. **04-memorization-tracker** — Spaced repetition, audio review, progress tracking
-5. **05-progress-dashboard-and-onboarding** — Dashboard, streaks, weekly goals, onboarding
+1. ✅ **01-database-schema-and-data-layer** — D1 schema, seed data, API layer
+2. ✅ **02-assessment-engine** — Diagnostic test, scoring algorithm, path assignment
+3. ✅ **03-learning-engine** — Lessons, exercises, flashcards, grammar drills
+4. ✅ **04-memorization-tracker** — Spaced repetition, audio review, progress tracking
+5. ✅ **05-progress-dashboard-and-onboarding** — Dashboard, streaks, weekly goals, onboarding
 
-#### Phase 2: Enhancement (8 weeks)
+#### Phase 2: Enhancement ✅ COMPLETE
 
-6. **06-tajweed-visualization** — Color-coded Quran, makharij diagrams, audio sync
-7. **07-grammar-deep-dive** — Sentence parser, conjugation, balagha, grammar checking
+6. ✅ **06-tajweed-visualization** — Color-coded Quran, makharij diagrams, audio sync
+7. ✅ **07-grammar-deep-dive** — Sentence parser, conjugation, balagha, grammar checking
 
-#### Phase 3: Advanced Features (6 weeks)
+#### Phase 3: Advanced Features (In Progress)
 
 8. **08-ai-tutor-and-advanced-features** — Chat interface, adaptive questions, certificate export
 
@@ -114,7 +130,7 @@ Each module is built on the completed design system and component library from P
 - Use React Server Components where possible (Next.js 14 App Router)
 
 ### API Design (Cloudflare Workers)
-- RESTful endpoints under `/api/v1/`
+- RESTful endpoints under `/api/` (no `/v1/` prefix)
 - Bearer token auth (single token, hardcoded for self-hosted)
 - JSON responses with consistent error format: `{ error: string }`
 - Rate limiting: 100 req/min per IP
@@ -185,9 +201,7 @@ Single-user bearer token authentication:
 
 ## Deployment
 
-### Deployment
-
-#### Automated (CI/CD)
+### Automated (CI/CD)
 The app automatically deploys to Cloudflare Pages when you push to the `main` branch:
 
 ```bash
@@ -201,7 +215,7 @@ The GitHub Actions workflow will:
 
 **Production URL:** https://languagebuilder-frontend.pages.dev
 
-#### Manual Deployment
+### Manual Deployment
 ```bash
 # Install dependencies
 cd src/app && npm install
@@ -213,12 +227,12 @@ npm run build
 npx wrangler pages deploy out --project-name=languagebuilder-frontend --branch=main
 ```
 
-#### Environment Variables
+### Environment Variables
 Set these secrets in your GitHub repository:
 - `CLOUDFLARE_API_TOKEN` - Cloudflare API token with Pages write permissions
 - `CLOUDFLARE_ACCOUNT_ID` - Your Cloudflare account ID
 
-#### Cloudflare Pages Configuration
+### Cloudflare Pages Configuration
 1. Connect your GitHub repository to Cloudflare Pages
 2. Set build command: `cd src/app && npm run build`
 3. Set output directory: `src/app/out`
@@ -268,24 +282,26 @@ Arabic UI strings use `dir="rtl"` on the root container.
 
 ---
 
-## API Endpoints (Planned)
+## API Endpoints (Live)
 
 ```
-GET  /api/v1/user/profile
-GET  /api/v1/assessment/start
-POST /api/v1/assessment/submit
-GET  /api/v1/assessment/results
-GET  /api/v1/learning/lessons
-GET  /api/v1/learning/lessons/:id
-POST /api/v1/learning/lessons/:id/submit
-GET  /api/v1/learning/flashcards
-POST /api/v1/learning/flashcards/review
-GET  /api/v1/memorization/surahs
-POST /api/v1/memorization/record
-GET  /api/v1/memorization/review
-POST /api/v1/tajweed/analyze
-GET  /api/v1/tutor/chat
-POST /api/v1/tutor/chat
+GET  /api/auth/profile
+GET  /api/auth/verify
+GET  /api/auth/onboarding
+GET  /api/assessment/start
+POST /api/assessment/submit
+GET  /api/assessment/results
+GET  /api/learning/lessons
+GET  /api/learning/lessons/:id
+POST /api/learning/lessons/:id/submit
+GET  /api/learning/flashcards
+POST /api/learning/flashcards/review
+GET  /api/memorization/surahs
+POST /api/memorization/record
+GET  /api/memorization/review
+POST /api/tajweed/analyze
+GET  /api/tutor/chat
+POST /api/tutor/chat
 ```
 
 ---
@@ -317,7 +333,7 @@ mid-task - stay scoped to the actual problem in front of you).
 
 ### Running the Development Server
 ```bash
-cd src
+cd src/app
 npm run dev
 # http://localhost:3000
 ```
@@ -330,9 +346,9 @@ npx wrangler d1 execute languagebuilder-db --file=src/lib/db/migrations/001_init
 ### Adding a New Module
 1. Create module doc in `modules/` following the template
 2. Create database tables in migration file
-3. Implement API endpoints in `src/lib/api/`
-4. Build components in `src/components/`
-5. Add tests in `src/__tests__/`
+3. Implement API endpoints in `workers/src/routes/`
+4. Build components in `src/app/components/`
+5. Add tests in `src/app/__tests__/`
 6. Update `PLAN.md` progress tracking
 
 ---
@@ -346,7 +362,10 @@ npx wrangler d1 execute languagebuilder-db --file=src/lib/db/migrations/001_init
 | Arabic text rendering broken | Check `lang="ar"`, `dir="rtl"`, font loaded |
 | Speech recognition inaccurate | Fallback to manual review, log errors |
 | Build fails on next export | Ensure all pages use static data or ISR |
-| `GET /api/auth/profile` returns 500 | No users exist yet in D1 (real, hit 2026-07-23) - seed a real user, don't just retry. Frontend was also found using the hardcoded token `dev-token-change-in-production` instead of a real env-var token - fix both together, not just the symptom. |
+| Tailwind CSS not generating utility classes | Check `tailwind.config.ts` content paths match actual directory structure (use `./app/` not `./src/app/`) |
+| `globals.css` corrupted | Restore from git — repeated `}` characters break CSS parser |
+| Frontend showing raw JS instead of UI | Check CSS is loading (27KB+), verify Tailwind compiled correctly |
+| `GET /api/auth/profile` returns 500 | No users exist yet in D1 - seed a real user, don't just retry. Frontend was also found using the hardcoded token `dev-token-change-in-production` instead of a real env-var token - fix both together, not just the symptom. |
 
 ---
 
@@ -373,4 +392,4 @@ npx wrangler d1 execute languagebuilder-db --file=src/lib/db/migrations/001_init
 
 ---
 
-*Last updated: July 24, 2026*
+*Last updated: July 25, 2026*

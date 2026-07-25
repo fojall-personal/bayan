@@ -30,6 +30,7 @@ A web application for learning Classical Arabic with focus on Quran comprehensio
 | Cache | Cloudflare KV (sessions, lookups) |
 | Auth | Bearer token (single-user, self-hosted) |
 | Build | Wrangler 3 |
+| CI/CD | GitHub Actions → Cloudflare Pages |
 
 ## 📦 Project Structure
 
@@ -52,6 +53,8 @@ languagebuilder/
 │   │   ├── lib/       # Auth, DB wrapper, scoring, Quran service
 │   │   └── db/        # Database schema
 │   └── wrangler.toml  # Workers config
+├── .github/workflows/ # CI/CD pipeline
+│   └── deploy.yml     # Auto-deploy to Cloudflare Pages on push to main
 └── modules/           # Design documentation per module
 ```
 
@@ -61,6 +64,7 @@ languagebuilder/
 - Node.js 18+
 - Wrangler CLI (`npm install -g wrangler`)
 - Cloudflare account (free tier is sufficient)
+- GitHub account (for CI/CD)
 
 ### Setup
 
@@ -91,109 +95,78 @@ languagebuilder/
    ```
 
 5. **Set environment variables**
-   - `NEXT_PUBLIC_API_TOKEN` — Match your Workers API_TOKEN
-   - `API_TOKEN` — Set in Cloudflare dashboard or wrangler.toml
+   - `CLOUDFLARE_API_TOKEN` — Cloudflare API token with Pages/Workers permissions
+   - `CLOUDFLARE_ACCOUNT_ID` — Your Cloudflare account ID
+   - `AUTH_TOKEN` — API bearer token for authentication
+
+## 🌐 Deployment
+
+### Frontend (Cloudflare Pages)
+The frontend automatically deploys when you push to the `main` branch:
+
+```bash
+git push origin main
+```
+
+**Production URL:** https://languagebuilder-frontend.pages.dev
+
+### Backend (Cloudflare Workers)
+Deploy the backend manually or via CI/CD:
+
+```bash
+cd workers && npx wrangler deploy
+```
+
+**Production URL:** https://languagebuilder.fojall.workers.dev
 
 ## 📊 Current Progress
 
 ### Phase 0: Design Foundation ✅
-- [x] Design System (tailwind.config.ts, globals.css, verification page)
-- [x] Component Library (18 components + 2 hooks)
+- [x] Design System (`src/app/tailwind.config.ts`, `src/app/styles/globals.css`)
+- [x] Component Library (18+ components across ui/, layout/, dashboard/, learning/, memorization/, assessment/, audio/)
 - [x] Project Scaffolding (Next.js app, Workers backend, D1 schema)
 
-### Phase 1: MVP Feature Modules
-- [x] Module 01: Database Schema & Data Layer (10 core words, 5 grammar lessons, 18 assessment questions, 6 tajweed rules)
-- [x] Module 02: Assessment Engine (scoring algorithm, adaptive path assignment, frontend flow)
-- [x] Module 03: Learning Engine (lesson delivery, exercise rendering, flashcards, spaced repetition)
-- [x] Module 04: Memorization Tracker (SM-2 spaced repetition, review sessions, surah progress)
-- [x] Module 05: Progress Dashboard & Onboarding (dashboard, streak, onboarding flow, score history)
+### Phase 1: MVP Feature Modules ✅
+- [x] 01: Database Schema & Data Layer
+- [x] 02: Assessment Engine
+- [x] 03: Learning Engine
+- [x] 04: Memorization Tracker
+- [x] 05: Progress Dashboard & Onboarding
 
-### Phase 2: Enhancement
-- [x] Module 06: Tajweed Visualization (color-coded text, makharij, mastery tracking)
-- [x] Module 07: Grammar Deep-Dive (sentence parser, conjugation tables, nahw/sarf/balagha, grammar checking)
-- [x] Module 08: AI Tutor & Advanced Features (tutor chat, suggested exercises, audio testing, certificate export)
-
-### Phase 2 COMPLETE: All 3 modules done
-
-
+### Phase 2: Enhancement ✅
+- [x] 06: Tajweed Visualization
+- [x] 07: Grammar Deep-Dive
 
 ### Phase 3: Advanced Features
-- [ ] Module 08: AI Tutor & Advanced Features
+- [ ] 08: AI Tutor + Advanced Features (Not started)
 
-## 🔑 Key Decisions
+### UI/UX Audit
+- [x] Slice 1: React Rendering Verification
+- [x] Slice 2: Visual Design Compliance
+- [ ] Slice 3-8: User Flow, Accessibility, Mobile, Backend Integration, Content, Documentation
 
-- **Dark mode default** — No light mode toggle
-- **Arabic line-height 2.0** — Generous spacing for Quranic text
-- **Functional tajweed colors** — Not decorative, used for rule identification
-- **Single-user auth** — Bearer token only, no registration flow
-- **Cloudflare free tier** — $0/month hosting
+## 🔧 Recent Critical Fixes
 
-## 📄 License
+1. **Tailwind CSS Bug** — Fixed `tailwind.config.ts` content paths (`./src/app/...` → `./app/...`), restoring 40KB CSS with all utility classes
+2. **globals.css Corruption** — Restored from git (had repeated `}` characters breaking CSS parser)
+3. **Frontend Token Mismatch** — Updated all components to use `dev-token-change-in-production`
+4. **Missing Nav Component** — Created `src/app/components/layout/Nav.tsx`
+5. **Responsive Grid** — Added `md:grid-cols-2` to GoalSelection page
+6. **CI/CD Pipeline** — Configured GitHub Actions for auto-deployment to Cloudflare Pages
 
-Private project. All rights reserved.
+## 📚 Documentation
 
-## 🙏 Acknowledgments
+- `PLAN.md` — Master plan with 12-module roadmap
+- `AGENTS.md` — Project instructions, coding standards, API spec
+- `RESUME.md` — Current state and recent activity
+- `modules/` — Detailed module specifications
 
-- Quran.com API for verse data
-- Tanzil.net for Uthmani script
-- Cloudflare for serverless infrastructure
+## 🔐 Security
 
+- `.env` file is gitignored and contains all secrets
+- Never commit credentials or API tokens
+- Use environment variables for all sensitive data
 
-## Deployment
+## 📝 License
 
-**Backend (Workers):** https://languagebuilder.fojall.workers.dev  
-**Frontend (Pages):** https://languagebuilder-frontend.pages.dev
-
-### Environment Variables
-- `AUTH_TOKEN` - Bearer token for API authentication
-- `DB` - D1 database binding
-- `languagebuilder_assets` - R2 bucket binding
-
-### Setup Commands
-```bash
-# Deploy Workers
-cd workers && npx wrangler deploy
-
-# Deploy Frontend
-cd src/app && npx wrangler pages deploy out --project-name=languagebuilder-frontend
-```
-
-
-## UI/UX Improvements
-
-The interface has been completely redesigned with:
-- **Clean Navigation**: Responsive navbar with all main sections
-- **Dark Theme**: Modern dark interface with Arabic green accents
-- **Mobile-First**: Fully responsive design that works on all devices
-- **Inline CSS**: Optimized for static export and fast loading
-- **Professional Layout**: Spacious, readable interface with proper spacing
-
-
-## 🎨 UI/UX Highlights
-
-- **Modern Design System**: Dark theme with Arabic green accents
-- **Responsive Layout**: Works perfectly on mobile, tablet, and desktop
-- **Professional Onboarding**: Beautiful goal selection interface
-- **Fast Performance**: Static export optimized for speed
-- **Accessible**: WCAG compliant navigation and interactions
-
-## 📱 Live Demo
-
-**Frontend**: https://languagebuilder-frontend.pages.dev  
-**Backend API**: https://languagebuilder.fojall.workers.dev
-
-## 🚀 Quick Start
-
-```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Deploy to Cloudflare
-npm run deploy
-```
+Private repository — all rights reserved.
