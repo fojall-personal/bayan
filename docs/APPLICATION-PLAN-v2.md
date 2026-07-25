@@ -4,6 +4,7 @@
 **Supersedes:** the roadmap and feature sections of `PLAN.md` (kept for history)
 **Companion:** `docs/CODE-AUDIT-2026-07-25.md` — verified current state
 **Audience:** decided 2026-07-25 — a small group of close friends, non-commercial (§4)
+**Budget:** decided 2026-07-25 — $0/month, treated as a hard constraint (§5)
 
 v1 of the plan was written before any code existed and was never revised against
 what got built. It marked eleven modules complete while six endpoints returned
@@ -130,7 +131,7 @@ Neither is now necessary.
 
 Privacy default is deliberate: memorisation progress is personal, and "close
 friends" is not a reason to make it visible by default. Sharing, if it ever
-happens, is opt-in (§7.3, F14).
+happens, is opt-in (§8.3, F14).
 
 ### Identity: use Cloudflare Access
 
@@ -157,32 +158,123 @@ of friends. **Cloudflare Access** is the right answer:
 - No passwords stored, no e-mail to send, no reset flow, no PII beyond an address.
 - Adding a friend is adding an e-mail to an Access policy.
 
-**Consequence: the same-origin architecture is now required, not merely
-preferred.** Access cookies are per-hostname. With the site on `pages.dev` and
-the API on `workers.dev`, the browser would have to carry an Access session across
-two origins — credentialed CORS, two Access applications, and a cookie problem
-that does not need to exist. Put both behind one hostname:
-
-```
-  bayan.<domain>            →  Pages (static export)
-  bayan.<domain>/api/*      →  Worker route
-  one Access application covering bayan.<domain>
-```
-
-One session covers pages and API. No CORS. No token in the bundle.
+**Consequence: one origin is required.** Access cookies are per-hostname, so a
+site on `pages.dev` calling an API on `workers.dev` would need the browser to
+carry an Access session across two origins. The free way to satisfy this is to
+fold the API into the Pages project as a Pages Function — see §5, Change 1. (An
+earlier draft called for a custom domain here; that is void, because it costs
+money.)
 
 **Provisioning becomes just-in-time.** On the first authenticated request, upsert a
 `users` row from the JWT's e-mail. `seed-user.sql` stays for local development,
 where there is no Access in front.
 
-**Fallback if a custom domain is not wanted:** issue a per-user opaque token by
-hand, map token → `user_id` in D1, store it in `localStorage`. No login flow, but
-tokens leak, get shared, and are revoked manually. Acceptable for five people;
+**Fallback if Access proves too fiddly:** issue a per-user opaque token by hand,
+map token → `user_id` in D1, store it in `localStorage`. Also free. No login flow,
+but tokens leak, get shared, and are revoked by hand. Acceptable for five people;
 not for fifty.
 
 ---
 
-## 5. Data sources — researched, with licences
+## 5. Hard constraint: $0/month
+
+**Stated 2026-07-25: this must be free. Not "cheap" — free.**
+
+Treated as a design constraint with veto power, not a preference. Two things in
+the previous draft failed it and have been changed.
+
+### The ledger
+
+Projections assume **20 users** at a genuinely active ~200 requests/day each.
+
+| Service | Free allowance | Projected at 20 users | Headroom |
+|---|---|---|---|
+| Pages (static hosting) | Unlimited requests, 500 builds/mo | ~30 builds/mo | Vast |
+| Pages Functions / Workers | 100,000 req/day | ~4,000/day | **25×** |
+| D1 storage | 5 GB | Full Quran + morphology + tajweed ≈ 30–60 MB | **~100×** |
+| D1 rows read | 5,000,000/day | ~50 rows × 4,000 req ≈ 200,000/day | **25×** |
+| D1 rows written | 100,000/day | reviews + progress, low thousands | **>20×** |
+| R2 | 10 GB, egress always free | D1 exports, a few hundred MB | Vast |
+| KV | 100k reads/day, 1k **writes**/day | Quran content cache — read-heavy, rarely written | Fine; the write cap is the one to watch |
+| Cloudflare Access | **50 seats, permanent** | 20 | 2.5× |
+| Cron Triggers | Included; 3 per Worker on free | 1 (nightly export) | Fine |
+| Workers AI | **10,000 neurons/day, shared across all users** | F8 only | **The one real ceiling** |
+| Custom domain | — | **not required** (see below) | — |
+| **Total** | | | **$0** |
+
+Everything except Workers AI has at least an order of magnitude of headroom. The
+plan is not close to any cliff, and the binding limits would be reached by user
+count long before any single user's activity.
+
+### Change 1: no custom domain — fold the API into the Pages project
+
+The previous draft made a custom domain a *requirement*, because Access cookies
+are per-hostname and the site and API sat on different origins. A domain costs
+money, so that requirement is void.
+
+**Cloudflare Access can protect `*.pages.dev` directly.** In Zero Trust →
+Access controls → Applications, create a self-hosted app, delete the wildcard from
+the Subdomain field, save, then re-enable the access policy in the Pages project.
+Keeping the `*` protects only preview deployments — protect **both**, or the
+preview URLs stay open.
+
+Protecting the Worker's `workers.dev` hostname is, by contrast, not
+dependably supported. So rather than pay for a domain to unify two origins,
+**collapse to one origin: deploy the Hono app as a Pages Function in the same
+project.**
+
+```
+  languagebuilder-frontend.pages.dev/*        →  static export
+  languagebuilder-frontend.pages.dev/api/*    →  functions/api/[[route]].ts  (Hono)
+  one Access application over the whole hostname
+```
+
+Hono supports this natively — `handle` from `hono/cloudflare-pages`, exported as
+`onRequest`. **The nine route files do not change at all**; only the entry point
+does. D1 and R2 bind via Pages → Settings → Bindings and arrive as `c.env.DB`
+exactly as now.
+
+This is better than the paid option on four counts beyond price:
+
+- Same origin — no CORS, and no bearer token in the bundle.
+- One deploy instead of two, which retires "the Worker is deployed by hand and CI
+  doesn't ship it."
+- Access covers pages and API in one session.
+- No DNS to own or renew.
+
+Honest trade-offs: Access on `pages.dev` is fiddly to configure and easy to get
+half-right (the preview-URL gap above). Cloudflare is also steering new projects
+toward Workers Static Assets rather than Pages, so expect a migration eventually —
+same runtime, so it is a packaging change, not a rewrite. **Keep one small
+standalone Worker** for the nightly D1 export, since Pages Functions are
+request-triggered only and cannot hold a cron.
+
+### Change 2: AI must be optional, never load-bearing
+
+10,000 neurons/day is shared across *all* users, so F8's budget shrinks as the
+group grows — the one limit in the ledger that gets worse with success.
+
+The fix is architectural rather than a quota alarm: **the corpus record is the
+answer; the model only narrates it.** F8 renders root, lemma, form and case
+straight from the morphology data — no inference, no cost, always available — and
+*optionally* adds a prose explanation on top. If the daily budget is gone, the
+facts still render and the prose is absent. The feature degrades to plain instead
+of breaking.
+
+Caching compounds this the right way: explanations key on `(word, ayah)`, which is
+deterministic, and the cache is shared across users. One person's lookup warms it
+for everyone, so **cost per user falls as the group grows**.
+
+### What would break $0
+
+Worth naming so it is a deliberate decision if it ever happens: exceeding 50
+Access seats ($7/user/month for *all* users, not just the excess); wanting a
+custom domain; sustained Workers AI use beyond the free neurons; or D1 growth past
+5 GB, which at these data volumes would take a deliberate mistake.
+
+---
+
+## 6. Data sources — researched, with licences
 
 Every feature below is costed against a real source. This section is what v1
 lacked: it listed "Quran.com API + Tanzil.net" and then wrote code against a
@@ -195,7 +287,7 @@ fabricated endpoint.
 | Morphology / i'rab | [Quranic Arabic Corpus](https://corpus.quran.com/download/) v0.4 | **GNU GPL**, attribution + link to corpus.quran.com required | Root, lemma, POS, form, case for every word. ⚠️ GPL — see risk R3. |
 | Word-level audio timing | Quran Foundation API `segments=true`; or [`cpfair/quran-align`](https://github.com/cpfair/quran-align) | API: OAuth2. quran-align: pre-generated releases | `[word_index, start_ms, end_ms]`. Enables word highlighting and "listen → recall". |
 | Translation, tafsir, reciter audio | Quran Foundation (Quran.com) API v4 | **OAuth2 client credentials** — `x-auth-token` + `x-client-id` | Registration required. |
-| Scheduling algorithm | FSRS | Open source | See §6. |
+| Scheduling algorithm | FSRS | Open source | See §7. |
 | LLM + STT | Cloudflare Workers AI | 10,000 neurons/day free, then $0.011/1k | 60+ models incl. Whisper and current LLMs (Qwen3, GLM-4.7-Flash, Llama). |
 
 Three findings here overturn existing code:
@@ -214,7 +306,7 @@ Three findings here overturn existing code:
 
 ---
 
-## 6. Algorithm decision: FSRS over SM-2
+## 7. Algorithm decision: FSRS over SM-2
 
 The current `space-repetition.ts` is labelled SM-2 but is a simplified
 approximation — quality 3 never decreases ease, quality 4 never changes it, and a
@@ -240,9 +332,9 @@ and conflating them is what makes hifz-without-understanding the default.
 
 ---
 
-## 7. Feature set
+## 8. Feature set
 
-### 7.1 In — v1 core loop
+### 8.1 In — v1 core loop
 
 **F1. Reader.** Word-by-word Uthmani text; tap a word for root, lemma, POS, form
 and case from the corpus; tajweed colouring from the CC-BY dataset; reciter audio
@@ -277,13 +369,16 @@ comprehension path, per §3.
 activity, per-domain score history, weekly load forecast from FSRS due counts.
 No widget that implies tracking it does not do.
 
-### 7.2 In — v2
+### 8.2 In — v2
 
-**F8. Grounded explanations (Workers AI).** An LLM that answers "why is this word
-`majrūr`?" **with the corpus record for that word in its context**, and cites it.
-Retrieval-grounded and verifiable — not the free-associating chatbot v1 called an
-AI tutor. Guard rails: refuse when the corpus has no annotation for the word
-rather than inventing one.
+**F8. Grounded explanations — facts first, narration optional.** Answers "why is
+this word `majrūr`?" by rendering the corpus record for that word in that context:
+root, lemma, form, case. That part is a database read — free, instant, always
+available, and verifiable. A Workers AI model *optionally* narrates it in prose on
+top. Retrieval-grounded, not the free-associating chatbot v1 called an AI tutor.
+Two guard rails: refuse when the corpus has no annotation rather than inventing
+one, and never let the prose layer be load-bearing — if the neuron budget is spent,
+the facts still render (§5, Change 2).
 
 **F9. Morphology pattern drills.** Given a root, produce or recognise Forms I–X;
 generated from corpus data, which has form labels for every verb.
@@ -291,7 +386,7 @@ generated from corpus data, which has form labels for every verb.
 **F10. Self-recording.** Record, play back against a reciter, self-rate. Explicit
 non-goal: automatic correctness. Feeds the FSRS recall schedule via self-rating.
 
-### 7.3 In — v3
+### 8.3 In — v3
 
 **F11. Balagha.** Curated, hand-authored, ~30 examples. Last, per §3, and the one
 place where hand-authoring is the right call because the corpus does not annotate
@@ -309,7 +404,7 @@ accountability works ("3 of your group reviewed today"). Strictly opt-in per use
 strictly aggregate — no browsing another person's mistakes. Deliberately last, so
 it cannot become a reason to weaken the privacy default in §4.
 
-### 7.4 Out — and why
+### 8.4 Out — and why
 
 | Feature | Decision | Reason |
 |---|---|---|
@@ -325,7 +420,7 @@ it cannot become a reason to weaken the privacy default in §4.
 
 ---
 
-## 8. Data model changes
+## 9. Data model changes
 
 Do these **before** more data accrues — the cost of adding `user_id` rises with
 every row, and §4 makes it mandatory rather than speculative.
@@ -336,7 +431,7 @@ every row, and §4 makes it mandatory rather than speculative.
    cannot know the same word.
 3. **`memorization`**: add FSRS state (`stability`, `difficulty`, `reps`,
    `lapses`, `last_review`, `due`); `id` → `TEXT` (code inserts a UUID into an
-   `INTEGER PRIMARY KEY`). Add the separate comprehension schedule from §6.
+   `INTEGER PRIMARY KEY`). Add the separate comprehension schedule from §7.
 4. **`quran_verses`**: create it, once, with one column naming — the two routes
    that read it currently assume different names. Loaded from the pinned Tanzil
    text + tajweed annotations + corpus morphology.
@@ -363,7 +458,7 @@ schema and the queries drifted apart unnoticed.
 
 ---
 
-## 9. Roadmap
+## 10. Roadmap
 
 Each stage ends with a check that exercises the running system. Stages 1–6 are
 the audit's remediation order; 7+ is new capability. **No stage is "done" on a
@@ -372,8 +467,9 @@ green build** — that rule is what produced eleven false ✅s.
 | Stage | Work | Done when |
 |---|---|---|
 | **1 ✅** | Frontend↔Worker wiring, user row, CORS, fail-closed auth, CI typecheck | `GET /api/auth/profile` returns the user row through the deployed site. *Verified locally; awaiting secrets for remote.* |
-| **2** | §8.1–8.4, 8.6–8.9 + `tutor.ts:31` binding + `learning.ts:111` SQL. Migrations table. | All 19 endpoints return non-5xx against a seeded DB; every user-scoped query filters by `user_id` |
-| **2b** | **Identity (§4):** custom domain, Pages + Worker under one hostname, Access application, JWT verification in the Worker, just-in-time user provisioning. Retire `NEXT_PUBLIC_API_TOKEN`. | Two different people log in and see two different, private profiles |
+| **2** | §9.1–9.4, 8.6–8.9 + `tutor.ts:31` binding + `learning.ts:111` SQL. Migrations table. | All 19 endpoints return non-5xx against a seeded DB; every user-scoped query filters by `user_id` |
+| **2a** | **One origin (§5):** move the Hono app to `functions/api/[[route]].ts` via `hono/cloudflare-pages`; bind D1/R2 in Pages; retire the standalone Worker deploy (keep a small cron Worker for exports). Route files unchanged. | `/api/auth/profile` answers on the Pages hostname; CORS code deleted |
+| **2b** | **Identity (§4):** Access application over the Pages hostname *and* its preview subdomain, JWT verification via `jose`, just-in-time user provisioning from the JWT e-mail. Retire `NEXT_PUBLIC_API_TOKEN`. | Two different people log in and see two different, private profiles; an un-invited address is refused; preview URLs are not open |
 | **3** | Lesson-grading contract; assessment result DTO; `error.tsx` | Submit a lesson, see a real score; kill the API, see an error not a blank |
 | **4** | Font `@import` order, Reem Kufi, `ProgressBar`/`Badge` static classes, logo viewBox, button contrast; pick one design system | Fonts load in devtools; progress bars visibly fill; contrast ≥ 4.5:1 |
 | **5** | Delete or route the 17 orphans — decides Module 05's real status; reset `PLAN.md` checkboxes | No unreachable component; docs match code |
@@ -395,7 +491,7 @@ F1–F14 are built on top of it.
 
 ---
 
-## 10. Definition of Done
+## 11. Definition of Done
 
 Extends the UI rule already in `AGENTS.md` — a green deploy is not proof a visual
 fix landed — to the backend, where it was missing.
@@ -410,39 +506,44 @@ A feature is done when:
 3. **The file is reachable.** Trace the import chain from a route. 17 files
    currently fail this.
 4. **Types check.** Both projects, in CI. Non-negotiable now that it is wired.
-5. **Content is verified by a competent reader.** §11 R4.
+5. **Content is verified by a competent reader.** §12 R4.
 6. **The claim matches the code.** If a step is a placeholder, the docs say
    placeholder. `seed-db.ts` printing `✅ Seeded 18 assessment questions` while
    writing nothing cost more trust than the missing feature did.
 
 ---
 
-## 11. Risks
+## 12. Risks
 
 | # | Risk | Severity | Mitigation |
 |---|---|---|---|
-| R1 | **Scope collapse under solo maintenance.** v1 planned 12 modules across 3 pillars for one part-time developer, and the result was breadth marked complete over a backend that could not serve a request. | **High** | The §7.4 cuts are the mitigation. Ship F1–F3 fully before F4. |
+| R1 | **Scope collapse under solo maintenance.** v1 planned 12 modules across 3 pillars for one part-time developer, and the result was breadth marked complete over a backend that could not serve a request. | **High** | The §8.4 cuts are the mitigation. Ship F1–F3 fully before F4. |
 | R2 | **Quran API OAuth blocks content ingestion.** Registration may be slow or terms may not fit. | Medium | Text, tajweed and morphology all come from static licensed files. Only translation/tafsir/audio need the API — degrade to text-only rather than block. |
 | R3 | **Corpus is GPL.** Morphological annotation is GNU GPL with attribution. | **Low** (was Medium) | Downgraded by §4: hosting one instance for friends is network use, and GPL's trigger is *distribution* of the work — not serving data from it. Attribution with a link to corpus.quran.com is required regardless and costs nothing. The risk only returns if someone self-hosts their own copy. Fallback: [QuranMorph](https://www.researchgate.net/publication/392941154_QuranMorph_Morphologically_Annotated_Quranic_Corpus) or Quran Foundation word-by-word. |
 | R4 | **Content errors teach falsehoods.** Already shipped: الرحيم glossed "the Forgiving" (that is الغفور) with the correct answer absent from the options; Form II/III patterns swapped in two places; `سرف` for صرف. | **Highest** (raised by §4) | Now the top risk in the plan. Teaching a wrong gloss of الرحمن الرحيم to friends who trust the app is a different order of problem from one developer's own test data — and they have no reason to doubt it. Pull the three known fixes forward out of Stage 6. No hand-authored Arabic reaches a user without review by a competent reader; prefer generated-from-corpus (F4) wherever possible. |
 | R5 | **Tanzil encoding drift** silently misaligns every tajweed offset. | Medium | Pin the bundled April-2017 text; checksum it in CI; assert a known annotation lands on the expected codepoints. |
-| R6 | **Workers AI free tier (10k neurons/day)** exceeded by F8. | Low | Cache explanations by `(word, ayah)` — the corpus record is deterministic, so the same question has the same answer. Cache hit rate should be high. |
+| R6 | **Workers AI free tier (10k neurons/day) is shared across all users**, so F8's budget shrinks as the group grows — the only limit that gets worse with success. | Medium (was Low) | Structural, not a quota alarm: the corpus record renders without inference, and the model only narrates (§5, Change 2). Cache on `(word, ayah)`, shared across users, so cost per user *falls* as the group grows. Worst case the prose disappears and the facts remain. |
 | R7 | **Public bearer token.** `NEXT_PUBLIC_API_TOKEN` ships in the bundle by construction, and resolves every caller to one identity. | **Blocking** (was Medium, accepted) | No longer tolerable: with several users a bundled token means any of them can read and write any other's data. Resolved — not mitigated — by Stage 2b: Access supplies identity and the token is deleted. Until then, treat all data as shared. Rotate the token committed in `.dev.vars` regardless. |
 | R8 | **FSRS mis-tuned on sparse data**, giving bad intervals early. | Low | Use published default parameters until there are enough reviews to fit; store raw review logs so it can be re-fit retroactively. |
-| R9 | **Data loss now costs someone else's months of work.** A friend's hifz history is not reproducible. | **High** | Scheduled `d1 export` to R2 on a cron Worker, plus D1 Time Travel for point-in-time restore. Test a restore *before* inviting anyone — an untested backup is not a backup. |
+| R9 | **Data loss now costs someone else's months of work.** A friend's hifz history is not reproducible. | **High** | D1 Time Travel gives point-in-time restore over 30 days automatically, at no cost and with nothing to build — that alone covers most of this. Add a nightly `d1 export` to R2 from a small cron Worker for anything older (cron is free; 3 triggers per Worker). Test a restore *before* inviting anyone — an untested backup is not a backup. |
 | R10 | **Operating a service for people you care about.** Silent breakage is now discovered by a friend, not a log. | Medium | Uptime check on `/health`; surface real errors in the UI (Stage 3) rather than blank regions; keep the group small enough to tell them directly when something breaks. |
+| R11 | **Free-tier terms change.** The $0 constraint depends on limits Cloudflare sets and can revise. | Low | Nothing here is exotic — static hosting, SQLite, a request handler. The lock-in that matters is D1, and `wrangler d1 export` produces portable SQL, so the exit is a normal SQLite file. Keep the nightly export (R9) partly for this reason. |
 
 ---
 
-## 12. Open questions
+## 13. Open questions
 
 Ones where the answer changes the build, rather than v1's list of things nobody
 needed to decide:
 
 1. ~~**Is this for one user or eventually many?**~~ **Answered 2026-07-25: a small
    group of close friends, non-commercial.** See §4. This drove multi-user accounts
-   back in scope, Cloudflare Access as the identity layer, a custom domain as a
-   requirement rather than a preference, R7 to blocking and R4 to highest.
+   back in scope, Cloudflare Access as the identity layer, R7 to blocking and R4 to
+   highest.
+1b. ~~**Does it need to be free?**~~ **Answered 2026-07-25: yes — $0, as a hard
+   constraint.** See §5. This voided the custom domain (Access works on
+   `*.pages.dev`), collapsed the API into a Pages Function for one free origin, and
+   made Workers AI narration optional rather than load-bearing.
 2. **Which mushaf and qira'ah?** The plan assumes Hafs — the tajweed dataset is
    Hafs-only. Anything else means new data.
 3. **How much daily time is the app designed for?** FSRS load balancing needs a
@@ -454,7 +555,8 @@ needed to decide:
    is not distribution (R3). Still open if a friend ever wants their own copy.
 6. **How many friends, and do you want them to know who else is on it?** Changes
    nothing structural — Access covers 50 either way — but it decides whether F14
-   is worth building and whether the group is visible to itself at all.
+   is worth building and whether the group is visible to itself at all. It is also
+   the only number that can breach $0: seat 51 costs $7/month × *everyone*.
 7. **Whose e-mail addresses go in the Access policy, and who adds them?** The
    entire access-control model is that list. Worth being deliberate about who can
    edit it.
@@ -477,6 +579,12 @@ needed to decide:
 - [Tarteel — mistake detection](https://tarteel.ai/blog/introducing-mistake-detection/)
 - [The Tarteel Dataset](https://openreview.net/forum?id=TAdzPkgnnV8)
 - [Cloudflare Zero Trust — free plan limits (50 seats)](https://costbench.com/software/business-vpn/cloudflare-zero-trust/free-plan/)
+- [Cloudflare Pages — known issues, incl. protecting `*.pages.dev` with Access](https://developers.cloudflare.com/pages/platform/known-issues/)
+- [Hono on Cloudflare Pages — `hono/cloudflare-pages`](https://hono.dev/docs/getting-started/cloudflare-pages)
+- [Pages Functions — bindings (D1, R2)](https://developers.cloudflare.com/pages/functions/bindings/)
+- [Cloudflare Workers — limits](https://developers.cloudflare.com/workers/platform/limits/)
+- [Cron Triggers — available on the Workers free plan](https://developers.cloudflare.com/workers/runtime-apis/handlers/scheduled/)
+- [Cloudflare free tier 2026 — D1 limits](https://agentdeals.dev/vendor/cloudflare)
 - [Cloudflare Access — seat management](https://github.com/cloudflare/cloudflare-docs/blob/production/content/cloudflare-one/identity/users/seat-management.md)
 - [Cloudflare Access — validating the JWT at the origin](https://blog.cloudflare.com/protecting-apis-with-jwt-validation/)
 - [Cloudflare Access — application token / `Cf-Access-Jwt-Assertion`](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/application-token/)
