@@ -359,9 +359,9 @@
 
 /* === Anti-Slop Guards ===
  * These CSS comments serve as a reminder for component authors.
- * Run the 10-tell audit from MODULE-09-DESIGN-SYSTEM.md before finalizing any page.
+ * Run the 12-tell audit from DESIGN.md before finalizing any page.
  *
- * The 10 tells of AI design slop:
+ * The 12 tells of AI design slop:
  *  1. Tech gradient — blue/violet/indigo glossy gradient
  *  2. Generic tech hue — default accent is indigo/violet
  *  3. Feature-tile grid — icon + heading + sentence × 3
@@ -372,6 +372,13 @@
  *  8. Center stack — everything centered, no real composition
  *  9. Default type — Inter/system-ui by default
  * 10. Wrong surface — composition doesn't match the surface
+ * 11. Feature tiles — 3-4 equal cards with icon + title + subtitle
+ * 12. Empty icon — decorative SVG above heading on empty state
  *
  * If tells 3, 8, or 10 fire → re-layout, not recolor.
  */
+
+/* Leading Arabic utility */
+.leading-arabic {
+  line-height: var(--leading-arabic);
+}
