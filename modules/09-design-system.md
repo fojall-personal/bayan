@@ -17,6 +17,13 @@
 | Analytics | Monitor | Charts, data density |
 | Settings | Configure | Form layout, toggles |
 
+---
+
+### References
+- **DESIGN.md** — Full token spec: `src/styles/DESIGN.md`
+- **globals.css** — CSS custom properties, component classes, motion: `src/styles/globals.css`
+- **Verification** — Visual audit page: `src/styles/design-system-verification.html`
+
 ## Color Palette
 
 ### Primary — Arabic Green

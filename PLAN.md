@@ -370,19 +370,23 @@ Based on assessment results, the app generates a personalized curriculum with:
 
 ### Phase 0: Design Foundation (1 week)
 ```
-Week 1:  Module 09 - Design system → tailwind.config.ts + global CSS
-         Module 11 - Component library → src/components/
-         Module 12 - Page UI specs → route page shells
-         Module 00 - Project scaffolding (routing, auth, types)
+Week 1:  DESIGN.md — Design token specification → src/styles/DESIGN.md
+         Module 09 — Design system → globals.css + tailwind.config.ts
+         Module 11 — Component library → src/components/
+         Module 12 — Page UI specs → route page shells
+         Module 00 — Project scaffolding (routing, auth, types)
 ```
 
 **Phase 0 Deliverables:**
-- [ ] `tailwind.config.ts` with custom theme tokens (colors, fonts, spacing, shadows)
-- [ ] 15+ React components in `src/components/` (all from module 11)
-- [ ] Route page shells for all 11 pages (from module 12 wireframes)
-- [ ] AppShell with sidebar + mobile nav
-- [ ] Anti-slop checklist applied to all components
-- [ ] Arabic text line-height (2.0), RTL support in place
+- [x] `DESIGN.md` — Design token specification (colors, fonts, spacing, shadows, surfaces, motion, anti-slop, iconography, RTL)
+- [x] `src/styles/globals.css` — CSS custom properties, component classes, motion, anti-slop
+- [x] `src/app/tailwind.config.ts` — Tailwind theme mapping all tokens
+- [x] `src/styles/design-system-verification.html` — Visual verification page
+- [x] 18+ React components in `src/components/` (all from module 11)
+- [x] Route page shells for all 11 pages (from module 12 wireframes)
+- [x] AppShell with sidebar + mobile nav
+- [x] Anti-slop checklist applied to all components
+- [x] Arabic text line-height (2.0), RTL support in place
 
 ### Phase 1: MVP Features (8 weeks)
 ```

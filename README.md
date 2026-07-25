@@ -23,7 +23,8 @@ A web application for learning Classical Arabic with focus on Quran comprehensio
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Next.js 14, React 18, TypeScript |
-| Styling | Tailwind CSS + shadcn/ui |
+| Styling | Tailwind CSS, Lucide React icons |
+| Design System | DESIGN.md token spec + globals.css + verification page |
 | Backend | Cloudflare Workers (Hono framework) |
 | Database | Cloudflare D1 (SQLite) |
 | Storage | Cloudflare R2 (audio, images) |
@@ -42,11 +43,13 @@ languagebuilder/
 │   ├── assessments/   # Diagnostic test questions
 │   └── tajweed/       # Tajweed rule definitions
 ├── scripts/           # Dev scripts (seed-db.ts)
-├── src/app/           # Next.js app
-│   ├── app/           # App Router pages
-│   ├── components/    # React components (ui, layout, dashboard, learning, etc.)
-│   ├── hooks/         # Custom hooks
-│   └── styles/        # Global CSS, design system
+├── src/
+│   ├── app/           # Next.js app
+│   │   ├── app/       # App Router pages
+│   │   ├── components/# React components (ui, layout, dashboard, learning, etc.)
+│   │   ├── hooks/     # Custom hooks
+│   │   └── tailwind.config.ts
+│   └── styles/        # Design system (DESIGN.md, globals.css, verification page)
 ├── workers/           # Cloudflare Workers backend
 │   ├── src/
 │   │   ├── routes/    # API route handlers
@@ -159,6 +162,7 @@ cd workers && npx wrangler deploy
 - `PLAN.md` — Master plan with 12-module roadmap
 - `AGENTS.md` — Project instructions, coding standards, API spec
 - `RESUME.md` — Current state and recent activity
+- `src/styles/DESIGN.md` — Design token specification (source of truth for all visual decisions)
 - `modules/` — Detailed module specifications
 
 ## 🔐 Security
