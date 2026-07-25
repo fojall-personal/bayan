@@ -2,12 +2,20 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { BookOpen, Brain, BookMarked, Sparkles } from 'lucide-react';
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  'read-quran': BookOpen,
+  'understand-arabic': Brain,
+  'memorize-quran': BookMarked,
+  'all': Sparkles,
+};
 
 const goals = [
-  { id: 'read-quran', emoji: '📖', title: 'Read the Quran fluently', description: 'Learn to read Arabic script and understand the text' },
-  { id: 'understand-arabic', emoji: '🧠', title: 'Understand Classical Arabic', description: 'Master grammar, vocabulary, and comprehension' },
-  { id: 'memorize-quran', emoji: '🕌', title: 'Memorize the Quran (Hifz)', description: 'Systematic memorization with spaced repetition' },
-  { id: 'all', emoji: '✨', title: 'All of the above', description: 'Comprehensive learning path for all goals' },
+  { id: 'read-quran', title: 'Read the Quran fluently', description: 'Learn to read Arabic script and understand the text' },
+  { id: 'understand-arabic', title: 'Understand Classical Arabic', description: 'Master grammar, vocabulary, and comprehension' },
+  { id: 'memorize-quran', title: 'Memorize the Quran (Hifz)', description: 'Systematic memorization with spaced repetition' },
+  { id: 'all', title: 'All of the above', description: 'Comprehensive learning path for all goals' },
 ];
 
 export default function GoalSelection() {
@@ -30,23 +38,26 @@ export default function GoalSelection() {
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-gray-50 text-center">What&apos;s your goal?</h2>
           <div className="grid md:grid-cols-2 gap-3">
-            {goals.map((goal) => (
-              <button
-                key={goal.id}
-                onClick={() => setSelectedGoal(goal.id)}
-                className={`flex items-center gap-4 p-5 rounded-xl border-2 transition-all text-left ${
-                  selectedGoal === goal.id
-                    ? 'border-primary-500 bg-primary-500/10'
-                    : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-                }`}
-              >
-                <span className="text-3xl">{goal.emoji}</span>
-                <div>
-                  <div className="font-bold text-lg text-gray-50">{goal.title}</div>
-                  <div className="text-sm text-gray-400">{goal.description}</div>
-                </div>
-              </button>
-            ))}
+            {goals.map((goal) => {
+              const Icon = iconMap[goal.id];
+              return (
+                <button
+                  key={goal.id}
+                  onClick={() => setSelectedGoal(goal.id)}
+                  className={`flex items-center gap-4 p-5 rounded-xl border-2 transition-all text-left ${
+                    selectedGoal === goal.id
+                      ? 'border-primary-500 bg-primary-500/10'
+                      : 'border-gray-700 bg-gray-800 hover:border-gray-600'
+                  }`}
+                >
+                  {Icon && <Icon className="w-8 h-8 text-primary-400 shrink-0" />}
+                  <div>
+                    <div className="font-bold text-lg text-gray-50">{goal.title}</div>
+                    <div className="text-sm text-gray-400">{goal.description}</div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
