@@ -6,7 +6,17 @@
 
 ## Phase 1: Visual Design Audit (Design System Compliance)
 
-### 1.1 Color & Typography Compliance
+### 1.1 React Rendering Verification
+- [ ] Verify all pages render without JavaScript errors (check console)
+- [ ] Confirm React hydration works (server-rendered HTML matches client)
+- [ ] Check component mounting sequence (no flash of unstyled content)
+- [ ] Verify state updates propagate correctly (button clicks, form inputs)
+- [ ] Test client-side routing (Next.js App Router navigation)
+- [ ] Confirm dynamic imports work (code splitting loads correctly)
+- [ ] Verify error boundaries catch and display errors properly
+- [ ] Check React DevTools would show correct component tree
+
+### 1.2 Color & Typography Compliance
 - [ ] Verify all screens use design tokens from `globals.css` (no hardcoded colors)
 - [ ] Check Arabic text uses `line-height: 2.0` (`--leading-arabic`)
 - [ ] Verify all Arabic containers have `dir="rtl"` and `lang="ar"`
@@ -15,7 +25,7 @@
 - [ ] Verify no cold blue tones in neutrals (warm grays only)
 - [ ] Confirm tajweed colors are functional (not decorative) with legends
 
-### 1.2 Layout & Spacing
+### 1.3 Layout & Spacing
 - [ ] Check all screens use consistent padding (card: 1.5rem, section: 2rem)
 - [ ] Verify responsive breakpoints work at 640px, 768px, 1024px, 1280px
 - [ ] Check mobile navigation (hamburger menu) functions correctly
@@ -23,7 +33,7 @@
 - [ ] Confirm no horizontal scroll on mobile (max-width constraints)
 - [ ] Check alignment consistency across all page types
 
-### 1.3 Component Consistency
+### 1.4 Component Consistency
 - [ ] Audit all 18+ components used across the app
 - [ ] Verify loading states exist for all async operations
 - [ ] Check error states are handled gracefully (no raw JSON exposure)
@@ -36,7 +46,16 @@
 
 ## Phase 2: User Flow & Navigation
 
-### 2.1 Onboarding Flow
+### 2.1 React Component Testing
+- [ ] Verify all pages use `'use client'` directive where needed
+- [ ] Check hooks work correctly (useState, useEffect, useContext)
+- [ ] Test component lifecycle (mount, update, unmount)
+- [ ] Verify props flow correctly through component tree
+- [ ] Check context providers work (auth, theme, language)
+- [ ] Test error boundaries catch component errors
+- [ ] Verify React.memo/useMemo prevent unnecessary re-renders
+
+### 2.2 Onboarding Flow
 - [ ] Test complete onboarding: Goal Selection → Assessment Prompt → Assessment
 - [ ] Verify goal selection persists across sessions
 - [ ] Check assessment redirect logic (if not completed, prompt user)
@@ -83,7 +102,14 @@
 
 ## Phase 3: Accessibility & Usability
 
-### 3.1 Accessibility (WCAG 2.1 AA)
+### 3.1 Browser Console Verification
+- [ ] Check browser console for JavaScript errors on each page
+- [ ] Verify no warnings about deprecated APIs
+- [ ] Check for unhandled promise rejections
+- [ ] Verify network requests complete successfully (no 4xx/5xx errors)
+- [ ] Check for console.log statements left in production code
+
+### 3.2 Accessibility (WCAG 2.1 AA)
 - [ ] Check color contrast ratios (text vs background ≥ 4.5:1)
 - [ ] Verify all interactive elements are keyboard navigable
 - [ ] Test screen reader compatibility (aria labels, landmarks)
@@ -91,7 +117,7 @@
 - [ ] Check alt text on all images/icons
 - [ ] Verify form inputs have associated labels
 
-### 3.2 Usability Heuristics
+### 3.3 Usability Heuristics
 - [ ] System status visibility (loading spinners, success messages)
 - [ ] Match between system and real world (no developer jargon)
 - [ ] User control and freedom (back button, undo, cancel)
@@ -99,7 +125,7 @@
 - [ ] Error prevention (confirmations for destructive actions)
 - [ ] Recognition rather than recall (show context, not just labels)
 
-### 3.3 Performance
+### 3.4 Performance
 - [ ] Check page load times (< 3 seconds target)
 - [ ] Verify lazy loading for images/media
 - [ ] Test API response times (< 500ms target)
@@ -217,15 +243,59 @@
 
 ---
 
+## Testing Methodology
+
+### Browser-Based Verification
+All UI/UX checks use the browser tool to verify actual rendering:
+
+1. **Navigate to each page** using `browser_navigate`
+2. **Take screenshots** with `browser_vision` to capture visual state
+3. **Check console errors** with `browser_console` to identify JS issues
+4. **Test interactions** by clicking buttons/inputs and verifying state changes
+5. **Verify responsive design** by testing at different viewport widths
+6. **Document findings** with annotated screenshots showing issues
+
+### Automated Checks
+- Run Lighthouse for accessibility and performance metrics
+- Check React DevTools via browser extension
+- Verify hydration with `document.querySelectorAll('[data-react-helmet]')`
+- Test API connectivity by checking network tab
+
+### Session Survival Strategy
+The audit is broken into small slices that can be paused and resumed:
+
+**Slice 1:** React Rendering Verification (Phase 1.1)
+**Slice 2:** Visual Design Compliance (Phase 1.2-1.4)
+**Slice 3:** User Flow Testing (Phase 2.1-2.6)
+**Slice 4:** Accessibility Audit (Phase 3.1-3.4)
+**Slice 5:** Mobile & Responsive (Phase 5.1-5.3)
+**Slice 6:** Backend Integration (Phase 6.1-6.3)
+**Slice 7:** Content & Copy (Phase 4)
+**Slice 8:** Documentation (Phase 8)
+
+Each slice updates the audit plan document and creates a findings report.
+
+---
+
 ## Deliverables
 
-1. **Audit Report** — Markdown document with findings, severity, and recommendations
-2. **Bug List** — Prioritized list of issues (Critical / High / Medium / Low)
-3. **Design Debt** — Items that violate design system (tech debt)
-4. **UX Improvements** — Suggested enhancements for user experience
-5. **Accessibility Gaps** — WCAG violations and fixes needed
-6. **Performance Issues** — Bottlenecks and optimization opportunities
-7. **Action Plan** — Phased remediation roadmap with time estimates
+### Per-Slice Outputs
+For each audit slice, create:
+1. **Findings Report** — `docs/audit-slice-XX-findings.md` with:
+   - Pages tested
+   - Issues found (with severity: Critical/High/Medium/Low)
+   - Screenshots of problems
+   - Recommended fixes
+2. **Updated Audit Plan** — Mark completed items with [x]
+
+### Final Outputs
+1. **Master Audit Report** — `docs/UI-UX-AUDIT-REPORT.md` with all findings
+2. **Bug List** — Prioritized issues in `docs/audit-bug-list.md`
+3. **Design Debt** — Items violating design system in `docs/audit-design-debt.md`
+4. **UX Improvements** — Suggestions in `docs/audit-ux-improvements.md`
+5. **Accessibility Report** — WCAG violations in `docs/audit-accessibility.md`
+6. **Performance Report** — Metrics and bottlenecks in `docs/audit-performance.md`
+7. **Action Plan** — Phased remediation in `docs/audit-action-plan.md`
 
 ---
 
