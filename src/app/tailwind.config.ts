@@ -77,11 +77,13 @@ const config: Config = {
           makharij: '#b99bf0',
         },
       },
+      // The var() names come from next/font in app/layout.tsx, so the families
+      // resolve to self-hosted files rather than a third-party stylesheet.
       fontFamily: {
-        display: ["'Reem Kufi'", "'Amiri'", 'serif'],
-        body: ["'IBM Plex Sans'", 'system-ui', 'sans-serif'],
-        arabic: ["'Amiri'", "'Scheherazade New'", 'serif'],
-        mono: ["'IBM Plex Mono'", 'ui-monospace', 'monospace'],
+        display: ['var(--font-display)', 'Amiri', 'serif'],
+        body: ['var(--font-body)', 'system-ui', 'sans-serif'],
+        arabic: ['var(--font-arabic)', 'serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       fontSize: {
         xs: ['0.75rem', { lineHeight: '1.4' }],

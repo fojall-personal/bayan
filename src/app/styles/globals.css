@@ -11,11 +11,11 @@
  * contrast (cream/canvas is 15.7:1 vs white's 18.8:1, both AAA).
  */
 
-/* MUST be the first rule in the file. An @import after any style rule is
- * invalid per spec and silently dropped by the browser — which is exactly what
- * happened when this sat below @tailwind: no webfont loaded in production, and
- * every Arabic glyph fell back to a system serif. */
-@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Scheherazade+New:wght@400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+/* No @import here on purpose. Fonts are self-hosted by next/font in
+ * app/layout.tsx, which injects --font-arabic, --font-display, --font-body and
+ * --font-mono. The previous @import sat below @tailwind, following 392 style
+ * rules in the built CSS — invalid per spec and silently dropped, so no webfont
+ * loaded in production. Self-hosting removes the ordering hazard entirely. */
 
 @tailwind base;
 @tailwind components;
@@ -77,11 +77,13 @@
     --tajweed-ghunnah:     #f58bc0; /* pink    */
     --tajweed-makharij:    #b99bf0; /* violet  */
 
-    /* ── Type */
-    --font-display: 'Reem Kufi', 'Amiri', serif;      /* brand, page titles */
-    --font-body:    'IBM Plex Sans', system-ui, sans-serif;
-    --font-arabic:  'Amiri', 'Scheherazade New', serif; /* Quranic text */
-    --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
+    /* ── Type
+     * --font-arabic / --font-display / --font-body / --font-mono are defined by
+     * next/font on the <html> element (app/layout.tsx). The fallbacks below only
+     * apply if that ever fails to render. */
+    --font-fallback-display: 'Amiri', serif;
+    --font-fallback-body: system-ui, sans-serif;
+    --font-fallback-arabic: serif;
 
     --leading-tight:   1.2;
     --leading-normal:  1.55;
@@ -112,7 +114,7 @@
 
 @layer base {
   html {
-    font-family: var(--font-body);
+    font-family: var(--font-body), var(--font-fallback-body);
     background: var(--color-bg);
     color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
@@ -129,7 +131,7 @@
    * use for Uthmani script and it handles stacked diacritics cleanly. */
   [lang='ar'],
   .arabic-text {
-    font-family: var(--font-arabic);
+    font-family: var(--font-arabic), var(--font-fallback-arabic);
     line-height: var(--leading-arabic);
     direction: rtl;
     font-feature-settings: 'liga' 1, 'calt' 1;
@@ -175,7 +177,7 @@
   /* Arabic type utilities. Tailwind generates font-arabic and leading-arabic
    * from the config; this pairs them in one class for Quranic blocks. */
   .text-arabic {
-    font-family: var(--font-arabic);
+    font-family: var(--font-arabic), var(--font-fallback-arabic);
     line-height: var(--leading-arabic);
   }
 
