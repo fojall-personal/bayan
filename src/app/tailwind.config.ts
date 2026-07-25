@@ -76,6 +76,7 @@ const config: Config = {
       fontFamily: {
         primary: ["'IBM Plex Sans'", "system-ui", "sans-serif"],
         arabic:  ["'Scheherazade New'", "'Amiri'", "serif"],
+        display: ["'Reem Kufi'", "serif"],
         mono:    ["'IBM Plex Mono'", "monospace"],
       },
       fontSize: {
