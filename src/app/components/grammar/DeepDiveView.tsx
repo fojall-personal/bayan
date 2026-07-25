@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Layout, Beaker, Feather } from 'lucide-react';
 
 interface Lesson {
   id: string;
@@ -20,10 +21,10 @@ interface DeepDiveViewProps {
   category: 'nahw' | 'sarf' | 'balagha';
 }
 
-const CATEGORY_INFO: Record<string, { name: string; icon: string }> = {
-  nahw: { name: 'Syntax (النَّحْو)', icon: '📐' },
-  sarf: { name: 'Morphology (الصَّرْف)', icon: '🔬' },
-  balagha: { name: 'Rhetoric (البَلَاغَة)', icon: '✨' },
+const CATEGORY_INFO: Record<string, { name: string; icon: React.ElementType }> = {
+  nahw: { name: 'Syntax (النَّحْو)', icon: Layout },
+  sarf: { name: 'Morphology (الصَّرْف)', icon: Beaker },
+  balagha: { name: 'Rhetoric (البَلَاغَة)', icon: Feather },
 };
 
 export function DeepDiveView({ category }: DeepDiveViewProps) {
@@ -98,10 +99,10 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
     <div className="page-transition space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <span className="text-3xl">{info.icon}</span>
+        <info.icon className="w-8 h-8 text-primary-400" />
         <div>
           <h1 className="text-2xl font-bold">Grammar Deep-Dive</h1>
-          <p className="text-gray-400">{info.name}</p>
+          <p className="text-muted">{info.name}</p>
         </div>
       </div>
 
