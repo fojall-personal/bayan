@@ -1,4 +1,5 @@
 'use client';
+import { useRouter } from 'next/navigation';
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
@@ -18,6 +19,7 @@ const iconMap = {
 };
 
 export function Onboarding({ onComplete }: OnboardingProps) {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [goal, setGoal] = useState<'read_quran' | 'understand_arabic' | 'memorize_quran' | 'all'>('all');
   const [readingAbility, setReadingAbility] = useState<'no' | 'partial' | 'yes'>('no');
@@ -32,7 +34,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         memorizedSurahs,
         challenge,
       });
-      window.location.href = '/assessment';
+      router.push('/assessment');
     } catch (error) {
       console.error('Onboarding error:', error);
     }

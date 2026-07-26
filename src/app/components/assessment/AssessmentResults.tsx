@@ -1,4 +1,5 @@
 'use client';
+import { useRouter } from 'next/navigation';
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
@@ -40,6 +41,7 @@ export function AssessmentResults({
   /** Omit to hide the retake action. */
   onRetake?: () => void;
 }) {
+  const router = useRouter();
   // Prefer the server's composite; recompute only as a fallback.
   const compositeScore =
     result.composite_score ??
@@ -132,7 +134,7 @@ export function AssessmentResults({
         * inert, and because /assessment shows results whenever any exist,
         * retaking was impossible once a single result was stored. */}
       <div className="flex flex-wrap gap-3">
-        <Button onClick={() => { window.location.href = '/learning'; }}>
+        <Button onClick={() => router.push('/learning')}>
           Continue to learning
         </Button>
         {onRetake && (

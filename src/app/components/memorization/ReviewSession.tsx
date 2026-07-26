@@ -86,10 +86,15 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
       {step === 'recite' && (
         <Card>
           <h3 className="text-xl font-semibold mb-4">Step 2: Recite</h3>
-          <p className="text-gray-400 mb-6">Record yourself reciting the ayahs</p>
+          <p className="text-gray-400 mb-6">
+            Recite the ayahs aloud from memory, then rate how well it went.
+          </p>
 
+          {/* Said "🎤 Record Recitation" but only advanced the step — nothing was
+              ever recorded. Self-recording is not built; the label now matches
+              what the button does. */}
           <Button onClick={handleRecite} className="w-full py-4 text-lg">
-            🎤 Record Recitation
+            I&apos;ve recited — rate myself
           </Button>
 
           <Button variant="ghost" onClick={onSkip} className="w-full mt-4">

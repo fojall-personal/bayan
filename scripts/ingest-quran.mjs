@@ -36,6 +36,20 @@ const TAJWEED_URL =
 /** Below this, refuse to emit. 0.995 leaves room for genuine edge cases only. */
 const MIN_ALIGNMENT = 0.995;
 
+/**
+ * SHA-256 of the pinned Tanzil Uthmani file.
+ *
+ * The alignment gate is the real defence, but it is statistical: it samples the
+ * five rules whose target letter is fixed by definition. This is exact. A text
+ * that differs at all is rejected before any offset is examined, which turns
+ * "swapped file" from a 60,057-annotation misalignment risk (plan risk R5) into
+ * a one-line failure.
+ *
+ * Override with --allow-unpinned when deliberately testing another text.
+ */
+const PINNED_SHA256 =
+  'abe6447a5d29bb126383ba9120628060cf96dc9ef5b402a506fc251f6ed0b9a2';
+
 /** Letters each rule must, by definition, sit on or beside. */
 const EXPECTED_LETTERS = {
   hamzat_wasl: new Set(['ٱ', 'ا']), // ٱ ا
@@ -57,6 +71,7 @@ const tajweedPath = args.includes('--tajweed')
   ? args[args.indexOf('--tajweed') + 1]
   : null;
 const force = args.includes('--force');
+const allowUnpinned = args.includes('--allow-unpinned');
 
 const log = (m) => process.stderr.write(m + '\n');
 
@@ -137,6 +152,22 @@ async function main() {
   const verses = parseTanzil(raw);
   log(`text:    ${verses.size} verses parsed from ${textPath}`);
   log(`         sha256 ${sha}`);
+
+  if (sha !== PINNED_SHA256 && !allowUnpinned) {
+    log('');
+    log('REFUSING TO EMIT — this is not the pinned text.');
+    log(`  expected ${PINNED_SHA256}`);
+    log(`  got      ${sha}`);
+    log('');
+    log('Tajweed offsets are only valid against the exact file they were');
+    log('generated from. Download it from the URL at the top of this script,');
+    log('or pass --allow-unpinned if you are deliberately testing another copy.');
+    process.exit(3);
+  }
+  if (sha !== PINNED_SHA256) {
+    log('--allow-unpinned given: checksum mismatch ignored. The alignment gate');
+    log('is now the only thing standing between you and mis-coloured tajweed.');
+  }
   if (verses.size !== 6236) {
     log(`WARNING: expected 6236 verses, got ${verses.size} — is this the "text with aya numbers" format?`);
   }

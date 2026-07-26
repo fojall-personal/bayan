@@ -27,11 +27,18 @@ const LETTERS_BY_MAKHARIJ: Record<string, string[]> = {
 };
 
 export function MakharijDiagram({
-  selectedLetter,
+  selectedLetter: initialSelected,
 }: {
+  /** Optional starting selection. */
   selectedLetter?: string;
 }) {
   const [hoveredMakharij, setHoveredMakharij] = useState<string | null>(null);
+  // The highlight logic already existed but nothing ever set a selection — no
+  // caller passed the prop and there was no way to click a letter, so the
+  // selected state was unreachable. Letters are buttons now.
+  const [selectedLetter, setSelectedLetter] = useState<string | undefined>(
+    initialSelected
+  );
 
   return (
     <Card>
@@ -57,16 +64,24 @@ export function MakharijDiagram({
               <div className="font-semibold mb-3">{name}</div>
               <div className="flex flex-wrap gap-2">
                 {letters.map((letter) => (
-                  <span
+                  <button
                     key={letter}
-                    className={`w-10 h-10 flex items-center justify-center rounded text-lg ${
+                    type="button"
+                    aria-pressed={selectedLetter === letter}
+                    aria-label={`Articulation point for ${letter}`}
+                    onClick={() =>
+                      setSelectedLetter((prev) =>
+                        prev === letter ? undefined : letter
+                      )
+                    }
+                    className={`w-10 h-10 flex items-center justify-center rounded text-lg transition-colors ${
                       selectedLetter === letter
                         ? 'bg-leaf-500 text-ground-50'
-                        : 'bg-gray-600 text-gray-200'
+                        : 'bg-gray-600 text-gray-200 hover:bg-gray-500'
                     }`}
                   >
                     {letter}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>

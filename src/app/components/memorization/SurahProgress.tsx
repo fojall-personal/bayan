@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Button } from '@/components/ui/Button';
@@ -30,11 +30,7 @@ export function SurahProgress({ surahId, surahName, totalAyahs }: SurahProgressP
   const [entries, setEntries] = useState<MemorizationEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchSurahProgress();
-  }, [surahId]);
-
-  const fetchSurahProgress = async () => {
+  const fetchSurahProgress = useCallback(async () => {
     setLoading(true);
     try {
       const data = await apiFetch<{ entries: MemorizationEntry[] }>(
@@ -46,7 +42,11 @@ export function SurahProgress({ surahId, surahName, totalAyahs }: SurahProgressP
     } finally {
       setLoading(false);
     }
-  };
+  }, [surahId]);
+
+  useEffect(() => {
+    fetchSurahProgress();
+  }, [fetchSurahProgress]);
 
   if (loading) {
     return (

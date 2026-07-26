@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
@@ -16,6 +17,7 @@ interface ScoreEntry {
 }
 
 export default function ProgressPage() {
+  const router = useRouter();
   const [scores, setScores] = useState<ScoreEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,9 +72,9 @@ export default function ProgressPage() {
             description="The placement assessment sets your starting level and the path that follows from it. It takes about fifteen minutes."
             action={{
               label: 'Take the assessment',
-              onClick: () => {
-                window.location.href = '/assessment';
-              },
+              // router.push rather than window.location.href, which threw away
+              // the loaded app and reloaded the whole document.
+              onClick: () => router.push('/assessment'),
             }}
           />
         ) : (

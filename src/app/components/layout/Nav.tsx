@@ -43,6 +43,9 @@ const LINKS = [
   { href: '/grammar', label: 'Grammar' },
   { href: '/tutor', label: 'Tutor' },
   { href: '/progress', label: 'Progress' },
+  // /advanced existed but was absent from every nav and every in-page link, so
+  // the only way to reach it was to type the URL.
+  { href: '/advanced', label: 'Advanced' },
 ];
 
 export function Nav() {

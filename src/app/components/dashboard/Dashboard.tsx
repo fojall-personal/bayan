@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -103,21 +105,21 @@ export function Dashboard() {
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <a href="/learning" className="p-4 bg-gold-500/10 border border-gold-500 rounded-lg hover:bg-gold-500/20 transition-colors">
+        <Link href="/learning" className="p-4 bg-gold-500/10 border border-gold-500 rounded-lg hover:bg-gold-500/20 transition-colors">
           <BookOpen className="w-6 h-6 text-gold-400 mb-2" />
           <div className="font-semibold">Continue Lesson</div>
           <div className="text-sm text-muted">Grammar-05 (20 min)</div>
-        </a>
-        <a href="/memorization" className="p-4 bg-gold-500/10 border border-gold-400 rounded-lg hover:bg-gold-500/20 transition-colors">
+        </Link>
+        <Link href="/memorization" className="p-4 bg-gold-500/10 border border-gold-400 rounded-lg hover:bg-gold-500/20 transition-colors">
           <BookMarked className="w-6 h-6 text-gold-400 mb-2" />
           <div className="font-semibold">Memorization Review</div>
           <div className="text-sm text-muted">{data.todayReview.length} ayahs due</div>
-        </a>
-        <a href="/assessment" className="p-4 bg-info/10 border border-info rounded-lg hover:bg-info/20 transition-colors">
+        </Link>
+        <Link href="/assessment" className="p-4 bg-info/10 border border-info rounded-lg hover:bg-info/20 transition-colors">
           <TestTube className="w-6 h-6 text-info mb-2" />
           <div className="font-semibold">Quick Quiz</div>
           <div className="text-sm text-muted">Test your knowledge</div>
-        </a>
+        </Link>
       </div>
 
       {/* Progress overview */}
