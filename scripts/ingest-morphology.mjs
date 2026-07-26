@@ -74,9 +74,9 @@ for (const line of lines) {
   let gender = null;
   let caseCase = null;
   
-  // Extract LEM
-  const lemMatch = features.match(/LEM:\{([^}]+)\}/);
-  if (lemMatch) lemma = lemMatch[1];
+  // Extract LEM (may or may not have braces)
+  const lemMatch = features.match(/LEM:([^\|]+)/);
+  if (lemMatch) lemma = lemMatch[1].trim();
   
   // Extract ROOT
   const rootMatch = features.match(/ROOT:([^|]+)/);
