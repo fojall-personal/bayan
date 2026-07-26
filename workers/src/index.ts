@@ -9,6 +9,7 @@ import { assessmentRoutes } from './routes/assessment';
 import { learningRoutes } from './routes/learning';
 import { memorizationRoutes } from './routes/memorization';
 import { progressRoutes } from './routes/progress';
+import { quranRoutes } from './routes/quran';
 import { tajweedRoutes } from './routes/tajweed';
 import { grammarRoutes } from './routes/grammar';
 import { tutorRoutes } from './routes/tutor';
@@ -115,6 +116,8 @@ app.route('/api/assessment', assessmentRoutes);
 app.route('/api/learning', learningRoutes);
 app.route('/api/memorization', memorizationRoutes);
 app.route('/api/progress', progressRoutes);
+// One ayah as one object: text, words with gloss + parse + known-root flag, tags.
+app.route('/api/quran', quranRoutes);
 app.route('/api/tajweed', tajweedRoutes);
 app.route('/api/grammar', grammarRoutes);
 app.route('/api/tutor', tutorRoutes);

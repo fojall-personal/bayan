@@ -267,3 +267,88 @@ progressRoutes.get('/coverage', async (c) => {
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
+
+/**
+ * POST   /api/progress/roots/:root/known — record a root as known
+ * DELETE /api/progress/roots/:root/known — undo it
+ *
+ * Coverage could not move until something wrote to user_known_root. The table and
+ * the read endpoint existed and nothing filled them, so the model was inert.
+ *
+ * POST returns the coverage DELTA, not just an acknowledgement: "+37 ayahs now
+ * fully readable" is the payoff, and because the corpus is closed it is a computed
+ * fact rather than an animation. DELETE exists because "I marked that too early"
+ * is the obvious next thing a learner needs, and a progress model you cannot
+ * correct is one people stop trusting.
+ */
+async function ayahsReadable(db: Database, userId: string): Promise<number> {
+  const row = await db.get<{ n: number }>(
+    `WITH known AS (SELECT root FROM user_known_root WHERE user_id = ?)
+     SELECT COUNT(*) AS n FROM (
+       SELECT surah_id, ayah_id
+         FROM quran_word_morphology
+        GROUP BY surah_id, ayah_id
+       HAVING SUM(CASE WHEN root IS NOT NULL
+                        AND root NOT IN (SELECT root FROM known)
+                       THEN 1 ELSE 0 END) = 0
+     )`,
+    [userId]
+  );
+  return row?.n ?? 0;
+}
+
+progressRoutes.post('/roots/:root/known', async (c) => {
+  const userId = c.get('userId');
+  const root = c.req.param('root');
+  const db = getDb(c);
+
+  try {
+    // Refuse roots the corpus does not attest. Accepting a typo would inflate the
+    // count with something that can never make an ayah readable — the same class of
+    // failure as the tutor inventing Arabic.
+    const exists = await db.get<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM quran_word_morphology WHERE root = ?`,
+      [root]
+    );
+    if (!exists || exists.n === 0) {
+      return c.json({ error: `The corpus has no root "${root}"` }, 404);
+    }
+
+    const before = await ayahsReadable(db, userId);
+    await db.run(
+      `INSERT OR IGNORE INTO user_known_root (user_id, root) VALUES (?, ?)`,
+      [userId, root]
+    );
+    const after = await ayahsReadable(db, userId);
+
+    return c.json({
+      data: {
+        root,
+        occurrences: exists.n,
+        ayahsUnlocked: after - before,
+        ayahsReadable: after,
+        ayahsTotal: 6236,
+      },
+    });
+  } catch (error) {
+    console.error('Mark root known error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+progressRoutes.delete('/roots/:root/known', async (c) => {
+  const userId = c.get('userId');
+  const root = c.req.param('root');
+  const db = getDb(c);
+
+  try {
+    await db.run(
+      `DELETE FROM user_known_root WHERE user_id = ? AND root = ?`,
+      [userId, root]
+    );
+    return c.json({ data: { root, ayahsReadable: await ayahsReadable(db, userId) } });
+  } catch (error) {
+    console.error('Unmark root error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});

@@ -155,7 +155,7 @@ export function Today() {
             The commonest root you do not know yet — it appears{' '}
             {nextRoot.occurrences.toLocaleString()} times in the Quran.
           </p>
-          <Link href={`/grammar?root=${encodeURIComponent(nextRoot.root)}`} className="mt-4 block">
+          <Link href={`/root?r=${encodeURIComponent(nextRoot.root)}`} className="mt-4 block">
             <Button className="w-full">Study this root</Button>
           </Link>
         </Card>
@@ -194,11 +194,11 @@ export function Today() {
               </p>
             </Card>
           </Link>
-          <Link href="/tajweed" className="block">
+          <Link href="/read?s=1&a=1" className="block">
             <Card interactive>
-              <p className="font-semibold">Read with tajweed colours</p>
+              <p className="font-semibold">Read an ayah</p>
               <p className="mt-0.5 text-sm text-ground-300">
-                Ten rules on the script, with word-by-word meaning
+                Recite, meaning, parse, memorize or ask — one ayah, five lenses
               </p>
             </Card>
           </Link>

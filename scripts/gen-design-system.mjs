@@ -753,6 +753,145 @@ ${box('Proposed', 'Land on today. One primary action, already chosen for you. Tw
   'Reviews, one new root, then read what it unlocked. In that order.'
 ), 'utf-8');
 
+// ── Build specs ────────────────────────────────────────────────────────────
+// The two pieces the thesis needs and the app does not have: an ayah that is one
+// object rather than five pages, and a loop that records a root as known so
+// coverage actually moves.
+
+const KNOWN = colour('ground-50');
+const UNKNOWN = colour('gold-400');
+
+const wordChip = (ar, en, root, known) =>
+  `<div style="text-align:center;min-width:92px">
+     <div class="ar" style="font-size:1.35rem;color:${known ? KNOWN : UNKNOWN};
+      ${known ? '' : `border-bottom:1px dotted ${colour('gold-500')};padding-bottom:2px;`}">${ar}</div>
+     <div style="font-size:.7rem;color:var(--muted);margin-top:3px">${en}</div>
+     <code style="font-size:.62rem;color:${known ? colour('ground-500') : colour('gold-400')}">${root}</code>
+   </div>`;
+
+await writeFile(join(OUT, 'preview/spec-ayah-screen.html'), shell(
+  'Spec — the ayah screen', 'Product',
+  `<p style="max-width:66ch">One route, <code>/read?s=1&a=2</code>, and one API call.
+Query parameters rather than a dynamic segment because the app is a static export —
+6,236 pre-rendered ayah pages is the wrong trade.</p>
+
+<h2>The screen</h2>
+<div style="max-width:620px;background:${colour('ground-900')};
+ border:1px solid ${colour('ground-700')};border-radius:${tokens.get('radius-lg')};padding:22px">
+  <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:.78rem">
+    <span>Al-Fatihah · 1:2</span><span style="color:${colour('leaf-400')}">every word known</span></div>
+
+  <div class="ar" style="font-size:2.1rem;text-align:center;margin:16px 0">
+    ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ</div>
+
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;direction:rtl">
+${wordChip('ٱلْحَمْدُ', 'All praises', 'Hmd', true)}
+${wordChip('لِلَّهِ', '(be) to Allah', 'Alh', true)}
+${wordChip('رَبِّ', 'the Lord', 'rbb', true)}
+${wordChip('ٱلْعَـٰلَمِينَ', 'of the universe', 'Elm', true)}
+  </div>
+
+  <div class="row" style="gap:6px;margin-top:22px;justify-content:center">
+${['Recite', 'Meaning', 'Parse', 'Memorize', 'Ask'].map((n, i) =>
+  `<span style="background:${i === 1 ? colour('gold-500') : colour('ground-800')};
+   color:${i === 1 ? colour('ground-950') : colour('ground-300')};
+   border:1px solid ${colour('ground-700')};padding:10px 16px;min-height:44px;
+   display:inline-flex;align-items:center;
+   border-radius:${tokens.get('radius-md')};font-size:.8rem">${n}</span>`).join('')}
+  </div>
+</div>
+
+<h2>A word you do not know yet</h2>
+<div style="max-width:620px;background:${colour('ground-900')};
+ border:1px solid ${colour('ground-700')};border-radius:${tokens.get('radius-lg')};padding:18px">
+  <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:.78rem">
+    <span>Al-Baqarah · 2:2</span><span style="color:${colour('gold-400')}">2 words to learn</span></div>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;direction:rtl;margin-top:14px">
+${wordChip('ذَٰلِكَ', 'That', '—', true)}
+${wordChip('ٱلْكِتَـٰبُ', 'the Book', 'ktb', true)}
+${wordChip('لَا', '(is) no', '—', true)}
+${wordChip('رَيْبَ', 'doubt', 'ryb', false)}
+${wordChip('فِيهِ', 'in it', '—', true)}
+${wordChip('هُدًى', 'a guidance', 'hdy', false)}
+  </div>
+</div>
+<p class="note">The dotted underline and gold are the coverage model made visible at
+word level. <strong>This is the whole motivational loop in one glance</strong> —
+"2 words to learn" is a specific, finishable task, and tapping one offers to learn
+its root. Every other progress bar in the app is a number; this is the number
+pointing at the thing to do next.</p>
+
+<h2>The five lenses, and where each gets its data</h2>
+<div class="grid" style="gap:10px">
+${box('Recite', 'Tajweed colours on the script, ten rules, plus per-ayah audio. <code>GET /api/tajweed/verses/:surah</code> — already exists.')}
+${box('Meaning', 'Word-by-word glosses. <code>quran_word_gloss</code>, 77,429 rows. Note there is NO full-translation table, so "meaning" is the gloss chain — worth saying rather than implying a translation exists.')}
+${box('Parse', 'Root, lemma, part of speech, form, case, per segment. <code>GET /api/grammar/word/:surah/:ayah/:word</code> — already exists, and returns null where the corpus is silent so the UI can say "not annotated".')}
+${box('Memorize', 'Add this ayah to the SM-2 schedule from where you are reading. <code>POST /api/memorization/add</code> — already exists.')}
+${box('Ask', 'The tutor, pre-scoped to this location. <code>POST /api/tutor/chat</code> — already exists and already classifies "2:255" as a location intent.')}
+</div>
+<p class="note"><strong>One new endpoint, not five.</strong> All of the above exists,
+but a screen assembling it would make four calls and do a join in the browser. So
+<code>GET /api/quran/ayah/:surah/:ayah</code> returns the text, the words with gloss
++ morphology + a known-root flag, and the tajweed tags — one object, which is the
+point of the whole design.</p>`,
+  'One route, one API call, five lenses. Unknown words marked so coverage is visible where you read.'
+), 'utf-8');
+
+await writeFile(join(OUT, 'preview/spec-root-loop.html'), shell(
+  'Spec — the root loop', 'Product',
+  `<p style="max-width:66ch">Coverage cannot move until something records a root as
+known. The table and the endpoint exist; nothing writes to them. This closes it.</p>
+
+<div style="max-width:560px;background:${colour('ground-900')};
+ border:1px solid ${colour('gold-500')}66;border-radius:${tokens.get('radius-lg')};padding:22px">
+  <div style="font-size:.7rem;letter-spacing:.16em;color:${colour('gold-400')}">NEW ROOT</div>
+  <div class="ar" style="font-size:2.6rem;text-align:center;color:${colour('gold-400')};margin:10px 0">ق و ل</div>
+  <p style="text-align:center;color:var(--muted);font-size:.82rem;margin:0">
+    1,722 occurrences · the 2nd commonest root in the Quran</p>
+
+  <h2 style="margin-top:22px">Forms the corpus attests</h2>
+  <div class="row" style="gap:8px">
+${[['قَالَ', 'I · perfect'], ['يَقُولُ', 'I · imperfect'], ['قُلْ', 'I · imperative'], ['قَوْل', 'noun']]
+  .map(([ar, tag]) => `<div style="background:${colour('ground-800')};border:1px solid ${colour('ground-700')};
+   border-radius:${tokens.get('radius-sm')};padding:8px 12px;text-align:center">
+   <div class="ar" style="font-size:1.2rem">${ar}</div>
+   <code style="font-size:.62rem;color:var(--muted)">${tag}</code></div>`).join('')}
+  </div>
+
+  <h2 style="margin-top:20px">Where you will meet it</h2>
+  <p class="ar" style="font-size:1.3rem;margin:6px 0">وَإِذْ <span style="color:${colour('gold-400')}">قَالَ</span> رَبُّكَ لِلْمَلَـٰئِكَةِ</p>
+  <p style="color:var(--muted);font-size:.75rem;margin:0">2:30</p>
+
+  <div style="background:${colour('gold-500')};color:${colour('ground-950')};font-weight:600;
+   text-align:center;padding:12px;border-radius:${tokens.get('radius-md')};margin-top:20px;min-height:44px">
+   I know this root</div>
+</div>
+
+<h2>The payoff, immediately after</h2>
+<div style="max-width:560px;background:${colour('leaf-500')}1a;
+ border:1px solid ${colour('leaf-500')}66;border-radius:${tokens.get('radius-lg')};padding:20px;margin-top:14px">
+  <div style="font-size:1.3rem;font-weight:600;color:${colour('leaf-400')}">
+    +37 ayahs now fully readable</div>
+  <p style="color:var(--muted);font-size:.84rem;margin:6px 0 0">
+    657 of 6,236 · 101 roots known. Next: <span class="ar">ك و ن</span>, 1,390 occurrences.</p>
+</div>
+<p class="note"><strong>This screen is the reason the coverage model is worth
+having.</strong> "+37 ayahs" is a specific, true, immediate consequence of one
+decision — and it is computable, because the corpus is closed. Nothing else in the
+app can say that, and no app working against an open vocabulary could.<br><br>
+One new endpoint: <code>POST /api/progress/roots/:root/known</code>, which records
+the root and returns the coverage delta so the payoff is a fact rather than an
+animation. Reversible — the same route deletes on DELETE, because "I marked that
+too early" is the obvious next thing a learner needs.</p>
+
+<h2>Where the loop runs</h2>
+<div class="grid" style="gap:10px;grid-template-columns:1fr 1fr">
+${box('From Today', 'When nothing is due, the primary action is "learn one new root" — the commonest one not yet known. Frequency order IS the curriculum.')}
+${box('From a word you are reading', 'Tap a gold-underlined word in the ayah screen and it offers that word’s root. Learning driven by what you actually hit.')}
+</div>`,
+  'Record a root as known, and say immediately what it opened.'
+), 'utf-8');
+
 // Tokens as CSS, for anyone consuming the system directly
 await writeFile(join(OUT, 'colors_and_type.css'),
   `/* Bayan design tokens — GENERATED from src/app/styles/globals.css.\n` +

@@ -53,7 +53,7 @@ function BayanLogo() {
  */
 const LINKS = [
   { href: '/today', label: 'Today' },
-  { href: '/tajweed', label: 'Read' },
+  { href: '/read', label: 'Read' },
   { href: '/memorization', label: 'Memorize' },
   { href: '/grammar', label: 'Grammar' },
   { href: '/tutor', label: 'Tutor' },
