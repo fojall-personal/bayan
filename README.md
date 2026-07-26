@@ -292,6 +292,8 @@ pages render, the database has 6,236 Quran verses and 77K morphology rows.
 | Grammar (corpus-derived) | ✅ 4,950 graded exercises, all 25 (kind, level) buckets full, 114/114 surahs |
 | Memorization curriculum | ✅ 908 ordered units across all 114 surahs |
 | Content correctness | ✅ Gated in CI; 14 seeded defects all caught |
+| Design system | ✅ Generated from globals.css, published to claude.ai/design, drift gated |
+| Tajweed reader | ✅ Coloured Amiri script, joins intact, 10 rules all ≥4.5:1 |
 | Word glosses | ✅ 77,429 words; 96.2% agreement with 5 independent translators |
 | Tutor | ✅ Grounded in the corpus; cites sources, refuses when unannotated |
 | Grammar lessons | ✅ 10, all reachable; claims checked against outside references |

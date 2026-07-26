@@ -17,7 +17,10 @@ interface ButtonProps {
 const VARIANTS: Record<string, string> = {
   // Dark ink on gold: 7.8:1. The old primary was white on #22c55e at 2.28:1,
   // which failed AA badly.
-  primary: 'bg-gold-500 text-ground-950 hover:bg-gold-500 active:bg-gold-600 font-semibold',
+  primary: // hover was `hover:bg-gold-500` — identical to the base, so the app's main
+    // call to action did not respond to the pointer at all. gold-400 is the
+    // palette's lighter step and keeps canvas-dark ink well past AAA.
+    'bg-gold-500 text-ground-950 hover:bg-gold-400 active:bg-gold-600 font-semibold',
   secondary: 'bg-ground-800 text-ground-50 border border-ground-700 hover:border-ground-600 hover:bg-ground-700',
   ghost: 'text-ground-300 hover:text-ground-50 hover:bg-ground-800',
   danger: 'bg-error text-ground-950 hover:opacity-90 font-semibold',

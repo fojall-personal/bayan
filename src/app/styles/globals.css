@@ -76,6 +76,19 @@
     --tajweed-qalqalah:    #f58c5c; /* orange  */
     --tajweed-ghunnah:     #f58bc0; /* pink    */
     --tajweed-makharij:    #b99bf0; /* violet  */
+    /* The renderer classifies ten rules, not six. These four had no token at
+     * all, so the reader fell back to colours held in D1 — the pre-rebrand
+     * palette, three of which failed 4.5:1. Chosen against numbers, not by eye:
+     * each is >= 4.5:1 on canvas, >= 25 CIE76 from every other rule colour, and
+     * >= 22 from gold-500 and leaf-500 so a rule never looks like the accent or
+     * like progress. */
+    --tajweed-lam-shamsiyyah: #b6d96a; /* lime    11.7:1 — the assimilating lam */
+    --tajweed-idghaam:        #f58a8a; /* rose     8.0:1 — merging */
+    --tajweed-hamzat-wasl:    #9fb3c8; /* slate    8.7:1 — a joining hamza */
+    /* Silent means "not pronounced", so it should read as de-emphasised text
+     * rather than as another colour competing for attention. That is exactly
+     * ground-400's existing role, so this is deliberately not a new hue. */
+    --tajweed-silent:         #8b8471; /* subdued  5.0:1 */
 
     /* ── Type
      * --font-arabic / --font-naskh / --font-display / --font-body / --font-mono

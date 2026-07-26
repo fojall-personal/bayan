@@ -88,7 +88,10 @@ export function Tabs<T extends string>({
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(item.id)}
             onKeyDown={(e) => onKeyDown(e, i)}
-            className={`rounded px-4 py-1.5 text-sm font-medium transition-colors ${
+            // min-h-11 rather than more padding: these measured 33px high, under
+            // the 44px tap-target floor, and every page uses this control to
+            // switch view.
+            className={`grid min-h-11 place-items-center rounded px-4 text-sm font-medium transition-colors ${
               selected
                 ? 'bg-gold-500 text-ground-950'
                 : 'text-ground-300 hover:bg-ground-800 hover:text-ground-50'

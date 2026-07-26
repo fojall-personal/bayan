@@ -6,6 +6,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { apiFetch } from '@/lib/api';
+import { getSurah } from '@/lib/surahs';
 
 interface MemorizationEntry {
   id: string;
@@ -27,6 +28,7 @@ interface SurahProgressProps {
 }
 
 export function SurahProgress({ surahId, surahName, totalAyahs }: SurahProgressProps) {
+  const surah = getSurah(surahId);
   const [entries, setEntries] = useState<MemorizationEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -67,7 +69,25 @@ export function SurahProgress({ surahId, surahName, totalAyahs }: SurahProgressP
       <div className="flex items-start justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold">{surahName}</h2>
-          <p className="text-gray-400 text-sm mt-1">Surah {surahId}</p>
+          {/* The Arabic name. The memorization index rendered no Arabic at all —
+              a learner memorising Quran saw only Latin transliterations and
+              counts. surahs.ts already carries the Arabic from Tanzil's
+              quran-data.xml, so this was available the whole time.
+              Amiri via .text-arabic, since a surah name is scripture, not UI
+              chrome, and lang="ar" so screen readers switch voice. */}
+          {surah && (
+            <p
+              className="text-arabic mt-1 text-xl text-gold-400"
+              dir="rtl"
+              lang="ar"
+            >
+              {surah.arabic}
+            </p>
+          )}
+          <p className="text-ground-400 text-sm mt-1">
+            Surah {surahId}
+            {surah ? ` · ${surah.translation}` : ''}
+          </p>
         </div>
         <Badge variant={percentage >= 100 ? 'success' : percentage >= 50 ? 'warning' : 'default'}>
           {Math.round(percentage)}%

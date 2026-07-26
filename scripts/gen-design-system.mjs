@@ -57,7 +57,8 @@ const RAMPS = {
 };
 const SEMANTIC = ['bg', 'surface', 'surface-2', 'border', 'ink', 'muted', 'subtle',
   'success', 'warning', 'error', 'info'];
-const TAJWEED = ['madd', 'noon-saakin', 'meem-saakin', 'qalqalah', 'ghunnah', 'makharij'];
+const TAJWEED = ['madd', 'noon-saakin', 'meem-saakin', 'qalqalah', 'ghunnah',
+  'makharij', 'lam-shamsiyyah', 'idghaam', 'hamzat-wasl', 'silent'];
 
 // ── Drift check: Tailwind must mirror globals.css ──────────────────────────
 const problems = [];
@@ -292,13 +293,12 @@ await writeFile(join(OUT, 'preview/buttons.html'), shell(
 ${Object.entries(SIZES).map(([s, pad]) => `<button style="${style};padding:${pad};border-radius:${tokens.get('radius-md')};cursor:pointer">${s}</button>`).join('')}
 <button style="${style};padding:${SIZES.md};border-radius:${tokens.get('radius-md')};opacity:.5">disabled</button>
 </div>`).join('\n') + `
-<p class="note"><strong>Known defect, not a specification.</strong> The primary
-variant ships <code>hover:bg-gold-500</code>, which is identical to its base
-<code>bg-gold-500</code> — so the app's main call to action has no visible hover
-state. <code>active:</code> correctly uses <code>gold-600</code>, which
-globals.css documents as "pressed". The intended hover is
-<code>gold-400</code> or <code>gold-600</code>; it has not been chosen yet, so
-this card documents the bug rather than pretending it away.</p>`,
+<p class="note">Primary hover is <code>gold-400</code> (${ratio(colour('gold-400'), CANVAS).toFixed(1)}:1
+against canvas ink) and pressed is <code>gold-600</code>, which globals.css
+documents as "pressed". This shipped for a while as
+<code>hover:bg-gold-500</code> — identical to the base — so the app's main call
+to action did not respond to the pointer at all. It was the only such no-op
+across all 44 components.</p>`,
   'Four variants, three sizes. Primary is gold fill with canvas-dark ink at 7.8:1.'
 ), 'utf-8');
 
@@ -364,6 +364,54 @@ old qalqalah amber was the gold accent, so neither could be seen as a rule.</p>`
   'Six rule colours, each ≥4.5:1 on canvas and mutually distinguishable.'
 ), 'utf-8');
 
+// 8b — The tajweed reader treatment. The audit found four defects stacked here,
+// so the card shows the wrong rendering beside the right one.
+const RULE_DEMO = [
+  ['\u0628\u0650', null], ['\u0633\u0652', 'hamzat-wasl'], ['\u0645\u0650', null],
+];
+await writeFile(join(OUT, 'preview/tajweed-reader.html'), shell(
+  'Tajweed reader treatment', 'Components',
+  `<h2>Wrong — what shipped</h2>
+<p style="font-family:Inter,system-ui;font-size:1.875rem;direction:rtl;line-height:2">
+<span style="background:#94a3b8;padding:0 2px;border-radius:3px">\u0671</span><span style="background:#14b8a6;padding:0 2px;border-radius:3px">\u0644</span><span style="background:#3b82f6;padding:0 2px;border-radius:3px">\u0631</span>\u0651\u064e\u062d\u0652\u0645\u064e\u0670\u0646\u0650</p>
+<p class="note" style="border-color:${colour('color-error')}">Four defects at once.
+The face is <strong>Inter</strong>, a Latin sans — the verse container carried no
+Arabic font class at all. Each letter is wrapped in a span with
+<code>padding: 0 2px</code>, which breaks the cursive joins and inflates the word
+by <strong>78%</strong> (measured: 57.6px \u2192 102.4px). The colour is painted as
+<code>background-color</code>, so it reads as a highlighter block over the glyph
+rather than as coloured script. And the values are the pre-rebrand palette, three
+of which fail 4.5:1.</p>
+
+<h2>Right — coloured script</h2>
+<p class="ar" style="font-size:1.875rem">
+<span style="color:${colour('tajweed-hamzat-wasl')}">\u0671</span><span style="color:${colour('tajweed-lam-shamsiyyah')}">\u0644</span><span style="color:${colour('tajweed-madd')}">\u0631\u0651\u064e</span>\u062d\u0652\u0645\u064e\u0670\u0646\u0650</p>
+<p class="note">Amiri, <code>lang="ar"</code>, <code>leading-arabic</code>, and
+<code>color</code> on the span with no padding, background or border-radius.
+Measured: a span that sets only <code>color</code> renders at
+<strong>exactly the same width as plain text</strong> — 57.6px either way — so the
+joins survive intact. This is also what a printed Tajweed Quran does: it colours
+the letters.</p>
+
+<h2>All ten rule colours on script</h2>
+<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))">
+${TAJWEED.map((r) => `<div style="background:${colour('ground-900')};border:1px solid ${colour('ground-700')};
+  border-radius:${tokens.get('radius-md')};padding:12px">
+  <div class="ar" style="font-size:1.75rem;color:${colour(`tajweed-${r}`)}">\u0631\u064e\u0628\u0651\u0650\u0643\u064e</div>
+  <code style="font-size:.7rem;color:var(--muted)">${r} \u00b7 ${colour(`tajweed-${r}`)} \u00b7 ${ratio(colour(`tajweed-${r}`), CANVAS).toFixed(1)}:1</code></div>`).join('')}
+</div>
+<p class="note">The renderer classifies <strong>ten</strong> rules; only six had
+tokens. The four added — lam-shamsiyyah, idghaam, hamzat-wasl, silent — were
+chosen against numbers rather than by eye: each is \u2265 4.5:1 on canvas,
+\u2265 25 CIE76 from every other rule colour so the coding actually distinguishes,
+and \u2265 22 from gold-500 and leaf-500 so no rule looks like the accent or like
+progress. Tightest pair is idghaam/qalqalah at \u0394E 25.0 \u2014 both warm, and hue 0
+was the only gap the existing six left open. <strong>silent</strong> is
+deliberately ground-400 rather than a new hue: "not pronounced" should read as
+de-emphasised text, not as another colour competing for attention.</p>`,
+  'What shipped, what it should be, and why the ten colours are the ten they are.'
+), 'utf-8');
+
 // 9 — Forms
 await writeFile(join(OUT, 'preview/forms.html'), shell(
   'Forms', 'Components',
@@ -427,10 +475,11 @@ Buttons · Badges & progress · Surfaces & cards · Forms
 6. **Write full class names.** \`bg-\${x}-500\` generates nothing; so does a token
    the palette never defined — \`arabic-green\` compiled to nothing for months.
 
-## Known deviations, documented not hidden
-- Primary button \`hover:\` equals its base colour — no visible hover on the main CTA.
-- 5 form controls, 2 label associations: at least 3 unlabelled inputs (WCAG 2.1 AA).
-- \`--font-naskh\` has no Tailwind \`fontFamily\` entry, so \`font-naskh\` compiles to nothing.
+## Deviations
+All three deviations this system was first published with are now fixed:
+primary-button hover, the missing \`font-naskh\` utility, and the tajweed reader.
+The unlabelled-input finding did not reproduce against the live DOM — every
+control had an accessible name via \`aria-label\` or a wrapping label.
 `, 'utf-8');
 
 process.stdout.write(`wrote design system to ${OUT}\n`);

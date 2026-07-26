@@ -104,7 +104,17 @@ export function TajweedViewer({
             </div>
           </div>
 
-          <div className="text-3xl text-center leading-loose" dir="rtl">
+          {/* lang="ar" + .text-arabic (Amiri) + leading-arabic. This carried only
+              `text-3xl text-center leading-loose`, no Arabic font class at all, so
+              the Quran itself rendered in the Latin body sans (IBM Plex Sans) —
+              on the one screen whose whole purpose is displaying scripture.
+              leading-loose is Tailwind's generic 2.0; leading-arabic is the
+              system's 2.1, sized for stacked diacritics. */}
+          <div
+            className="text-3xl text-center leading-arabic text-arabic"
+            dir="rtl"
+            lang="ar"
+          >
             <TajweedText
               text={currentVerse.text_uthmani}
               tags={currentVerse.tajweed_tags}
@@ -129,7 +139,7 @@ export function TajweedViewer({
             <div className="text-sm text-gray-500 mb-1">
               Ayah {verse.ayah}
             </div>
-            <div className="leading-loose" dir="rtl">
+            <div className="leading-arabic text-arabic" dir="rtl" lang="ar">
               <TajweedText
                 text={verse.text_uthmani}
                 tags={verse.tajweed_tags}
@@ -200,15 +210,21 @@ function TajweedText({
     <>
       {segments.map((seg, i) =>
         seg.color ? (
-          <span
-            key={i}
-            style={{
-              backgroundColor: seg.color,
-              padding: '0 2px',
-              borderRadius: '3px',
-            }}
-            title={seg.rule ?? undefined}
-          >
+          // `color`, and nothing else. This was `backgroundColor` with
+          // `padding: '0 2px'` and a border radius, which caused three separate
+          // problems at once:
+          //
+          //   - it painted a highlighter block OVER each glyph instead of
+          //     colouring the script, which is not what a Tajweed Quran does;
+          //   - the padding broke Arabic cursive joining, because a span with
+          //     horizontal padding forces the shaping engine to break the run.
+          //     Measured: بِسْمِ went 57.6px → 102.4px, a 78% inflation, with the
+          //     letters rendering in isolated rather than connected forms;
+          //   - cream ink on a mid-tone fill left the letters low-contrast.
+          //
+          // A span that sets ONLY color measures byte-identical to plain text
+          // (57.6px either way), so the joins survive completely intact.
+          <span key={i} style={{ color: seg.color }} title={seg.rule ?? undefined}>
             {seg.text}
           </span>
         ) : (

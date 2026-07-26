@@ -221,7 +221,7 @@ export function ExerciseRunner() {
               <p dir="auto" className="text-sm text-gray-300 text-naskh">
                 {current.explanation}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-ground-400">
                 Source: Quran {current.source}
                 {getSurah(Number(current.source.split(':')[0]))
                   ? ` — ${getSurah(Number(current.source.split(':')[0]))!.name}`
@@ -244,7 +244,7 @@ export function ExerciseRunner() {
       {/* Licence condition, not a courtesy: the corpus is GPL and requires a
           visible link wherever its data is surfaced. */}
       {attribution && (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-ground-400">
           Grammar data from{' '}
           <a
             href={attribution.url}

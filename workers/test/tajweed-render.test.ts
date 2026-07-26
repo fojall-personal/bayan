@@ -15,15 +15,20 @@ import { segmentVerse, type RenderTag } from '../../src/app/lib/tajweed-render';
 /** Al-Fatiha 1:1 from the pinned Tanzil Uthmani text — 38 codepoints. */
 const BISMILLAH = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
 
-/** Its real annotations, as returned by GET /api/tajweed/verses/1. */
+/** Its real annotations, as returned by GET /api/tajweed/verses/1.
+ *
+ * Colours updated with migration 0016, which aligned tajweed_rules with the
+ * design palette. They had been the pre-rebrand values, three of which failed
+ * 4.5:1 on the canvas. This fixture documents what the API returns, so it has
+ * to move when the API does. */
 const TAGS_1_1: RenderTag[] = [
-  { rule: 'hamzat_wasl', start: 7, end: 8, color: '#94a3b8', category: 'hamzat_wasl' },
-  { rule: 'hamzat_wasl', start: 15, end: 16, color: '#94a3b8', category: 'hamzat_wasl' },
-  { rule: 'lam_shamsiyyah', start: 16, end: 17, color: '#14b8a6', category: 'lam_shamsiyyah' },
-  { rule: 'madd_2', start: 24, end: 25, color: '#3b82f6', category: 'madd' },
-  { rule: 'hamzat_wasl', start: 28, end: 29, color: '#94a3b8', category: 'hamzat_wasl' },
-  { rule: 'lam_shamsiyyah', start: 29, end: 30, color: '#14b8a6', category: 'lam_shamsiyyah' },
-  { rule: 'madd_246', start: 35, end: 36, color: '#3b82f6', category: 'madd' },
+  { rule: 'hamzat_wasl', start: 7, end: 8, color: '#9fb3c8', category: 'hamzat_wasl' },
+  { rule: 'hamzat_wasl', start: 15, end: 16, color: '#9fb3c8', category: 'hamzat_wasl' },
+  { rule: 'lam_shamsiyyah', start: 16, end: 17, color: '#b6d96a', category: 'lam_shamsiyyah' },
+  { rule: 'madd_2', start: 24, end: 25, color: '#6ba8f5', category: 'madd' },
+  { rule: 'hamzat_wasl', start: 28, end: 29, color: '#9fb3c8', category: 'hamzat_wasl' },
+  { rule: 'lam_shamsiyyah', start: 29, end: 30, color: '#b6d96a', category: 'lam_shamsiyyah' },
+  { rule: 'madd_246', start: 35, end: 36, color: '#6ba8f5', category: 'madd' },
 ];
 
 const coloured = (segs: ReturnType<typeof segmentVerse>) =>
@@ -72,7 +77,7 @@ describe('segmentVerse', () => {
     const segs = segmentVerse(BISMILLAH, TAGS_1_1);
     const madd = segs.filter((s) => s.category === 'madd');
     expect(madd).toHaveLength(2);
-    for (const m of madd) expect(m.color).toBe('#3b82f6');
+    for (const m of madd) expect(m.color).toBe('#6ba8f5');
   });
 
   it('returns the text untouched when there are no tags', () => {
@@ -88,8 +93,8 @@ describe('segmentVerse', () => {
   describe('overlaps — 40 pairs exist in the corpus', () => {
     // 2:18 is a real case: ghunnah [2,6) meets iqlab [4,8).
     const overlapping: RenderTag[] = [
-      { rule: 'ghunnah', start: 2, end: 6, color: '#ec4899', category: 'ghunnah' },
-      { rule: 'iqlab', start: 4, end: 8, color: '#22c55e', category: 'noon_saakin' },
+      { rule: 'ghunnah', start: 2, end: 6, color: '#f58bc0', category: 'ghunnah' },
+      { rule: 'iqlab', start: 4, end: 8, color: '#7fd8c0', category: 'noon_saakin' },
     ];
 
     it('still reassembles the text exactly', () => {

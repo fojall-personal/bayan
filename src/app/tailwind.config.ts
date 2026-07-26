@@ -75,6 +75,10 @@ const config: Config = {
           qalqalah: '#f58c5c',
           ghunnah: '#f58bc0',
           makharij: '#b99bf0',
+          'lam-shamsiyyah': '#b6d96a',
+          idghaam: '#f58a8a',
+          'hamzat-wasl': '#9fb3c8',
+          silent: '#8b8471',
         },
       },
       // The var() names come from next/font in app/layout.tsx, so the families

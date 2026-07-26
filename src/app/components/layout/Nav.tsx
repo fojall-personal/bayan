@@ -126,7 +126,10 @@ export function Nav() {
             aria-expanded={open}
             aria-controls="mobile-nav"
             aria-label={open ? 'Close menu' : 'Open menu'}
-            className="rounded-md p-2 text-ground-300 transition-colors hover:bg-ground-800 hover:text-ground-50 md:hidden"
+            // 44x44 minimum: this measured 36x36, and it is the only way to
+            // navigate on a phone. WCAG 2.5.5 and both platform HIGs put the
+            // floor at 44.
+            className="grid min-h-11 min-w-11 place-items-center rounded-md text-ground-300 transition-colors hover:bg-ground-800 hover:text-ground-50 md:hidden"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               <path

@@ -108,8 +108,8 @@ describe('tajweed rule → category mapping', () => {
 
 describe('colourTags', () => {
   const palette = new Map([
-    ['qalqalah', { color: '#f59e0b', name: 'Qalqalah (قلقة)' }],
-    ['noon_saakin', { color: '#22c55e', name: 'Noon Saakin & Tanween' }],
+    ['qalqalah', { color: '#f58c5c', name: 'Qalqalah (قلقة)' }],
+    ['noon_saakin', { color: '#7fd8c0', name: 'Noon Saakin & Tanween' }],
   ]);
 
   it('attaches colour and category name from the palette', () => {
@@ -119,7 +119,7 @@ describe('colourTags', () => {
       start: 4,
       end: 5,
       category: 'noon_saakin',
-      color: '#22c55e',
+      color: '#7fd8c0',
       categoryName: 'Noon Saakin & Tanween',
     });
   });

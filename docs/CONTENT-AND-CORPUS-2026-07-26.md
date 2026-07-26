@@ -494,6 +494,91 @@ candidates instead of 150. Selection now prefers 4-option items and falls back t
 
 The bank is now **4,950 exercises across 7 kinds**.
 
+## 10. The first UI audit, and what it found
+
+Nobody had ever looked at this app. Every UI change until now was made by reading
+code and verified with tsc, lint and a build — none of which look at pixels. The
+two defects reported from real use (squished script, backwards question marks) were
+the only visual QA it had ever had.
+
+So the app was served locally against the real database — Access blocks the
+deployed site, but the middleware falls back to a bearer token when the Access
+variables are unset — and driven at 1280x720 and 375x812. Everything below is
+measured from the live DOM, not read off a screenshot, because the browser pane
+produced one rendering artifact that looked exactly like a layout bug.
+
+### The flagship feature was broken four ways at once
+
+"Color-coded Quran text with rule visualization" is the headline of the Tajweed
+page. It was rendering:
+
+1. **The Quran in a Latin sans-serif.** The verse container carried
+   `text-3xl text-center leading-loose` — no Arabic font class, no `lang`. Computed
+   family: IBM Plex Sans. Every Arabic typography decision in the design system was
+   bypassed on the one screen that displays scripture.
+2. **With the cursive joins broken.** Each tagged letter was wrapped in a span with
+   `padding: 0 2px`, which forces the shaping engine to break the run. Measured:
+   بِسْمِ went 57.6px to 102.4px, a **78% inflation**, letters rendering in isolated
+   rather than connected forms. For Arabic that is a correctness failure.
+3. **Coloured as highlighter blocks.** `background-color` with a border radius,
+   painted over the glyphs rather than colouring the script.
+4. **In the palette the app had abandoned.** 9 of 10 rule colours were absent from
+   globals.css, and three failed 4.5:1 outright — makharij 4.44, idghaam 3.89,
+   silent 3.89.
+
+globals.css says the tajweed colours were "retuned for the green ground" and names
+the two problems it fixed. The retuning reached the CSS tokens. It never reached
+`tajweed_rules` in D1 — which is what the reader actually renders, through an
+inline style. The fix that was documented had never shipped.
+
+**The decisive experiment** was whether spans break Arabic shaping at all, because
+that determined the whole approach. They do not: a span setting only `color`
+measures **byte-identical to plain text**, 57.6px either way. Padding was the
+entire cause. So the reader now colours the script — which is also what a printed
+Tajweed Quran does — in Amiri, with `lang="ar"` and `leading-arabic`.
+
+**Four rule colours had no token at all**, because the renderer classifies ten
+categories and the palette defined six. Those were designed against numbers rather
+than by eye: each ≥ 4.5:1 on canvas, ≥ 25 CIE76 from every other rule colour so the
+coding actually distinguishes, and ≥ 22 from gold-500 and leaf-500 so no rule looks
+like the accent or like progress. Tightest pair is idghaam/qalqalah at ΔE 25.0 —
+both warm, and hue 0 was the only gap the existing six left. `silent` is
+deliberately ground-400 rather than a new hue: a letter that is not pronounced
+should read as de-emphasised text, not as another colour competing for attention.
+Migration 0016 aligns the data; the test fixtures moved with it, since their comment
+claims to document what the API returns.
+
+### The rest
+
+- **The GPL attribution failed contrast** at 4.12:1 — ground-500 at 12px. That token
+  is designated "disabled ink, icon rest", not text. Now ground-400, 5.05:1. It is
+  also a licence condition, which makes it the worst thing to render sub-legibly.
+- **The mobile menu trigger was 36×36**, the only way to navigate on a phone. Now
+  44×44. The segmented control was 33px high; now 44. Sub-44px targets went 6 to 1.
+- **The memorization index showed no Arabic at all** — a learner memorising Quran saw
+  only transliterations and counts. surahs.ts already carried the Arabic from
+  Tanzil's metadata, so it had been available the whole time. Now rendered in Amiri
+  at 20px with `lang="ar"`.
+- **The primary button had no hover state.** `hover:bg-gold-500` was identical to its
+  base, so the app's main call to action did not respond to the pointer. Now
+  gold-400. It was the only such no-op across all 44 components.
+
+### Two findings that did not survive measurement
+
+Both were mine, inferred from static greps, and both were wrong:
+
+- **"Mobile is likely untested — 33 responsive utilities is thin."** At 375×812 there
+  is no horizontal overflow, the hamburger has correct `aria-label` and
+  `aria-expanded`, all nine links render at 45px when open, and the Arabic fits. The
+  responsive layout is sound.
+- **"At least 3 unlabelled form controls."** Not reproduced. Every control on the live
+  pages had an accessible name; the static count compared `htmlFor` against control
+  tags without accounting for `aria-label` or wrapping labels.
+
+Verified working and left alone: the focus ring is exactly per spec — `:focus-visible`
+matches on real keyboard Tab, 2px solid gold-500 at 2px offset. Both Arabic faces
+load real 700 weights, so bold Arabic is not synthesised.
+
 ## Still open
 
 - **The 96.2% gloss agreement is a screen, not a proof.** A correct word-by-word
@@ -501,6 +586,8 @@ The bank is now **4,950 exercises across 7 kinds**.
   with a truncating stemmer will both miss subtle errors and flag correct glosses.
   It rules out gross errors; it cannot certify nuance. No bulk gloss source of
   documented provenance independent of Leeds was findable.
+- **The wordmark link is 88×22.** Below the tap floor, but it is a text logo rather
+  than a control users hunt for, so it was left as it is.
 - **Whether the explanations teach well is still unexamined.** Reachability, the
   ramp, prerequisite integrity and exercise weighting are now gated. Whether the
   prose actually lands is a judgement no script makes.
