@@ -434,6 +434,317 @@ yet match.</p>`,
   'Label above, gold focus ring, error text below the field.'
 ), 'utf-8');
 
+// ── Flows ──────────────────────────────────────────────────────────────────
+// Not tokens or components: the shape of the experience. Added because the entry
+// point sends a fully-onboarded learner back to the 15-minute placement test
+// every single time.
+
+const box = (title, body, tone = 'ground-800') =>
+  `<div style="background:${colour(tone)};border:1px solid ${colour('ground-700')};
+   border-radius:${tokens.get('radius-md')};padding:14px 16px">
+   <strong style="font-size:.9rem">${title}</strong>
+   <div style="color:var(--muted);font-size:.8125rem;margin-top:4px">${body}</div></div>`;
+const arrow = `<div style="text-align:center;color:${colour('ground-600')};font-size:1.1rem;margin:6px 0">↓</div>`;
+
+await writeFile(join(OUT, 'preview/flow-entry.html'), shell(
+  'Entry routing', 'Flows',
+  `<h2>What happens now</h2>
+<div style="max-width:520px">
+${box('/ — goal picker', 'Four goal cards, stored in localStorage. Static client page.', 'ground-900')}
+${arrow}
+${box('Only CTA: “Continue to assessment”', '<code>href="/assessment"</code>, hard-coded. 15 minutes, 18 questions across 4 modules.', 'ground-900')}
+</div>
+<p class="note" style="border-color:${colour('color-error')}"><strong>It never asks
+whether you have already done this.</strong> The assessment writes
+<code>onboarding_completed = 1</code> and <code>current_path</code> to the users
+table on submit. Nothing at the entry point reads either. So a learner who
+finished the placement test — recorded, with a stored path — lands back on the
+goal picker, and the only way forward is the 15-minute test again.<br><br>
+There are also <strong>two separate onboarding flows</strong> that do not know
+about each other: this one, and an <code>&lt;Onboarding/&gt;</code> component
+<em>inside</em> <code>/dashboard</code> that asks different questions (reading
+ability, memorized surahs, biggest challenge) and POSTs to
+<code>/api/auth/onboarding</code>. Both set <code>onboarding_completed = 1</code>.
+Neither is canonical.</p>
+
+<h2>What it should do</h2>
+<div style="max-width:520px">
+${box('/ — decide, do not pitch', 'Read the profile once. Route. Render nothing else.', 'ground-900')}
+${arrow}
+<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+${box('New → onboarding', 'Goal, then a real choice: place me (15 min) <em>or</em> start me at a level I pick. Skippable, resumable later.')}
+${box('Returning → /today', 'Reviews due, next lesson, practice at your level. Never the goal picker again.')}
+</div>
+</div>
+<p class="note">One flow, not two. The assessment becomes an <em>option</em> rather
+than a gate — a 15-minute wall before any content is the classic
+onboarding-abandonment shape, and everything behind it works fine without a
+placement score: exercises are filterable by level, lessons have their own
+prerequisite chain, memorization starts wherever you point it.</p>`,
+  'Why a returning learner keeps landing on the placement test, and what the root route should do instead.'
+), 'utf-8');
+
+await writeFile(join(OUT, 'preview/flow-today.html'), shell(
+  'Today — the resumed home', 'Flows',
+  `<div style="max-width:560px">
+  <div style="display:flex;justify-content:space-between;align-items:baseline">
+    <div><div style="font-family:Amiri,serif;font-size:1.6rem">Today</div>
+    <div style="color:var(--muted);font-size:.8125rem">Understand Classical Arabic · Level 3</div></div>
+    <span style="background:${colour('gold-500')}1a;color:${colour('gold-400')};padding:4px 12px;
+     border-radius:999px;font-size:.8rem">4 day streak</span>
+  </div>
+
+  <div style="background:${colour('ground-900')};border:1px solid ${colour('gold-500')}66;
+   border-radius:${tokens.get('radius-lg')};padding:20px;margin-top:20px">
+    <div style="font-size:.7rem;letter-spacing:.16em;color:${colour('gold-400')}">NEXT</div>
+    <div style="font-size:1.15rem;font-weight:600;margin-top:6px">6 ayahs due for review</div>
+    <div style="color:var(--muted);font-size:.8125rem;margin-top:4px">
+      Al-Fatihah 1–4, An-Nas 1–2 · about 7 minutes</div>
+    <div style="background:${colour('gold-500')};color:${colour('ground-950')};font-weight:600;
+     text-align:center;padding:11px;border-radius:${tokens.get('radius-md')};margin-top:16px">Start review</div>
+  </div>
+
+  <h2>Then</h2>
+  <div class="grid" style="gap:10px">
+${box('Lesson 6 — The Idafa Construction', 'Level 2 · 20 min · unlocked by Case Endings')}
+${box('20 grammar exercises at level 3', 'Verb form, case ending, word meaning · drawn from 4,950')}
+${box('Add an ayah to memorize', 'Curriculum suggests An-Nas 3 next · 908 ordered units')}
+  </div>
+</div>
+<p class="note"><strong>Every number on this screen already has an endpoint.</strong>
+<code>GET /api/memorization/review/today</code> for what is due,
+<code>/api/learning/next</code> for the next unlocked lesson,
+<code>/api/progress/dashboard</code> for the streak, and the exercise bank filters
+by level and kind. The assessment supplies the level and path. The machinery for
+“here is your next thing” is complete and the entry point uses none of it —
+it shows a goal picker instead.<br><br>
+One primary action, chosen by what is actually due rather than by a grid of eight
+equal tiles. Anti-slop tell 3 and 11 are both feature-tile grids; a dashboard of
+equal cards is how you avoid deciding what matters.</p>`,
+  'One screen, one primary action, every value drawn from an endpoint that already exists.'
+), 'utf-8');
+
+await writeFile(join(OUT, 'preview/flow-nav.html'), shell(
+  'Navigation', 'Flows',
+  `<h2>Now — eight items, no hierarchy</h2>
+<div class="row" style="gap:8px">
+${['Dashboard','Learn','Memorize','Tajweed','Grammar','Tutor','Progress','Advanced']
+  .map((n) => `<span style="background:${colour('ground-800')};border:1px solid ${colour('ground-700')};
+   padding:6px 12px;border-radius:${tokens.get('radius-md')};font-size:.8125rem">${n}</span>`).join('')}
+</div>
+<p class="note" style="border-color:${colour('color-error')}">Dashboard and Progress
+both answer “how am I doing”. “Advanced” names a drawer rather than a subject, so
+nothing in it is findable. Four of the eight — Learn, Memorize, Tajweed, Grammar —
+are the actual activities, and they carry the same visual weight as the other four.</p>
+
+<h2>Proposed — one home, four activities, one record</h2>
+<div class="row" style="gap:8px">
+${[['Today','gold-500'],['Read','ground-800'],['Memorize','ground-800'],['Grammar','ground-800'],['Tutor','ground-800'],['Progress','ground-800']]
+  .map(([n,c]) => `<span style="background:${c==='gold-500'?colour('gold-500'):colour('ground-800')};
+   color:${c==='gold-500'?colour('ground-950'):colour('ground-50')};
+   border:1px solid ${colour('ground-700')};padding:6px 12px;
+   border-radius:${tokens.get('radius-md')};font-size:.8125rem;font-weight:${c==='gold-500'?600:400}">${n}</span>`).join('')}
+</div>
+<p class="note"><strong>Read</strong> absorbs Tajweed — the coloured reader IS how
+you read here, so it is a view of the text rather than a separate subject.
+<strong>Today</strong> replaces Dashboard as the home. <strong>Progress</strong>
+keeps the record and the certificate. <strong>Advanced</strong> dissolves: its
+tools move next to the activity they belong to, which is where someone would look
+for them.<br><br>
+Six items fit a phone without a scroll and leave the mobile menu meaningful. This
+is a proposal about information architecture, not a token change — worth arguing
+with before anyone builds it.</p>`,
+  'Eight items with two overlaps and one grab-bag, versus six with distinct jobs.'
+), 'utf-8');
+
+// ── What the app should be ─────────────────────────────────────────────────
+//
+// Not tokens or components: a product thesis, argued from what the corpus makes
+// computable. Every number in these cards was measured from the pinned text and
+// the morphology corpus, not estimated.
+
+const COVERAGE = [
+  [25, 91], [50, 221], [100, 620], [150, 993],
+  [250, 1867], [400, 3046], [600, 4222], [1000, 5462],
+];
+const AYAHS = 6236;
+const TOP_ROOTS = [
+  ['ٱللَّه', 'Alh', 2851, 5.7], ['قَوْل', 'qwl', 1722, 3.4], ['كَوْن', 'kwn', 1390, 2.8],
+  ['رَبّ', 'rbb', 980, 2.0], ['أَمْن', 'Amn', 879, 1.8], ['عَلْم', 'Elm', 854, 1.7],
+];
+
+
+// ── 1. The thesis ──────────────────────────────────────────────────────────
+await writeFile(join(OUT, 'preview/product-thesis.html'), shell(
+  'What Bayan is', 'Product',
+  `<p style="font-size:1.05rem;max-width:64ch;line-height:1.6">
+Bayan is not a course you finish. It is <strong>one closed text, seen through
+several lenses, widened a little every day</strong>.</p>
+
+<h2>The advantage nobody is using</h2>
+<p class="note" style="border-color:${colour('gold-500')}">Every language app works
+against an open vocabulary: it can never tell you how much of the language you
+know, because nobody knows how big the language is. <strong>This corpus is
+closed.</strong> 6,236 ayahs, 77,429 words, 1,642 roots — all of it already
+parsed, glossed and counted in this repository.<br><br>
+So Bayan can make a promise no other app can, and have it be
+<em>arithmetically true</em>.</p>
+
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-top:20px">
+${[[63, '50%', 'of every rooted word'], [249, '80%', 'of every rooted word'],
+   [400, 'half', 'of all 6,236 ayahs, fully'], [600, '68%', 'of all ayahs, fully']]
+  .map(([n, pct, label]) => `<div style="background:${colour('ground-900')};
+   border:1px solid ${colour('gold-500')}4d;border-radius:${tokens.get('radius-lg')};padding:18px">
+   <div style="font-size:2rem;font-weight:700;color:${colour('gold-400')};line-height:1">${n}</div>
+   <div style="font-size:.75rem;letter-spacing:.14em;color:${colour('ground-400')};margin:6px 0">ROOTS UNLOCK</div>
+   <div style="font-size:1.05rem;font-weight:600">${pct}</div>
+   <div style="color:var(--muted);font-size:.8125rem">${label}</div></div>`).join('')}
+</div>
+
+<h2>The six commonest roots are 17% of the text</h2>
+<div class="row" style="gap:10px">
+${TOP_ROOTS.map(([ar, tr, n, pct]) => `<div style="background:${colour('ground-900')};
+  border:1px solid ${colour('ground-700')};border-radius:${tokens.get('radius-md')};
+  padding:10px 14px;text-align:center">
+  <div class="ar" style="font-size:1.4rem">${ar}</div>
+  <code style="font-size:.65rem;color:var(--muted)">${tr}</code>
+  <div style="font-size:.8rem;color:${colour('gold-400')}">${pct}%</div></div>`).join('')}
+</div>
+
+<h2>What follows from that</h2>
+<div class="grid" style="gap:10px;margin-top:8px">
+${box('The unit of work is an ayah, not a lesson',
+  'Eight modules are eight views of the same 6,236 verses. Reciting, reading, parsing and memorizing an ayah are one activity seen four ways, not four places to visit.')}
+${box('Progress is coverage, not completion',
+  '"Level 3, 4-day streak" says nothing. "You can now read 620 ayahs end to end" is true, checkable, and worth another ten minutes tomorrow.')}
+${box('The curriculum orders itself',
+  'Roots in frequency order. No syllabus to author, no opinion to defend — and the app can show you exactly which ayahs each new root just opened.')}
+${box('The session ends on the text',
+  'Reviews, then one new thing, then read a passage your new vocabulary just unlocked. Ending on scripture is the point. Ending on a quiz score is not.')}
+</div>
+<p class="note">Measured, not estimated: coverage from the pinned Tanzil Uthmani
+text and the Quranic Arabic Corpus v0.4 in this repo. Words with no root — particles
+and pronouns — count as known, since they are learned in the first week and are not
+what gates comprehension.</p>`,
+  'One closed text, already fully parsed. That makes an honest promise possible.'
+), 'utf-8');
+
+// ── 2. Coverage as the progress model ──────────────────────────────────────
+const maxA = 5462;
+await writeFile(join(OUT, 'preview/flow-coverage.html'), shell(
+  'Coverage, not completion', 'Product',
+  `<h2>Ayahs you can read end to end, as roots accumulate</h2>
+<div style="max-width:560px">
+${COVERAGE.map(([r, a]) => `<div style="display:flex;align-items:center;gap:12px;margin:7px 0">
+  <code style="width:74px;text-align:right;color:var(--muted);font-size:.75rem">${r} roots</code>
+  <div style="flex:1;background:${colour('ground-800')};height:20px;border-radius:4px;overflow:hidden">
+    <div style="width:${(a / maxA * 100).toFixed(1)}%;height:100%;
+     background:${r >= 400 ? colour('gold-500') : colour('leaf-500')}"></div></div>
+  <span style="width:112px;font-size:.8rem">${a.toLocaleString()} <span style="color:var(--muted)">(${(a / AYAHS * 100).toFixed(0)}%)</span></span>
+</div>`).join('')}
+</div>
+<p class="note"><strong>400 roots is the headline.</strong> It is half the Quran,
+fully readable — every word in 3,046 ayahs. At ten new roots a week that is under a
+year, and the app can say so honestly because it has counted.</p>
+
+<h2>What the progress screen should show</h2>
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+${[['Ayahs fully readable', '620', 'of 6,236 · 9.9%', 'gold-400'],
+   ['Roots known', '100', 'of 1,642 · covers 60% of rooted words', 'leaf-400'],
+   ['Words recognised', '11,300', 'of 77,429 occurrences', 'leaf-400'],
+   ['Surahs fully readable', '31', 'of 114 — mostly Juz 30', 'gold-400']]
+  .map(([label, big, sub, c]) => `<div style="background:${colour('ground-900')};
+   border:1px solid ${colour('ground-700')};border-radius:${tokens.get('radius-lg')};padding:16px">
+   <div style="font-size:.72rem;letter-spacing:.14em;color:${colour('ground-400')}">${label.toUpperCase()}</div>
+   <div style="font-size:1.9rem;font-weight:700;color:${colour(c)};line-height:1.15">${big}</div>
+   <div style="color:var(--muted);font-size:.78rem">${sub}</div></div>`).join('')}
+</div>
+<p class="note">Every one of these is a query away from data already in D1 —
+<code>quran_word_morphology</code> has the roots, <code>quran_word_gloss</code> the
+words, and a per-user "known roots" table is the only thing missing. It is one
+table and one join, and it replaces four vanity metrics with four true ones.<br><br>
+<strong>Streaks stay, but demoted.</strong> A streak measures showing up; coverage
+measures learning. Only one of those is why someone opened the app.</p>`,
+  'A progress model made of true statements about a finite text.'
+), 'utf-8');
+
+// ── 3. The ayah as the unit of work ────────────────────────────────────────
+await writeFile(join(OUT, 'preview/flow-ayah.html'), shell(
+  'The ayah is the unit', 'Product',
+  `<div style="max-width:600px;background:${colour('ground-900')};
+ border:1px solid ${colour('ground-700')};border-radius:${tokens.get('radius-lg')};padding:22px">
+  <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:.78rem">
+    <span>Al-Fatihah 1:2</span><span>every word known · 4 roots</span></div>
+
+  <div class="ar" style="font-size:2.1rem;text-align:center;margin:18px 0">
+    <span style="color:${colour('tajweed-hamzat-wasl')}">ٱ</span>لْحَمْدُ
+    لِلَّهِ رَبِّ <span style="color:${colour('tajweed-madd')}">ٱ</span>لْعَـٰلَمِينَ</div>
+
+  <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;direction:rtl">
+${[['ٱلْحَمْدُ', 'All praise', 'Hmd'], ['لِلَّهِ', 'to Allah', 'Alh'],
+   ['رَبِّ', 'Lord of', 'rbb'], ['ٱلْعَـٰلَمِينَ', 'the worlds', 'Elm']]
+  .map(([ar, en, rt]) => `<div style="background:${colour('ground-800')};
+   border:1px solid ${colour('ground-700')};border-radius:${tokens.get('radius-sm')};
+   padding:7px 10px;text-align:center;min-width:88px">
+   <div class="ar" style="font-size:1.1rem">${ar}</div>
+   <div style="font-size:.7rem;color:var(--muted)">${en}</div>
+   <code style="font-size:.62rem;color:${colour('gold-400')}">${rt}</code></div>`).join('')}
+  </div>
+
+  <div class="row" style="gap:6px;margin-top:20px;justify-content:center">
+${[['Recite', 'gold-500'], ['Meaning', 'ground-800'], ['Parse', 'ground-800'],
+   ['Memorize', 'ground-800'], ['Ask', 'ground-800']]
+  .map(([n, c]) => `<span style="background:${colour(c)};
+   color:${c === 'gold-500' ? colour('ground-950') : colour('ground-300')};
+   border:1px solid ${colour('ground-700')};padding:7px 14px;
+   border-radius:${tokens.get('radius-md')};font-size:.8rem">${n}</span>`).join('')}
+  </div>
+</div>
+
+<h2>Five lenses, one screen</h2>
+<div class="grid" style="gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+${box('Recite', 'Tajweed colours on the script. Ten rules, all ≥4.5:1. Audio per ayah.')}
+${box('Meaning', 'Word-by-word glosses, 77,429 of them, plus a full translation.')}
+${box('Parse', 'The corpus record: root, lemma, part of speech, form, case. 128,219 segments.')}
+${box('Memorize', 'Add this ayah to the SM-2 schedule from where you are reading it.')}
+${box('Ask', 'The tutor, scoped to THIS ayah — not a free-floating chat tab.')}
+</div>
+<p class="note">All five already exist as separate pages, each with its own surah
+picker, each making you navigate to it and find your place again. They are lenses
+on one object. <strong>Making the ayah the unit removes four surah pickers and
+three navigations.</strong><br><br>
+The header line matters most: <em>"every word known · 4 roots"</em>. That is the
+app telling you this ayah is inside your reach — which is the whole motivational
+loop, and it is one join away from data already stored.</p>`,
+  'Reciting, reading, parsing and memorizing are one activity seen five ways.'
+), 'utf-8');
+
+// ── 4. The daily session ───────────────────────────────────────────────────
+await writeFile(join(OUT, 'preview/flow-session.html'), shell(
+  'The daily session', 'Product',
+  `<div style="max-width:520px">
+${box('1 · Due reviews', 'Whatever SM-2 says is due — memorized ayahs, and roots you met before. Usually 4–8 minutes. Skippable when nothing is due, never invented to fill the slot.', 'ground-900')}
+${arrow}
+${box('2 · One new root', 'The next in frequency order. Shown with its family — the forms it actually takes in the text — and the ayahs it just opened.', 'ground-900')}
+${arrow}
+${box('3 · Read what it unlocked', 'A short passage that is now fully within reach. This is the payoff and it must be last.', 'ground-900')}
+</div>
+<p class="note"><strong>Twelve minutes, and it ends on scripture.</strong> The order
+is the design: a session that ends on a quiz score tells you how you did, and a
+session that ends on reading the text you came for tells you why you bothered.
+<br><br>
+Step 2 is where the closed corpus earns its keep — "this root appears 980 times and
+opens 41 more ayahs for you" is a true sentence the app can compute, and it is far
+more motivating than "Lesson 6 of 10".</p>
+
+<h2>What this replaces</h2>
+<div class="grid" style="gap:10px;grid-template-columns:1fr 1fr">
+${box('Now', 'Land on a goal picker. Choose a goal you already chose. A 15-minute placement test you already passed. Then eight tabs and no suggestion of where to start.', 'ground-900')}
+${box('Proposed', 'Land on today. One primary action, already chosen for you. Two secondary. The text at the end.', 'ground-900')}
+</div>`,
+  'Reviews, one new root, then read what it unlocked. In that order.'
+), 'utf-8');
+
 // Tokens as CSS, for anyone consuming the system directly
 await writeFile(join(OUT, 'colors_and_type.css'),
   `/* Bayan design tokens — GENERATED from src/app/styles/globals.css.\n` +
