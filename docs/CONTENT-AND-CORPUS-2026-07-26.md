@@ -406,18 +406,106 @@ the gate reads and left the file the database is seeded from untouched — green
 gate, stale content, no diff. `--check` runs in CI, the same pattern as
 `sync-pages-config.mjs`.
 
+## 9. Making the course actually teachable
+
+Three items were left open after the external check: the lessons' pedagogy was
+unexamined, three glosses looked weak, and level 5 verb_form was thin. Pulling on
+each found something bigger than the item.
+
+### Four of ten lessons could never be reached
+
+grammar-02's only exercise was a `match`, and the grader excludes `match` from the
+denominator — correctly, since there is no matching implementation. So it scored
+0, never met the 70% completion bar, and never completed. grammar-04 lists it as a
+prerequisite; grammar-08 and grammar-10 depend on grammar-04. **A learner stalled
+permanently at lesson two, and six of the ten were unreachable in practice.**
+
+Every individual lesson was fine. Nothing looked at the composition.
+
+Six lessons also had exactly one gradable exercise, which at a 70% pass mark is
+all-or-nothing: one wrong answer scores 0 and fails the lesson. Every lesson now
+has at least two, so partial credit means something.
+
+`scripts/check-pedagogy.mjs` is new and runs in CI. It simulates the whole path
+from a standing start, and **all 7 seeded defects make it exit non-zero** —
+including the exact shipped bug, its cascade, prerequisite cycles, a missing
+prerequisite id, a backwards ramp (a level-2 lesson depending on a level-3 one),
+and a hole in the level sequence. It asks whether the course *works*;
+`check-content.mjs` asks whether it is *true*. Different questions.
+
+### The glosses were not wrong. The questions were.
+
+I had flagged `عَلَيْهِمْ` → "on themselves" and `هُمُ` → "themselves" as weak
+upstream data. **That was my error.** Read in the source's own running chain —
+"those who earned (Your) wrath | on themselves" — it is idiomatic and correct.
+They only look wrong pulled out of the chain and posed as standalone questions.
+Overriding the translation would have been the wrong fix.
+
+The real defect was next door and much larger: **390 of the 1,200 comprehension
+items — nearly a third — asked about a word with no lexical content.**
+Prepositions, relative pronouns, negation particles, and 30 items on the Quranic
+initials, which have no meaning to give at all. "What does مِن mean?" is not a
+comprehension question; "What does الم mean?" has no answer.
+
+The existing filter was an English wordlist, which cannot know that "Those who" is
+ٱلَّذِينَ. The morphology corpus can: a word is askable when some segment of it is
+a noun, verb, adjective, proper noun or adverb. Verified before relying on it —
+corpus and word-by-word agree on the word count for all 6,236 ayahs, so index N
+is the same word in both. **390 → 0.**
+
+Also fixed: 20 questions displayed a waqf sign dangling off the end of the word
+(`ٱلْأَرْضِ ۖ`), because the source attaches a between-words pause mark to the
+word before it. Marks *inside* a word — the `۟` of `ءَامَنُوٓا۟` — are correct
+Uthmani orthography and were left alone.
+
+### "Level" did not mean anything for three of the five kinds
+
+Level 5 verb_form having 34 of 150 items was a symptom. The cause: **three kinds
+hard-coded their level.** `pos_id` was always 1, `aspect` always 2, `case_ending`
+2 or 3. And `root_id` skipped any root occurring fewer than 20 times while level 5
+is *defined* as fewer than 15 — the filter excluded exactly the band that defines
+the level, so level 5 was unreachable by construction.
+
+Only **13 of 25 (kind, level) buckets existed**, which is exactly what the database
+contained. A learner choosing "Level 5 — rare roots" got 34 verb_form items and
+nothing else; level 1 offered three kinds out of five.
+
+Worse, the cap took the first N candidates in corpus order, so **eight of the
+thirteen live buckets drew on two surahs or fewer, and their highest surah was 2.**
+The learner was studying al-Baqarah and nothing else, and no part of the UI said so.
+
+Now every kind ramps on word-form frequency, so "level" denotes one thing across
+the bank, and selection round-robins over surahs. **All 25 buckets full at 150:
+3,750 derived exercises, up from 1,834, spread over 114 of 114 surahs, balanced
+750 per kind and 750 per level.** The UI labels were rewritten to match, since
+"rare roots" only ever described one kind.
+
+verb_form level 5 was fixed by asking the same question of a rare *word* from a
+well-attested root rather than a rare root. 1,580 level-5 candidates existed under
+the old definition, but a rare root seldom has the three attested forms the
+question needs for real distractors, so nearly all were filtered out downstream.
+
+The new validator caught two pre-existing defects while it was at it: some
+verb_form items offered only 3 options rather than 4. That is kept, deliberately —
+distractors must be forms the corpus attests for that root, and inventing a fourth
+would teach something false. Requiring four would leave level 1 with 125
+candidates instead of 150. Selection now prefers 4-option items and falls back to
+3 only to fill. `aspect` and `case_ending` are inherently three-way.
+
+The bank is now **4,950 exercises across 7 kinds**.
+
 ## Still open
 
-- **Level 5 verb_form is 34 items, not 150** — rare roots do not supply enough
-  whole-word verb candidates. Reported short rather than padded.
 - **The 96.2% gloss agreement is a screen, not a proof.** A correct word-by-word
   gloss can use vocabulary no flowing translation chose, and content-word matching
   with a truncating stemmer will both miss subtle errors and flag correct glosses.
   It rules out gross errors; it cannot certify nuance. No bulk gloss source of
   documented provenance independent of Leeds was findable.
-- **The lessons' pedagogy is unexamined.** Their factual claims are now checked
-  against outside references; sequencing, difficulty ramp and whether the
-  explanations land are not.
+- **Whether the explanations teach well is still unexamined.** Reachability, the
+  ramp, prerequisite integrity and exercise weighting are now gated. Whether the
+  prose actually lands is a judgement no script makes.
+- **Two exercises per lesson is a floor, not a target.** It makes partial credit
+  possible; it does not make a lesson thorough.
 - **Self-recording is unimplemented**, deliberately excluded. The original hook
   was broken and microphone capture cannot be verified headlessly.
 - **The D1 Time Travel drill was retired**, not deferred: every large table is

@@ -47,6 +47,14 @@ jobs:
       - name: Assert seed-lessons.sql matches lessons.json
         run: node scripts/gen-lessons-sql.mjs --check
 
+      # check-content.mjs asks whether a lesson is true. This asks whether the
+      # course can be walked, which had a worse answer: grammar-02's only exercise
+      # was a `match`, which the grader excludes, so it scored 0, never completed,
+      # and blocked grammar-04 → 08 → 10. Four of ten lessons were unreachable and
+      # every individual lesson looked fine.
+      - name: Check the learning path is walkable
+        run: node scripts/check-pedagogy.mjs
+
       # 39 tests over grading, scoring, the SM-2 scheduler and the Quran ingest
       # alignment gate. Every case corresponds to a bug that shipped or a
       # behaviour previously checked only by hand. Adding them found a live one:

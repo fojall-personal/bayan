@@ -49,11 +49,15 @@ const KINDS = [
 
 const LEVELS = [
   { value: '', label: 'All levels' },
-  { value: '1', label: 'Level 1 — commonest words' },
-  { value: '2', label: 'Level 2' },
-  { value: '3', label: 'Level 3' },
-  { value: '4', label: 'Level 4' },
-  { value: '5', label: 'Level 5 — rare roots' },
+  // Level is how often the word occurs in the Quran, and it now means that for
+  // every kind. It used to be a constant for three of the five — pos_id was
+  // always level 1, aspect always 2 — so "Level 5 — rare roots" described only
+  // verb_form, and picking level 5 returned 34 items out of a possible 750.
+  { value: '1', label: 'Level 1 — the commonest words' },
+  { value: '2', label: 'Level 2 — very frequent' },
+  { value: '3', label: 'Level 3 — frequent' },
+  { value: '4', label: 'Level 4 — occasional' },
+  { value: '5', label: 'Level 5 — rare words' },
 ];
 
 export function ExerciseRunner() {

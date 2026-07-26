@@ -77,7 +77,12 @@ for (const s of surahs) {
         surah: su,
         ayah: ay,
         position: pos,
-        arabic: w.text_uthmani ?? w.text ?? '',
+        // A waqf sign separated by a space belongs BETWEEN words, not to this
+        // one, and the source hands it over attached to the preceding word: 20
+        // questions displayed ٱلْأَرْضِ ۖ with a pause mark dangling off the end.
+        // Marks INSIDE a word — the ۟ of ءَامَنُوٓا۟ — are correct Uthmani
+        // orthography and are left exactly as they are.
+        arabic: (w.text_uthmani ?? w.text ?? '').replace(/\s+[\u06D6-\u06ED]+\s*$/u, '').trim(),
         translit: w.transliteration?.text ?? null,
         english: (w.translation?.text ?? '').trim(),
       });
@@ -92,6 +97,47 @@ if (words.length !== EXPECTED_WORDS) {
 if (words.some((w) => !w.arabic || !w.english)) {
   log('REFUSING: some words have no Arabic or no gloss');
   process.exit(2);
+}
+
+// ── Which words carry meaning, according to the corpus ─────────────────────
+//
+// 390 of the first 1,200 items — nearly a third — asked about a word with no
+// lexical content: prepositions, relative pronouns, negation particles, and 30
+// of the Quranic initials (الم), which have no meaning to give. "What does مِن
+// mean?" is not a comprehension question, and "What does الم mean?" has no
+// answer at all.
+//
+// This also settles three glosses I had called weak — عَلَيْهِمْ → "on themselves"
+// and هُمُ → "themselves". Read in the source's own running chain, "those who
+// earned (Your) wrath | on themselves" is idiomatic and correct; they only look
+// wrong pulled out of that chain and posed as standalone questions. So the defect
+// was never in the translation, and overriding it would have been wrong. The
+// defect was asking about words whose glosses are not self-contained.
+//
+// The morphology corpus decides this, not an English wordlist: a word is askable
+// when at least one of its segments is a noun, verb, adjective, proper noun or
+// adverb. Verified before relying on it — corpus and word-by-word agree on the
+// word count for all 6,236 ayahs, so index N means the same word in both.
+const CONTENT_POS = new Set(['N', 'V', 'ADJ', 'PN', 'ADV']);
+const contentWords = new Set();
+{
+  const raw = await readFile(join(root, 'data/quranic-corpus-morphology-0.4.txt'), 'utf-8');
+  const LOCATION = /^\((\d+):(\d+):(\d+):(\d+)\)/;
+  let tagged = 0;
+  for (const line of raw.split('\n')) {
+    if (line[0] !== '(') continue;
+    const cols = line.split('\t');
+    if (cols.length < 4) continue;
+    const m = LOCATION.exec(cols[0]);
+    if (!m) continue;
+    tagged += 1;
+    if (CONTENT_POS.has(cols[2].trim())) contentWords.add(`${m[1]}:${m[2]}:${m[3]}`);
+  }
+  if (tagged !== 128219) {
+    log(`REFUSING: expected 128219 corpus segments, parsed ${tagged}`);
+    process.exit(2);
+  }
+  log(`corpus: ${tagged} segments, ${contentWords.size} words carry lexical content`);
 }
 
 // ── Gloss quality ──────────────────────────────────────────────────────────
@@ -143,7 +189,11 @@ function isTeachable(w) {
   // A gloss that is mostly parenthetical supplies more grammar than meaning.
   const bare = g.replace(/\([^)]*\)/g, '').trim();
   if (bare.length < 3) return false;
-  return [...w.arabic].length >= 3;
+  if ([...w.arabic].length < 3) return false;
+  // The decisive filter: the corpus must tag some segment of this word as a noun,
+  // verb, adjective, proper noun or adverb. An English wordlist cannot do this —
+  // it would have to guess that "Those who" is ٱلَّذِينَ, a relative pronoun.
+  return contentWords.has(`${w.surah}:${w.ayah}:${w.position}`);
 }
 
 /** Word frequency drives level, as it does for vocabulary and grammar. */

@@ -111,6 +111,30 @@
             "answer": "we wrote"
           }
         ]
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which form of كَتَبَ means “they (men) wrote”?",
+        "options": [
+          "كَتَبُوا",
+          "كَتَبْنَ",
+          "كَتَبْنَا",
+          "كَتَبْتُ"
+        ],
+        "correct": 0,
+        "explanation": "The masculine plural past suffix is ـُوا. كَتَبْنَ is “they (women) wrote” and كَتَبْنَا is “we wrote”."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "The past-tense suffix ـْنَا indicates which subject?",
+        "options": [
+          "I",
+          "we",
+          "they (women)",
+          "you (feminine)"
+        ],
+        "correct": 1,
+        "explanation": "كَتَبْنَا is “we wrote”. Note that ـْنَ alone — كَتَبْنَ — is “they (women) wrote”, so the final alif matters."
       }
     ]
   },
@@ -154,6 +178,18 @@
         "correct": 1,
         "explanation": "الْبَابُ is the مبتدأ (subject/noun that begins the sentence).",
         "quranic": false
+      },
+      {
+        "type": "multiple_choice",
+        "question": "What are the two parts of a nominal sentence (جملة اسمية)?",
+        "options": [
+          "فعل and فاعل",
+          "مبتدأ and خبر",
+          "مضاف and مضاف إليه",
+          "صفة and موصوف"
+        ],
+        "correct": 1,
+        "explanation": "A nominal sentence is مبتدأ (subject) + خبر (predicate). فعل and فاعل belong to a verbal sentence."
       }
     ]
   },
@@ -188,6 +224,18 @@
         "question": "Complete: يَكْتُبُ → they (men) write = ___",
         "correct": "يَكْتُبُونَ",
         "explanation": "The masculine plural present suffix is ُونَ (-ūna) — waw, then noon with a fatha."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which present-tense form means “we write”?",
+        "options": [
+          "نَكْتُبُ",
+          "يَكْتُبُ",
+          "تَكْتُبُ",
+          "أَكْتُبُ"
+        ],
+        "correct": 0,
+        "explanation": "The نـ prefix marks “we”. يـ is “he”, تـ is “you” or “she”, and أـ is “I”."
       }
     ]
   },
@@ -237,6 +285,19 @@
         ],
         "correct": 0,
         "explanation": "The subject (فاعل) takes the nominative case with damma (ـُ)."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "In ذَهَبْتُ إِلَى الرَّجُلِ, why does الرَّجُلِ end in a kasra?",
+        "options": [
+          "It is the subject",
+          "It follows a preposition, so it is genitive",
+          "It is the object of the verb",
+          "Every noun ends in a kasra"
+        ],
+        "correct": 1,
+        "explanation": "إِلَى is a preposition, and a noun after a preposition is genitive (مجرور) — marked with a kasra.",
+        "quranic": false
       }
     ]
   },
@@ -355,6 +416,18 @@
         ],
         "correct": 1,
         "explanation": "On a noun it marks the possessor."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "In رَبِّكَ (“your Lord”), which part is the attached pronoun?",
+        "options": [
+          "كَ — the ending",
+          "رَبِّ — the stem",
+          "the whole word",
+          "there is no pronoun"
+        ],
+        "correct": 0,
+        "explanation": "رَبِّكَ is the stem رَبِّ (“Lord”) plus the attached pronoun كَ (“your”). Attached pronouns are always the ending."
       }
     ]
   },
@@ -469,6 +542,18 @@
         ],
         "correct": 1,
         "explanation": "هَٰذَا is the near masculine singular; ذَٰلِكَ is its far counterpart."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which demonstrative is feminine singular and far?",
+        "options": [
+          "تِلْكَ",
+          "هَٰذِهِ",
+          "ذَٰلِكَ",
+          "هَٰذَا"
+        ],
+        "correct": 0,
+        "explanation": "تِلْكَ is the far feminine singular. هَٰذِهِ is its near counterpart, and ذَٰلِكَ is far but masculine."
       }
     ]
   },

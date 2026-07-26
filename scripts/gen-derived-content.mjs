@@ -119,6 +119,23 @@ function levelFromFreq(n) {
   return 5;
 }
 
+/**
+ * How often this exact word form occurs. Needed because three of the five kinds
+ * are not about roots at all, and were given a CONSTANT level as a result:
+ * pos_id was always 1, aspect always 2, case_ending 2 or 3. Only 13 of the 25
+ * (kind, level) buckets were reachable, so a learner who picked "Level 5 — rare
+ * roots" got 34 verb_form items and nothing else, while level 1 offered three
+ * kinds out of five. The label promised a difficulty ramp the bank did not have.
+ *
+ * A word you have met a thousand times is easier to parse than one you have met
+ * twice, whatever is being asked about it — so form frequency ramps every kind.
+ */
+const formFreq = new Map();
+for (const s of segments) {
+  formFreq.set(s.form, (formFreq.get(s.form) ?? 0) + 1);
+}
+const levelFromForm = (form) => levelFromFreq((formFreq.get(form) ?? 0) * 6);
+
 const VERB_FORMS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 const CASE_LABEL = { NOM: 'Nominative (مرفوع)', ACC: 'Accusative (منصوب)', GEN: 'Genitive (مجرور)' };
 const ASPECT_LABEL = { PERF: 'Perfect — past (ماضي)', IMPF: 'Imperfect — present (مضارع)', IMPV: 'Imperative (أمر)' };
@@ -188,7 +205,13 @@ for (const s of segments) {
   if (attested.length < 2) continue; // fewer than 3 options is not a question
   const options = [answer, ...attested.slice(0, 3)].map((f) => `Form ${f}`);
   add('verb_form', s, {
-    level: levelFromFreq(rootFreq.get(s.root) ?? 0),
+    // Was root frequency, which left level 5 with 34 items out of a possible 150.
+    // 1,580 level-5 candidates existed by that measure, but a rare root rarely has
+    // the three attested forms this question needs for real distractors, so nearly
+    // all of them were filtered out downstream. Form frequency asks the same
+    // question of a rare WORD from a well-attested root — which supplies plenty,
+    // and means "level" denotes one thing across all five kinds instead of five.
+    level: levelFromForm(s.form),
     prompt: `Which derived form is ${toArabic(s.form)}?`,
     answer: `Form ${answer}`,
     options,
@@ -205,7 +228,7 @@ for (const s of segments) {
   if (!s.kase || !['N', 'ADJ', 'PN'].includes(s.pos ?? '')) continue;
   const others = Object.keys(CASE_LABEL).filter((k) => k !== s.kase);
   add('case_ending', s, {
-    level: s.pos === 'N' ? 2 : 3,
+    level: levelFromForm(s.form),
     prompt: `What is the case of ${toArabic(s.form)}?`,
     answer: CASE_LABEL[s.kase],
     options: [CASE_LABEL[s.kase], ...others.map((k) => CASE_LABEL[k])],
@@ -216,12 +239,19 @@ for (const s of segments) {
 }
 
 // ── 3. Root identification ─────────────────────────────────────────────────
+// Distractors must be real roots a learner could plausibly confuse, so they come
+// from roots attested at least 5 times. The ANSWER may be rarer than that — which
+// is the whole point of level 5.
 const commonRoots = [...rootFreq.entries()]
-  .filter(([, n]) => n >= 20)
+  .filter(([, n]) => n >= 5)
   .map(([r]) => r);
 for (const s of segments) {
   if (!s.root || !s.lemma) continue;
-  if ((rootFreq.get(s.root) ?? 0) < 20) continue;
+  // Was `< 20 continue`, which made level 5 unreachable by construction:
+  // levelFromFreq calls anything under 15 level 5, so the filter excluded exactly
+  // the band that defines the level. 3 is the floor at which a root is attested
+  // rather than incidental.
+  if ((rootFreq.get(s.root) ?? 0) < 3) continue;
   // Distractors: other common roots sharing a letter, so it is not a shape game.
   const near = commonRoots.filter(
     (r) => r !== s.root && r.length === s.root.length && [...r].some((c) => s.root.includes(c))
@@ -246,7 +276,7 @@ for (const s of segments) {
   const others = ['N', 'V', 'ADJ', 'P', 'PRON', 'CONJ'].filter((p) => p !== s.pos);
   const picks = seededShuffle(others, `pos${s.surah}${s.ayah}${s.word}${s.seg}`).slice(0, 3);
   add('pos_id', s, {
-    level: 1,
+    level: levelFromForm(s.form),
     prompt: `What part of speech is ${toArabic(s.form)}?`,
     answer: POS_LABEL[s.pos],
     options: [POS_LABEL[s.pos], ...picks.map((p) => POS_LABEL[p])],
@@ -259,7 +289,7 @@ for (const s of segments) {
   if (s.pos !== 'V' || !s.aspect) continue;
   const others = Object.keys(ASPECT_LABEL).filter((a) => a !== s.aspect);
   add('aspect', s, {
-    level: 2,
+    level: levelFromForm(s.form),
     prompt: `Is ${toArabic(s.form)} past, present or imperative?`,
     answer: ASPECT_LABEL[s.aspect],
     options: [ASPECT_LABEL[s.aspect], ...others.map((a) => ASPECT_LABEL[a])],
@@ -274,15 +304,96 @@ for (const s of segments) {
 // instead of being padded — level 5 verb_form is genuinely thin because rare
 // roots do not supply enough whole-word verbs.
 const PER_BUCKET = 150;
-const buckets = new Map();
-const chosen = [];
+
+/**
+ * Round-robin over surahs instead of taking the head of the list.
+ *
+ * Candidates are generated in corpus order, so a first-N cap filled almost every
+ * bucket out of surah 2 alone: eight of the thirteen live buckets drew on two
+ * surahs or fewer, and their highest surah was 2. The learner was studying
+ * al-Baqarah and nothing else, which no part of the UI said or implied.
+ *
+ * Deterministic, so regenerating does not churn the bank.
+ */
+function spreadAcrossSurahs(items, cap) {
+  const queues = new Map();
+  for (const e of items) {
+    if (!queues.has(e.surah)) queues.set(e.surah, []);
+    queues.get(e.surah).push(e);
+  }
+  // Within a surah, offer the richest questions first: a 4-option item is a
+  // better test than a 3-option one, so 3-option items only fill what is left.
+  const order = [...queues.keys()]
+    .sort((a, b) => a - b)
+    .map((k) => queues.get(k).sort((x, y) => y.options.length - x.options.length));
+  const out = [];
+  let i = 0;
+  while (out.length < cap) {
+    const live = order.filter((q) => q.length);
+    if (!live.length) break;
+    out.push(live[i % live.length].shift());
+    i += 1;
+  }
+  return out;
+}
+
+const byBucket = new Map();
 for (const e of exercises) {
   const k = `${e.kind}|${e.level}`;
-  const n = buckets.get(k) ?? 0;
-  if (n >= PER_BUCKET) continue;
-  buckets.set(k, n + 1);
-  chosen.push(e);
+  if (!byBucket.has(k)) byBucket.set(k, []);
+  byBucket.get(k).push(e);
 }
+const chosen = [];
+const short = [];
+for (const k of [...byBucket.keys()].sort()) {
+  const picked = spreadAcrossSurahs(byBucket.get(k), PER_BUCKET);
+  if (picked.length < PER_BUCKET) short.push(`${k}=${picked.length}`);
+  chosen.push(...picked);
+}
+// Never let a bucket run short silently: a thin level reads as a complete one.
+if (short.length) log(`           short buckets: ${short.join(' ')}`);
+
+// ── Validate, then refuse ─────────────────────────────────────────────────
+const defects = [];
+for (const e of chosen) {
+  if (!e.options.includes(e.answer)) defects.push(`${e.id}: answer is not an option`);
+  if (new Set(e.options).size !== e.options.length) defects.push(`${e.id}: repeated option`);
+  // Three kinds are legitimately three-way. aspect and case_ending because the
+  // categories have three members. verb_form because its distractors must be
+  // forms the corpus ATTESTS for that root — inventing a fourth would make the
+  // question teach something false, and requiring four would leave level 1 with
+  // 125 candidates instead of 150. Selection below prefers four where it exists.
+  const minOptions =
+    e.kind === 'aspect' || e.kind === 'case_ending' || e.kind === 'verb_form' ? 3 : 4;
+  if (e.options.length < minOptions) {
+    defects.push(`${e.id}: ${e.options.length} options, expected ${minOptions}`);
+  }
+}
+const liveBuckets = new Set(chosen.map((e) => `${e.kind}|${e.level}`));
+const kinds = new Set(chosen.map((e) => e.kind));
+for (const kind of kinds) {
+  for (let lv = 1; lv <= 5; lv += 1) {
+    if (!liveBuckets.has(`${kind}|${lv}`)) {
+      defects.push(
+        `${kind} has no level ${lv} items — the level filter offers a level with ` +
+          'nothing behind it'
+      );
+    }
+  }
+}
+const surahsSeen = new Set(chosen.map((e) => e.surah));
+if (surahsSeen.size < 100) {
+  defects.push(
+    `only ${surahsSeen.size} of 114 surahs represented — the cap is taking the ` +
+      'head of an ordered list again rather than spreading'
+  );
+}
+if (defects.length) {
+  for (const d of defects.slice(0, 20)) process.stderr.write(`  ✘ ${d}\n`);
+  process.stderr.write(`\n${defects.length} defect(s); refusing to emit.\n`);
+  process.exit(1);
+}
+log(`           validated: ${chosen.length} exercises, ${liveBuckets.size} buckets, ${surahsSeen.size}/114 surahs`);
 
 log(`exercises: ${exercises.length} candidates, ${chosen.length} selected`);
 const byKind = {};
