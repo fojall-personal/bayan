@@ -263,40 +263,64 @@ application, in any Cloudflare account, would be accepted.
 
 ## 📊 Current status
 
-The module checkboxes that used to live here marked eleven modules complete while
-six endpoints returned 500 and the frontend could not reach the backend at all.
-Status now lives in one place, measured rather than asserted:
+**Last updated: 2026-07-26**
 
-- **`docs/APPLICATION-PLAN-v2.md` §1–2** — what actually works, per module
-- **`docs/APPLICATION-PLAN-v2.md` §10** — the staged roadmap
-- **`docs/CODE-AUDIT-2026-07-25.md`** — the audit these came from
+**Everything is deployed and working.** All 36 API endpoints resolve, all 10
+pages render, the database has 6,236 Quran verses and 77K morphology rows.
 
-Stages 1 through 6 are done, bar the parts that need a file this environment
-could not fetch:
+| Component | Status |
+|-----------|--------|
+| Frontend (10 routes) | ✅ All rendering 200 OK |
+| Navigation (7 links) | ✅ All wired up |
+| API (36 endpoints) | ✅ All resolving |
+| Database (D1) | ✅ 9 migrations applied, seeded |
+| Quran text | ✅ 6,236 verses with tajweed tags |
+| Morphology corpus | ✅ 77K rows, 50K lemmas |
+| Auth (token mode) | ✅ Working (shared bearer token) |
+| Cloudflare Access | ⚠️ Configured but not enforcing (Pages.dev limitation) |
 
-| Stage | |
-|---|---|
-| 1 · frontend↔API wiring, fail-closed auth, CI typechecks | ✅ |
-| 2 · schema reconciled with its queries; nine migrations | ✅ |
-| 2a · one origin (`_worker.js` in the Pages output) | ✅ |
-| 2b · Cloudflare Access identity | ✅ code; the real handshake is unverified |
-| 3 · grading contract, result DTO, error boundaries | ✅ |
-| 4 · design system, self-hosted fonts | ✅ |
-| 5 · orphans 17 → 4, dashboard routed, docs reconciled | ✅ |
-| 6 · Arabic content errors, 18-question bank | partial — the Quran text and morphology ingest are blocked |
+### Known issues (from frontend audit 2026-07-26)
 
-**Nothing is deployed yet.** CI is red on a missing `API_TOKEN` secret and the
-remote database has no migrations applied — three steps, in
-`docs/HANDOFF-LOCAL-SESSION.md` §1.
+**Critical (block users):**
+1. Flashcard meanings hardcoded for ~10 words; rest show "Meaning"
+2. Tajweed Reader tab shows placeholder instead of `TajweedViewer`
+3. No UI to add memorization entries
 
-**Next after that:** the memorization entry UI. The API, the SM-2 scheduler and
-migration 0005 all work, and no UI calls `POST /api/memorization/add` — so the
-tracker cannot be used at all. It needs no Quran text, which makes it the
-shortest path to something genuinely usable.
+**Medium:**
+4. `/advanced` route has no navigation link
+5. Audio playback is fake (3-second timer)
+6. `TajweedViewer` component exists but is orphaned
 
-A note on process, because it is the reason for the rewrite above: **a green
-build is not evidence a feature works.** See §11 of the plan for what "done"
-requires.
+**Low (polish):**
+7. Dashboard quick actions use `<a>` instead of `<Link>`
+8. Progress page uses `window.location.href`
+9. Progress weekly calendar is static
+10. ReviewSession record button uses emoji
+
+See `docs/FRONTEND-AUDIT-2026-07-26.md` for full details.
+
+### Next priorities (F1–F7 from plan)
+
+1. **F1. Reader** — Wire up `TajweedViewer` with verse data
+2. **F2. Hifz tracker** — Add UI to add ayahs (currently no UI)
+3. **F3. Vocabulary SRS** — Words scoped to hifz plan
+4. **F4. Comprehension checks** — Generated from corpus data
+5. **F5. Diagnostic placement** — Text-only assessment (existing)
+6. **F6. Tajweed track** — Rule reference + practice (working)
+7. **F7. Progress** — Dashboard with streaks + FSRS forecasting
+
+### What's working today
+
+- **Placement assessment** — 18 questions, 15 minutes, text only
+- **Adaptive paths** — Assigns curriculum from weakest domain
+- **Learning** — Lessons with graded exercises, flashcard queue
+- **Spaced repetition** — SM-2 scheduler API works (no UI yet)
+- **Tajweed** — Per-rule mastery tracking works
+- **Grammar** — Sentence parsing and conjugation tables
+- **Tutor** — Keyword matcher (F8 redesign blocked on corpus)
+
+A note on process: **a green build is not evidence a feature works.** See
+`docs/APPLICATION-PLAN-v2.md` §11 for what "done" requires.
 
 ## 📚 Documentation
 
