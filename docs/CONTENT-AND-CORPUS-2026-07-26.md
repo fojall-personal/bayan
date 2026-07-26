@@ -213,15 +213,85 @@ because it is the only one with depth behind it. `/memorization` gains a
 Curriculum tab. Both surface the GPL attribution, which is a licence condition
 rather than a courtesy.
 
+## 6. Comprehension, and a tutor that stopped inventing Arabic
+
+**The F4 gap.** All 754 exercises so far tested labelling — which form, which case,
+which part of speech. Not one asked what a word *means*, because the morphology
+corpus carries no English at all. An app that checks whether you can parse Arabic
+but never whether you can read it is half built.
+
+`quran_word_gloss` closes it: 77,429 words with English glosses from the
+quran.com v4 word-by-word translation, cached under `data/wbw/`. From that,
+1,200 comprehension items in two kinds — `word_meaning` ("what does X mean?") and
+`find_word` ("which word here means Y?"), where the options are the other words of
+that very ayah. Distractors are always real glosses of real words; an invented
+gloss would be both guessable and a claim no source supports. All 1,200 were
+re-verified against the cached source independently of the generator: zero defects.
+
+The bank is now **3,034 exercises across 7 kinds**, after raising the per-bucket
+cap from 60 to 150.
+
+**The tutor was inventing Arabic.** Its madd answer offered السَّآمَّة and
+الْحَآئِرِينَ as canonical examples. Checked against the pinned text: **0
+occurrences each.** Both are fabricated, while the real examples — الضَّآلِّينَ
+(6), السَّمَآء (118), جَآءَ (238) — sit in data the tutor never consulted. A chat
+reply reads as more authoritative than a lesson, which makes this worse than the
+sun-letter errors, not better.
+
+It is now a classifier plus record lookups (`workers/src/lib/tutor-grounding.ts`).
+It answers four things from data — a pasted word, a root, a location like `2:255`,
+a named tajweed rule — and each branch has an explicit "the corpus does not
+annotate this" path. Nothing generates prose about Arabic. No model is called,
+which is both the F8 design and a necessity: Workers AI allows 10,000 neurons/day
+shared across all users.
+
+Verified live: "explain madd" now returns real annotated occurrences with
+locations; `2:255` renders Ayat al-Kursi word by word with glosses.
+
+One defect caught in my own rewrite: `answerWord` first pulled `LIMIT 20000` rows
+and filtered in JS. That is roughly the first eight surahs, so any word later than
+that was unfindable however it was typed. Now an indexed exact match with a
+first-letter-bounded fallback.
+
+## 7. Authored lessons, and the smaller items
+
+Grammar lessons went from 5 to 10 — idafa, attached pronouns, verb forms I–IV,
+demonstratives, negation. Prose cannot be derived, so this is the part that needs
+checking by hand: **every Arabic example was verified to occur in the pinned text
+before the lesson was written**, the same check that caught the tutor's
+fabrications. Occurrence counts ranged from إِيَّاكَ (8) to لَا (4,381).
+
+- **StatCard's positive trend had no colour.** It used `text-arabic-green`, which
+  is not in the palette — `globals.css` lists it as a known dead token and
+  ProgressBar and Badge had already been cleaned of it. Tailwind emits nothing for
+  an undefined token, so a positive trend rendered unstyled while a negative one
+  went red. Now `leaf-400`.
+- **The weekly calendar showed dates and nothing else.** It now marks days with
+  recorded activity, and says so when there is none, rather than looking like a
+  streak tracker that never tracks. Also fixed a real bug: `getDate() - getDay() +
+  1` lands on *next* Monday when today is Sunday.
+- **`/health` and `/manifest.json` are public again**, via a *separate*
+  path-scoped Access application — never a bypass on the main app, which is what
+  silently exposed the whole site before. Verified: those two return 200 while
+  `/`, `/dashboard`, `/grammar`, `/api/*` and the touch icon all still 302.
+- **wrangler 3 → 4**, which required `@cloudflare/workers-types` 4 → 5 as a peer.
+  Whole toolchain re-verified on v4: tests, `d1 execute`, `d1 migrations list`,
+  `build:pages`, and the pages-config check.
+- **`actions/checkout` and `actions/setup-node` bumped to v5.** The Node 20
+  deprecation annotation was about the actions' own runtime, not the
+  `node-version` input changed earlier — a correction to what I claimed then.
+
 ## Still open
 
-- **Authored lessons are still five.** The derived banks carry the volume now, but
-  the prose explanations that scaffold them have not grown. Those cannot be
-  derived, so they stay gated by scripts/check-content.mjs.
-- **Exercises are capped at 60 per (kind, level)** out of 63,835 valid
-  candidates. The cap keeps the bank balanced; raising it is a one-line change.
-- **Level 5 has 34 items, not 60** — rare roots simply do not supply enough
-  whole-word verb candidates. Reported rather than padded.
+- **Level 5 verb_form is 34 items, not 150** — rare roots do not supply enough
+  whole-word verb candidates. Reported short rather than padded.
+- **Self-recording is unimplemented**, deliberately excluded. The original hook
+  was broken and microphone capture cannot be verified headlessly.
+- **The D1 Time Travel drill was retired**, not deferred: every large table is
+  regenerable from a committed generator with a checksummed input, and the only
+  irreplaceable data is 13 rows. Revisit once real review history accumulates —
+  SM-2 state records when someone actually studied, which no generator can
+  reconstruct.
 - **D1 Time Travel restore drill** — never run. Content is the asset hardest to
   reproduce, and the backup remains untested.
 - `/health` and the icon paths sit behind Access. Re-exposing them needs a

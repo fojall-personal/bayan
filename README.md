@@ -289,9 +289,12 @@ pages render, the database has 6,236 Quran verses and 77K morphology rows.
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |
 | Cloudflare Access | ✅ Enforcing — every path 302s to the login |
-| Grammar (corpus-derived) | ✅ 754 graded exercises, root families, grounded i'rab |
+| Grammar (corpus-derived) | ✅ 3,034 graded exercises incl. comprehension |
 | Memorization curriculum | ✅ 908 ordered units across all 114 surahs |
 | Content correctness | ✅ Gated in CI (scripts/check-content.mjs) |
+| Word glosses | ✅ 77,429 words with English meanings |
+| Tutor | ✅ Grounded in the corpus; cites sources, refuses when unannotated |
+| Grammar lessons | ✅ 10, every Arabic example verified present in the text |
 | Auth | ✅ Per-user identity via Access JWT; shared token retired |
 
 ### Known issues (from frontend audit 2026-07-26)

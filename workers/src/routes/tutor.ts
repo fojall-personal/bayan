@@ -3,6 +3,16 @@ import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 
+import {
+  CAPABILITIES_REPLY,
+  classify,
+  normaliseArabic,
+  topicsFor,
+  type Intent,
+} from '../lib/tutor-grounding';
+import { buckwalterToArabic, rootToArabic } from '../lib/buckwalter';
+import { buildFamily, grammarFacts, type MorphRow } from '../lib/root-families';
+
 export const tutorRoutes = new Hono<AppEnv>();
 
 // POST /api/tutor/chat — Chat with AI tutor (context-aware)
@@ -59,14 +69,16 @@ tutorRoutes.post('/chat', async (c) => {
       .map(([mod]) => mod)
       .slice(0, 3);
 
-    // Generate contextual response
-    const response = generateTutorResponse(message, {
-      user,
-      assessment,
-      recentLessons: recentLessons.slice(0, 3),
-      memorizationDue: memorizationDue || [],
+    // Answer from data. The previous implementation was a keyword matcher with
+    // hardcoded replies, and it invented Arabic: its madd answer cited
+    // السَّآمَّة and الْحَآئِرِينَ, neither of which occurs anywhere in the
+    // Quran (0 occurrences each, checked against the pinned text). Everything
+    // below is a record lookup that cites its source, and says so when the
+    // corpus is silent.
+    const intent = classify(message);
+    const response = await answerFromData(db, intent, {
+      memorizationDue: (memorizationDue || []).length,
       weakAreas,
-      currentPath: user.current_path,
     });
 
     // Save conversation
@@ -76,8 +88,9 @@ tutorRoutes.post('/chat', async (c) => {
       [crypto.randomUUID(), userId, message, response]
     );
 
-    // Extract topics
-    const topics = extractTopics(message);
+    // Topics come from the resolved intent rather than a second keyword scan of
+    // the same string.
+    const topics = topicsFor(intent);
     for (const topic of topics) {
       await db.run(
         `INSERT OR IGNORE INTO tutor_topic_history (id, user_id, topic, discussed_at)
@@ -198,42 +211,204 @@ tutorRoutes.get('/history', async (c) => {
   }
 });
 
-// Generate contextual tutor response
-function generateTutorResponse(message: string, context: any): string {
-  const msg = message.toLowerCase();
+// ── Answering from data ─────────────────────────────────────────────────────
+//
+// Each branch renders records and cites them. None of it calls a model, which is
+// both the F8 design ("the model only narrates it") and a practical necessity:
+// Workers AI allows 10,000 neurons/day shared across all users, so anything
+// model-dependent could not be load-bearing.
+//
+// Every branch has an explicit "the corpus does not have this" path. That is the
+// point of the rewrite.
 
-  if (msg.includes('madd')) {
-    return `Great question about Madd! Since you're working on ${context.weakAreas.includes('grammar') ? 'grammar' : 'memorization'}, let me explain this in context.\n\nThere are three main types:\n1. **Madd Tabi'i** — 2 counts, like قَالَ\n2. **Madd Wajib** — 4-5 counts, like السَّآمَّة\n3. **Madd Lazim** — 6 counts, like الْحَآئِرِينَ\n\nWould you like practice exercises on Madd?`;
+const ATTRIBUTION =
+  '\n\n—\nFrom the Quranic Arabic Corpus (corpus.quran.com, GNU GPL) and the ' +
+  'Tanzil text.';
+
+async function answerFromData(
+  db: Database,
+  intent: Intent,
+  ctx: { memorizationDue: number; weakAreas: string[] }
+): Promise<string> {
+  switch (intent.kind) {
+    case 'word':
+      return answerWord(db, intent.arabic);
+    case 'root':
+      return answerRoot(db, intent.root);
+    case 'location':
+      return answerLocation(db, intent.surah, intent.ayah);
+    case 'tajweed':
+      return answerTajweed(db, intent.rule);
+    default: {
+      const extra =
+        ctx.memorizationDue > 0
+          ? `\n\nYou also have ${ctx.memorizationDue} memorization unit${
+              ctx.memorizationDue === 1 ? '' : 's'
+            } due today.`
+          : '';
+      return CAPABILITIES_REPLY + extra;
+    }
   }
-
-  if (msg.includes('grammar') || msg.includes('nahw') || msg.includes('صرف') || msg.includes('نحو')) {
-    return `Let's focus on grammar! Based on your recent attempts, you're doing well with basic nouns but could use more verb conjugation practice.\n\nTry this: هُوَ ___ الكِتَابَ\nOptions: أَكَلَ / كَتَبَ / قَرَأَ / ذَهَبَ\n\nThe answer is كَتَبَ (he wrote). You may be confusing verb patterns between Form I (فَعَلَ) and Form II (فَعَّلَ).`;
-  }
-
-  if (msg.includes('memoriz') || msg.includes('hifz') || msg.includes('حفظ')) {
-    const dueCount = context.memorizationDue.length;
-    return `You have ${dueCount} ayahs due for review today. Here's a tip: review them in order, then test yourself by reciting from memory without looking.\n\nFor better retention, try the audio testing feature — listen to the ayah and type what you hear. This strengthens recall without visual cues.`;
-  }
-
-  if (msg.includes('tajweed')) {
-    return `Tajweed is essential for correct Quran recitation. Your current level suggests focusing on:\n\n• **Noon Saakin rules** — Idgham, Ikhfa, Izhar\n• **Madd types** — Tabi'i, Wajib, Lazim\n• **Qalqalah** — The bouncing sound of ق ط ب ج د\n\nWant me to generate practice exercises for a specific rule?`;
-  }
-
-  return `I understand you're asking about "${message}". Based on your learning path (${context.currentPath}) and recent activity, I'd suggest:\n\n1. Practice your weak areas first\n2. Review your memorization due today\n3. Try a grammar exercise to reinforce what you've learned\n\nWould you like me to generate practice questions on a specific topic?`;
 }
 
-// Extract topics from message
-function extractTopics(message: string): string[] {
-  const topics: string[] = [];
-  const msg = message.toLowerCase();
+/** A word the learner pasted. Matched on the normalised form. */
+async function answerWord(db: Database, arabic: string): Promise<string> {
+  const target = normaliseArabic(arabic);
 
-  if (msg.includes('madd') || msg.includes('مَدّ')) topics.push('madd');
-  if (msg.includes('noon') || msg.includes('نون')) topics.push('noon-saakin');
-  if (msg.includes('grammar') || msg.includes('nahw') || msg.includes('نحو')) topics.push('grammar');
-  if (msg.includes('memoriz') || msg.includes('hifz') || msg.includes('حفظ')) topics.push('memorization');
-  if (msg.includes('tajweed') || msg.includes('تجويد')) topics.push('tajweed');
-  if (msg.includes('conjugat') || msg.includes('صرف')) topics.push('conjugation');
-  if (msg.includes('balagha') || msg.includes('بلاغة')) topics.push('balagha');
+  // Exact match first, which is an index hit. A first draft of this pulled
+  // `LIMIT 20000` rows and filtered in JS — 20,000 of 77,429 words is roughly
+  // the first eight surahs, so anything later was unfindable regardless of how
+  // it was typed.
+  type GlossRow = {
+    surah_id: number; ayah_id: number; position: number; arabic: string; english: string;
+  };
+  let hit = await db.get<GlossRow>(
+    `SELECT surah_id, ayah_id, position, arabic, english
+     FROM quran_word_gloss WHERE arabic = ? LIMIT 1`,
+    [arabic.trim()]
+  );
 
-  return topics.length > 0 ? topics : ['general'];
+  // Failing that, compare normalised forms — but bounded by first letter so this
+  // stays a narrow scan rather than a table sweep.
+  if (!hit && target.length >= 2) {
+    const candidates = await db.query<GlossRow>(
+      `SELECT surah_id, ayah_id, position, arabic, english
+       FROM quran_word_gloss WHERE arabic LIKE ? LIMIT 800`,
+      [`${arabic.trim()[0]}%`]
+    );
+    hit = candidates.find((g) => normaliseArabic(g.arabic) === target) ?? undefined;
+  }
+
+  if (!hit) {
+    return (
+      `I could not find **${arabic}** in the corpus as written.\n\n` +
+      `That usually means a different vocalisation or an inflected form I am not ` +
+      `matching, rather than the word being absent. Try pasting it exactly as it ` +
+      `appears in the text, or give me a location like \`2:255\` and I will show ` +
+      `every word in that ayah.`
+    );
+  }
+
+  const morph = await db.query<MorphRow & { form: string | null; segment_index: number }>(
+    `SELECT segment_index, form, lemma, root, pos, verb_form, aspect, voice,
+            case_case, gender, number, person
+     FROM quran_word_morphology
+     WHERE surah_id = ? AND ayah_id = ? AND word_index = ?
+     ORDER BY segment_index ASC`,
+    [hit.surah_id, hit.ayah_id, hit.position]
+  );
+
+  const lines = [`**${hit.arabic}** — “${hit.english}”`, ''];
+  if (morph.length === 0) {
+    lines.push('The morphology corpus does not annotate this word.');
+  }
+  for (const seg of morph) {
+    const facts = grammarFacts(seg);
+    const shown = Object.entries(facts).filter(([, v]) => v);
+    if (shown.length === 0) continue;
+    lines.push(
+      `*${seg.form ? buckwalterToArabic(seg.form) : `segment ${seg.segment_index}`}*`
+    );
+    for (const [k, v] of shown) {
+      lines.push(`  • ${k.replace(/([A-Z])/g, ' $1').toLowerCase()}: ${v}`);
+    }
+  }
+  lines.push('', `Quran ${hit.surah_id}:${hit.ayah_id}, word ${hit.position}.`);
+  return lines.join('\n') + ATTRIBUTION;
+}
+
+/** A root family. */
+async function answerRoot(db: Database, root: string): Promise<string> {
+  const rows = await db.query<MorphRow>(
+    `SELECT lemma, root, pos, verb_form, aspect, voice, case_case, gender, number, person
+     FROM quran_word_morphology WHERE root = ?`,
+    [root]
+  );
+  if (rows.length === 0) {
+    return (
+      `The corpus has no occurrences of the root \`${root}\`.\n\n` +
+      `Roots are written in Buckwalter here — \`ktb\` for ك ت ب, \`Elm\` for ` +
+      `ع ل م. If you meant a different root, try that form.`
+    );
+  }
+
+  const family = buildFamily(root, rows);
+  const lines = [
+    `**${family.rootArabic}** — ${family.totalOccurrences} occurrences.`,
+    '',
+  ];
+  if (family.formsAttested.length) {
+    lines.push(`Verb forms attested: ${family.formsAttested.map((f) => `Form ${f}`).join(', ')}.`);
+    if (family.formsAttested.length === 1) {
+      lines.push('Only one form, so there is no form contrast to drill on this root.');
+    }
+    lines.push('');
+  }
+  for (const m of family.members.slice(0, 10)) {
+    lines.push(
+      `• ${m.lemmaArabic} — ${m.pos ?? 'unclassified'}` +
+        (m.form ? `, Form ${m.form}` : '') +
+        ` (×${m.occurrences})`
+    );
+  }
+  return lines.join('\n') + ATTRIBUTION;
+}
+
+/** An ayah, word by word. */
+async function answerLocation(db: Database, surah: number, ayah: number): Promise<string> {
+  const words = await db.query<{ position: number; arabic: string; english: string }>(
+    `SELECT position, arabic, english FROM quran_word_gloss
+     WHERE surah_id = ? AND ayah_id = ? ORDER BY position ASC`,
+    [surah, ayah]
+  );
+  if (words.length === 0) {
+    return `I have no words recorded for ${surah}:${ayah}. Check the reference — surahs run 1–114.`;
+  }
+  const verse = await db.get<{ text_uthmani: string }>(
+    `SELECT text_uthmani FROM quran_verses WHERE surah = ? AND ayah = ?`,
+    [surah, ayah]
+  );
+
+  const lines = [`**Quran ${surah}:${ayah}**`, ''];
+  if (verse?.text_uthmani) lines.push(verse.text_uthmani, '');
+  for (const w of words) lines.push(`• ${w.arabic} — ${w.english}`);
+  return lines.join('\n') + ATTRIBUTION;
+}
+
+/** A tajweed rule, with real examples pulled from the annotated text. */
+async function answerTajweed(db: Database, rule: string): Promise<string> {
+  const meta = await db.get<{ name: string; color: string }>(
+    `SELECT name, color FROM tajweed_rules WHERE id = ?`,
+    [rule]
+  );
+
+  // Find ayahs whose stored tags include this category. The tags carry the
+  // ingest's rule names, which map to display categories in tajweed-colors.ts.
+  const verses = await db.query<{ surah: number; ayah: number; text_uthmani: string; tajweed_tags: string }>(
+    `SELECT surah, ayah, text_uthmani, tajweed_tags FROM quran_verses
+     WHERE tajweed_tags LIKE ? LIMIT 200`,
+    [`%${rule === 'madd' ? 'madd' : rule === 'noon_saakin' ? 'ikhfa' : rule}%`]
+  );
+
+  const examples: string[] = [];
+  for (const v of verses) {
+    if (examples.length >= 4) break;
+    examples.push(`• ${v.text_uthmani.slice(0, 60)}${v.text_uthmani.length > 60 ? '…' : ''} — ${v.surah}:${v.ayah}`);
+  }
+
+  if (examples.length === 0) {
+    return (
+      `I have no annotated examples of **${meta?.name ?? rule}** in the text.\n\n` +
+      `Either the Quran text has not been ingested for this deployment, or that ` +
+      `rule is not among the ones the annotation covers. I would rather tell you ` +
+      `that than make an example up.`
+    );
+  }
+
+  return (
+    `**${meta?.name ?? rule}** — real occurrences from the annotated text:\n\n` +
+    examples.join('\n') +
+    `\n\nOpen the Tajweed reader to see these colour-coded in place.` +
+    ATTRIBUTION
+  );
 }

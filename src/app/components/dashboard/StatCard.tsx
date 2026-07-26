@@ -20,7 +20,12 @@ export function StatCard({ label, value, icon, trend }: StatCardProps) {
       {trend && (
         <div
           className={`mt-3 flex items-center gap-1 text-sm ${
-            trend.positive ? 'text-arabic-green' : 'text-error'
+            // `arabic-green` is not in the palette — globals.css lists it as a
+            // known dead token, and ProgressBar and Badge were already cleaned of
+            // it. Tailwind emits nothing for an undefined token, so a POSITIVE
+            // trend was rendering with no colour at all while a negative one went
+            // red. leaf-400 is the palette's positive green.
+            trend.positive ? 'text-leaf-400' : 'text-error'
           }`}
         >
           <span>{trend.positive ? '↑' : '↓'}</span>

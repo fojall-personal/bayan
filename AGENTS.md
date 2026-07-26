@@ -308,6 +308,8 @@ GET  /api/grammar/word/:surah/:ayah/:word (grounded i'rab, one entry per segment
 GET  /api/grammar/drills/forms            (pattern drills; distractors are attested)
 GET  /api/grammar/exercises               (754-item graded bank; ?level=1-5 &kind=)
 GET  /api/grammar/exercises/summary       (counts by kind and level)
+     kinds: verb_form, case_ending, root_id, pos_id, aspect,
+            word_meaning, find_word  (the last two are comprehension, F4)
 POST /api/grammar/exercise
 GET  /api/grammar/mastery
 POST /api/grammar/parse

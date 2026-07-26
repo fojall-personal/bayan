@@ -35,6 +35,11 @@ interface Attribution {
 
 const KINDS = [
   { value: '', label: 'All kinds' },
+  // Comprehension first — these ask what a word MEANS, which the morphology
+  // corpus cannot express and which the first 754 exercises therefore all
+  // omitted. They come from the word-by-word gloss table.
+  { value: 'word_meaning', label: 'Word meaning' },
+  { value: 'find_word', label: 'Find the word in an ayah' },
   { value: 'verb_form', label: 'Verb form (I–XII)' },
   { value: 'case_ending', label: "Case ending (i'rab)" },
   { value: 'root_id', label: 'Root identification' },
@@ -164,7 +169,14 @@ export function ExerciseRunner() {
           {/* The word under examination. Naskh, and dir="auto" — the prompt mixes
               English with Arabic, and forcing RTL is what put question marks on
               the wrong side across this app. */}
-          <p className="text-center text-5xl mb-6 text-naskh" dir="rtl">
+          {/* find_word puts a whole ayah here, not one word, so the size steps
+              down and it is allowed to wrap. */}
+          <p
+            className={`text-center mb-6 text-naskh leading-loose ${
+              current.kind === 'find_word' ? 'text-2xl' : 'text-5xl'
+            }`}
+            dir="rtl"
+          >
             {current.word}
           </p>
 

@@ -18,10 +18,10 @@ workers/.wrangler/
 .DS_Store
 Thumbs.db
 
-# Data files (large, can be regenerated from source)
-data/*.txt
-data/*.json
-data/*.zip
+# Data files (large, can be regenerated from source).
+# The recursive form matters: data/*.json does NOT match data/wbw/1.json, and the
+# word-by-word cache is 114 files / ~16 MB.
+data/
 
 # Local worker secrets (rotated 2026-07-26; the previous value was committed)
 workers/.dev.vars

@@ -119,7 +119,7 @@ export default function ProgressPage() {
       {/* Weekly calendar */}
       <Card>
         <h2 className="text-xl font-bold mb-4">This Week</h2>
-        <WeeklyCalendar />
+        <WeeklyCalendar activeDates={scores.map((s) => s.completed_at)} />
       </Card>
     </div>
   );
@@ -152,33 +152,69 @@ function ScoreBar({
   );
 }
 
-function WeeklyCalendar() {
+/**
+ * The week, marked with days that actually had activity.
+ *
+ * This previously rendered seven date boxes and nothing else — real dates, but no
+ * information, so it looked like a streak tracker that never tracked anything.
+ * Assessment completion dates are the one activity signal already fetched by this
+ * page, so it uses those rather than adding a request.
+ */
+function WeeklyCalendar({ activeDates }: { activeDates: string[] }) {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const today = new Date();
   const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay() + 1);
+  // getDay() is 0 for Sunday, so a plain -getDay()+1 lands on the NEXT Monday
+  // when today is Sunday. Treat Sunday as day 7.
+  const offset = today.getDay() === 0 ? 6 : today.getDay() - 1;
+  startOfWeek.setDate(today.getDate() - offset);
+
+  const active = new Set(activeDates.map((d) => new Date(d).toDateString()));
 
   return (
-    <div className="grid grid-cols-7 gap-1 sm:gap-2">
-      {days.map((day, i) => {
-        const date = new Date(startOfWeek);
-        date.setDate(startOfWeek.getDate() + i);
-        const isToday = date.toDateString() === today.toDateString();
+    <>
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
+        {days.map((day, i) => {
+          const date = new Date(startOfWeek);
+          date.setDate(startOfWeek.getDate() + i);
+          const isToday = date.toDateString() === today.toDateString();
+          const wasActive = active.has(date.toDateString());
+          const future = date > today;
 
-        return (
-          <div
-            key={day}
-            className={`p-3 rounded-lg text-center ${
-              isToday
-                ? 'bg-leaf-500/20 border border-leaf-500'
-                : 'bg-gray-800'
-            }`}
-          >
-            <div className="text-sm text-gray-400">{day}</div>
-            <div className="text-lg font-bold">{date.getDate()}</div>
-          </div>
-        );
-      })}
-    </div>
+          return (
+            <div
+              key={day}
+              aria-label={`${day} ${date.getDate()}${wasActive ? ', activity recorded' : ''}`}
+              className={`p-3 rounded-lg text-center border ${
+                isToday
+                  ? 'bg-leaf-500/20 border-leaf-500'
+                  : wasActive
+                    ? 'bg-leaf-500/10 border-leaf-600'
+                    : future
+                      ? 'bg-gray-800/40 border-transparent'
+                      : 'bg-gray-800 border-transparent'
+              }`}
+            >
+              <div className="text-sm text-gray-400">{day}</div>
+              <div className={`text-lg font-bold ${future ? 'text-gray-600' : ''}`}>
+                {date.getDate()}
+              </div>
+              {/* A dot only where something happened, so an empty week reads as
+                  empty rather than as un-implemented. */}
+              <div
+                className={`mt-1 h-1.5 w-1.5 mx-auto rounded-full ${
+                  wasActive ? 'bg-leaf-400' : 'bg-transparent'
+                }`}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-xs text-gray-500 mt-3">
+        {activeDates.length === 0
+          ? 'No assessment activity recorded yet — days will fill in as you go.'
+          : 'Marked days are ones with a recorded assessment.'}
+      </p>
+    </>
   );
 }
