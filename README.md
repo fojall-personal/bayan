@@ -296,6 +296,11 @@ pages render, the database has 6,236 Quran verses and 77K morphology rows.
 | Tajweed reader | ✅ Coloured Amiri script, joins intact, 10 rules all ≥4.5:1 |
 | Word glosses | ✅ 77,429 words; 96.2% agreement with 5 independent translators |
 | Tutor | ✅ Grounded in the corpus; cites sources, refuses when unannotated |
+| Home | ✅ Today — one action chosen from what is actually due |
+| Reader | ✅ One ayah, five lenses (recite, meaning, parse, memorize, ask) |
+| Translation | ✅ 6,236 verses, Saheeh International via Tanzil, SHA-pinned |
+| Coverage | ✅ Ayahs readable from known roots — 400 roots is half the Quran |
+| Arabic shaping | ✅ Measured intact across every screen; gated in CI |
 | Grammar lessons | ✅ 10, all reachable; claims checked against outside references |
 | Auth | ✅ Per-user identity via Access JWT; shared token retired |
 

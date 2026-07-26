@@ -579,6 +579,80 @@ Verified working and left alone: the focus ring is exactly per spec — `:focus-
 matches on real keyboard Tab, 2px solid gold-500 at 2px offset. Both Arabic faces
 load real 700 weights, so bold Arabic is not synthesised.
 
+## 11. From eight modules to one text
+
+The entry point never read the profile. `/` was a goal picker whose only exit was a
+hard-coded `href="/assessment"`, so a learner with `onboarding_completed = 1` and a
+stored `current_path` landed back on it and the only way forward was the fifteen-minute
+test they had already passed. State written on submit, nothing at the entry point
+consulting it — the same shape as the design-system drift and the lesson dead-end.
+
+Pulling on that produced a product thesis rather than a routing patch.
+
+### The corpus is closed, so coverage is arithmetic
+
+Every language app works against an open vocabulary and therefore cannot tell you how
+much you know. This one can. Measured from the data in this repository:
+
+| | |
+|---|---|
+| 63 roots | half of every rooted word in the Quran |
+| 249 roots | 80% |
+| 100 roots | **620 ayahs** readable end to end |
+| 400 roots | **3,046 ayahs — half the text** |
+
+`user_known_root` is the only new table the model needed. `GET /api/progress/coverage`
+turns it into true statements, and **620 at 100 roots has now been confirmed three
+independent ways**: a Python pass over the raw corpus file, the SQL endpoint, and the
+calibration flow.
+
+### What shipped
+
+- **Today** replaces the dashboard: one primary action chosen from what is actually
+  due — reviews first because SM-2 decides when they matter, the next root when
+  nothing is owed. Every value came from an endpoint that already existed and nothing
+  was using.
+- **`/read`** is the ayah as one object: one call to the new
+  `GET /api/quran/ayah/:surah/:ayah`, five lenses. Unknown words render gold under a
+  dotted underline and offer their root inline, so "2 words to learn" is a finishable
+  task rather than a percentage.
+- **Root calibration** measures rather than infers. Seeding known roots from the
+  placement score was the tempting shortcut and would have been fabrication — the
+  assessment's eighteen questions never ask which roots you know. Twelve roots sampled
+  across the frequency ranking, answers recorded as fact, and the banded fill offered
+  as the estimate it is with the monotonicity assumption stated in the sentence the
+  learner reads.
+- **6,236 translations** from Saheeh International via Tanzil, SHA-pinned with three
+  spot-checks before emit. The column had existed empty all along, so the Meaning lens
+  could only offer the gloss chain — and a gloss chain read as prose is exactly what
+  made three glosses look wrong earlier when they were fine in sequence.
+- **Nav 8 → 6.** Dashboard and Progress both answered "how am I doing"; "Advanced"
+  named a drawer rather than a subject and was in no nav and no in-page link, so
+  nothing in it was findable. It is now linked from Memorize, where its tools belong.
+
+### Arabic shaping, verified rather than assumed
+
+The tajweed reader had been rendering the Quran in a Latin sans, letter-by-letter with
+`padding: 0 2px` breaking every cursive join — measured, بِسْمِ inflated 78%. The fix
+was to colour the text and nothing else. The decisive experiment: a span setting only
+`color` measures **byte-identical** to plain text.
+
+Then checked everywhere, not just where the bug was. Clone each composite element into
+an off-layout probe, render the same characters as one text node, compare widths;
+Arabic shaping is width-sensitive, so equal width proves one continuous run. The
+detector was validated against the real defect first — padding +44.8px, background
++44.8px, `inline-block` +20.8px all caught. Results: the basmala across 13 spans at
+207.5px versus 207.5px plain; `/tajweed` 8 composite elements up to 14 spans each, all
+passing; `/grammar` all single text nodes and unsplittable by construction.
+
+**Two of my own checkers returned "clean" having examined nothing.** The first skipped
+elements taller than 1.6 line-heights, which excluded the ayah — the only element that
+mattered. The second was disabled by a `width < 2` guard, because the browser pane
+reports `innerWidth: 0`, so every live rect measured zero. Both looked like passes.
+That is why the invariant is now a CI gate: `gen-design-system.mjs --check` fails if
+either renderer styles a segment span with padding, margin, background, border or
+display, and it is proven to fail on the markup that shipped.
+
 ## Still open
 
 - **The 96.2% gloss agreement is a screen, not a proof.** A correct word-by-word
@@ -586,6 +660,11 @@ load real 700 weights, so bold Arabic is not synthesised.
   with a truncating stemmer will both miss subtle errors and flag correct glosses.
   It rules out gross errors; it cannot certify nuance. No bulk gloss source of
   documented provenance independent of Leeds was findable.
+- **`/dashboard` is unreachable.** Nothing links to it and it is not in the nav, so
+  the only way in is to type the URL — the same condition `/advanced` was in. Its two
+  panels, "Progress Overview" and "This Week", are both covered by `/progress`, and
+  "what now" is covered by Today. It looks like dead weight that should be deleted,
+  but removing a whole page is a call worth making deliberately rather than in passing.
 - **The wordmark link is 88×22.** Below the tap floor, but it is a text logo rather
   than a control users hunt for, so it was left as it is.
 - **Whether the explanations teach well is still unexamined.** Reachability, the
