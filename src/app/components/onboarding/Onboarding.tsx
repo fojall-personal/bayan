@@ -69,7 +69,7 @@ export function Onboarding({ onComplete, initialGoal }: OnboardingProps) {
    * their own prerequisite chain, and memorization starts wherever you point it.
    * So placement is now an option with a real alternative.
    */
-  const finish = async (destination: '/assessment' | '/today') => {
+  const finish = async (destination: '/assessment' | '/today' | '/calibrate') => {
     setSaving(true);
     setError(null);
     try {
@@ -277,11 +277,11 @@ export function Onboarding({ onComplete, initialGoal }: OnboardingProps) {
 
           <Button
             variant="secondary"
-            onClick={() => finish('/today')}
+            onClick={() => finish('/calibrate')}
             disabled={saving}
             className="mt-3 w-full"
           >
-            Skip for now — start learning
+            Skip the test — tell us what you know instead
           </Button>
 
           <Button

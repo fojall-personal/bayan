@@ -352,3 +352,153 @@ progressRoutes.delete('/roots/:root/known', async (c) => {
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
+
+/**
+ * GET /api/progress/calibration — twelve roots to check knowledge against.
+ *
+ * The alternative was seeding known roots from the placement score: level 3 implies
+ * the top 120 roots, and so on. That would be fabrication — the assessment's
+ * eighteen questions cover literacy, comprehension, grammar and memorization, and
+ * not one tests which roots a learner knows. Inferring a vocabulary from a
+ * comprehension score is the same failure as citing Arabic nobody checked.
+ *
+ * So: measure. Twelve roots sampled ACROSS the frequency ranking rather than the
+ * first twelve, each with its commonest attested word and that word's gloss —
+ * a bare triliteral is recognisable to almost nobody, and the word is what you
+ * actually meet on the page.
+ */
+const CALIBRATION_RANKS = [5, 15, 30, 60, 100, 160, 250, 380, 550, 800, 1100, 1500];
+
+progressRoutes.get('/calibration', async (c) => {
+  const db = getDb(c);
+
+  try {
+    // Rank every root by frequency once, then pick the sampled positions. LIMIT/
+    // OFFSET per rank would be twelve scans of 128,219 segments.
+    const ranked = await db.query<{ root: string; occurrences: number }>(
+      `SELECT root, COUNT(*) AS occurrences
+         FROM quran_word_morphology
+        WHERE root IS NOT NULL
+        GROUP BY root
+        ORDER BY occurrences DESC`
+    );
+
+    const picks = CALIBRATION_RANKS
+      .filter((r) => r <= ranked.length)
+      .map((rank) => ({ rank, ...ranked[rank - 1] }));
+
+    // The commonest word actually built on each root, so the prompt shows something
+    // a learner has met rather than a paradigm they have not.
+    const items = await Promise.all(
+      picks.map(async (p) => {
+        const word = await db.get<{ arabic: string; english: string }>(
+          `SELECT g.arabic, g.english
+             FROM quran_word_morphology m
+             JOIN quran_word_gloss g
+               ON g.surah_id = m.surah_id AND g.ayah_id = m.ayah_id
+              AND g.position = m.word_index
+            WHERE m.root = ?
+            GROUP BY g.arabic, g.english
+            ORDER BY COUNT(*) DESC
+            LIMIT 1`,
+          [p.root]
+        );
+        return {
+          root: p.root,
+          rank: p.rank,
+          occurrences: p.occurrences,
+          exampleArabic: word?.arabic ?? null,
+          exampleEnglish: word?.english ?? null,
+        };
+      })
+    );
+
+    return c.json({
+      data: { items, rootsTotal: ranked.length },
+      basis:
+        'Roots sampled across the frequency ranking. Answers are recorded as fact; ' +
+        'any bulk fill beyond them is an estimate you opt into.',
+    });
+  } catch (error) {
+    console.error('Calibration error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * POST /api/progress/calibration — record the answers, and optionally fill a band.
+ *
+ * Body: { known: string[], fillToRank?: number }
+ *
+ * `known` is measurement and is written as given. `fillToRank` is the inference —
+ * "you knew everything up to rank 100, so mark the rest of that band too" — and it
+ * only happens because the learner asked for it. Keeping the two separate is the
+ * whole point: a guess recorded as a measurement is how progress models stop being
+ * trustworthy.
+ */
+progressRoutes.post('/calibration', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  try {
+    const body = (await c.req.json()) as { known?: unknown; fillToRank?: unknown };
+    const known = Array.isArray(body.known)
+      ? body.known.filter((r): r is string => typeof r === 'string' && r.length > 0)
+      : [];
+    const fillToRank =
+      typeof body.fillToRank === 'number' && body.fillToRank > 0
+        ? Math.min(Math.floor(body.fillToRank), 1642)
+        : 0;
+
+    const before = await ayahsReadable(db, userId);
+
+    let roots = [...new Set(known)];
+    if (fillToRank > 0) {
+      const band = await db.query<{ root: string }>(
+        `SELECT root FROM quran_word_morphology
+          WHERE root IS NOT NULL
+          GROUP BY root
+          ORDER BY COUNT(*) DESC
+          LIMIT ?`,
+        [fillToRank]
+      );
+      roots = [...new Set([...roots, ...band.map((b) => b.root)])];
+    }
+
+    // Verify every root against the corpus before writing. A typo in the request
+    // would otherwise inflate the count with something that can never make an ayah
+    // readable.
+    const attested = new Set(
+      (
+        await db.query<{ root: string }>(
+          `SELECT DISTINCT root FROM quran_word_morphology WHERE root IS NOT NULL`
+        )
+      ).map((r) => r.root)
+    );
+    const valid = roots.filter((r) => attested.has(r));
+    const rejected = roots.filter((r) => !attested.has(r));
+
+    for (const r of valid) {
+      await db.run(
+        `INSERT OR IGNORE INTO user_known_root (user_id, root) VALUES (?, ?)`,
+        [userId, r]
+      );
+    }
+
+    const after = await ayahsReadable(db, userId);
+    return c.json({
+      data: {
+        rootsRecorded: valid.length,
+        rejected,
+        measured: known.length,
+        inferred: Math.max(0, valid.length - known.length),
+        ayahsUnlocked: after - before,
+        ayahsReadable: after,
+        ayahsTotal: 6236,
+      },
+    });
+  } catch (error) {
+    console.error('Calibration save error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});

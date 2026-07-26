@@ -121,7 +121,7 @@ export default function TajweedPage() {
 
       <PageHeader
         title="Tajweed"
-        subtitle="Color-coded Quran text with rule visualization"
+        subtitle="A whole surah, colour-coded — for reciting through. For one ayah in depth, use Read."
         actions={
           <Tabs
             label="Tajweed views"

@@ -335,6 +335,14 @@ function ReciteLens({ data }: { data: Ayah }) {
           </span>
         ))}
       </div>
+      {/* /tajweed is the whole-surah reader and is deliberately not in the nav —
+          this is the point in the journey where someone wants it: they have
+          understood the ayah and now want to recite through the surah. */}
+      <p className="mt-4 text-xs text-ground-400">
+        <Link href="/tajweed" className="text-gold-400 hover:underline">
+          Recite the whole surah with colours →
+        </Link>
+      </p>
     </div>
   );
 }
@@ -356,13 +364,26 @@ function MeaningLens({ data }: { data: Ayah }) {
           </li>
         ))}
       </ul>
-      {/* Said rather than implied: there is no full translation in the database.
-          The column exists on quran_verses and is empty for all 6,236 verses, so
-          claiming a translation here would be inventing one. */}
-      <p className="mt-4 text-xs text-ground-400">
-        {data.translation ??
-          'Word-by-word glosses only — no full translation is stored yet, and the gloss chain is meant to be read in sequence rather than as a sentence.'}
-      </p>
+      {/* The translation is a separate claim from the gloss chain, so it gets its
+          own block rather than sitting in the caption. A gloss chain read as prose
+          is what made three glosses look wrong earlier when they were fine in
+          sequence — worth keeping the two visually distinct. */}
+      {data.translation ? (
+        <div className="mt-5 border-t border-ground-800 pt-4">
+          <h3 className="mb-2 text-xs uppercase tracking-label text-ground-400">
+            Translation
+          </h3>
+          <p className="text-sm leading-relaxed text-ground-200">{data.translation}</p>
+          <p className="mt-2 text-xs text-ground-400">
+            Saheeh International, via tanzil.net. The word-by-word list above is a
+            parsing aid and is meant to be read in sequence, not as a sentence.
+          </p>
+        </div>
+      ) : (
+        <p className="mt-4 text-xs text-ground-400">
+          Word-by-word glosses only — no translation stored for this ayah.
+        </p>
+      )}
     </div>
   );
 }

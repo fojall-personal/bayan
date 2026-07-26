@@ -116,6 +116,23 @@ export function Today() {
         </Card>
       )}
 
+      {/* Coverage starts empty, and a learner who already reads some Arabic should
+          not have to click "I know this root" a hundred times to say so. Offered
+          rather than forced, and only while it is still true. */}
+      {coverage && coverage.rootsKnown === 0 && (
+        <Card className="border-gold-500/40">
+          <p className="text-xs uppercase tracking-label text-gold-400">First</p>
+          <h2 className="mt-1.5 text-xl font-semibold">Which roots do you already know?</h2>
+          <p className="mt-1 text-sm text-ground-300">
+            Twelve questions, about a minute. Everything on this page counts from the
+            answers, so it is worth doing before anything else.
+          </p>
+          <Link href="/calibrate" className="mt-4 block">
+            <Button className="w-full">Start</Button>
+          </Link>
+        </Card>
+      )}
+
       {/* ── The one primary action ──────────────────────────────────────────
           Chosen, not offered alongside seven equals. Reviews first because SM-2
           decides when they are due and a missed review costs retention; the next

@@ -892,6 +892,64 @@ ${box('From a word you are reading', 'Tap a gold-underlined word in the ayah scr
   'Record a root as known, and say immediately what it opened.'
 ), 'utf-8');
 
+// ── Root calibration ───────────────────────────────────────────────────────
+await writeFile(join(OUT, 'preview/spec-calibration.html'), shell(
+  'Spec — root calibration', 'Product',
+  `<p class="note" style="border-color:${colour('color-error')}"><strong>What this is
+NOT.</strong> The obvious move was to seed known roots from the placement test
+score: level 3 implies the top 120 roots, and so on. That would be fabrication.
+The assessment has eighteen questions across literacy, comprehension, grammar and
+memorization, and <strong>not one of them tests which roots you know</strong>.
+Inferring a root list from a comprehension score is the same failure as the tutor
+citing Arabic it had never checked — a confident number with nothing behind it.</p>
+
+<h2>Measure instead. Twelve questions, about a minute.</h2>
+<div style="max-width:520px;background:${colour('ground-900')};
+ border:1px solid ${colour('ground-700')};border-radius:${tokens.get('radius-lg')};padding:22px">
+  <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:.78rem">
+    <span>4 of 12</span><span>rank 100 of 1,642</span></div>
+  <div class="ar" style="font-size:2.4rem;text-align:center;color:${colour('gold-400')};margin:14px 0 6px">ع ل م</div>
+  <p style="text-align:center;margin:0 0 4px"><span class="ar" style="font-size:1.4rem">يَعْلَمُ</span></p>
+  <p style="text-align:center;color:var(--muted);font-size:.8rem;margin:0">“he knows” · 854 occurrences</p>
+  <div class="row" style="gap:10px;margin-top:20px">
+    <span style="flex:1;background:${colour('leaf-500')};color:${colour('ground-950')};
+     text-align:center;padding:12px;border-radius:${tokens.get('radius-md')};
+     font-weight:600;min-height:44px">I know this</span>
+    <span style="flex:1;background:${colour('ground-800')};color:${colour('ground-50')};
+     border:1px solid ${colour('ground-700')};text-align:center;padding:12px;
+     border-radius:${tokens.get('radius-md')};min-height:44px">Not yet</span>
+  </div>
+</div>
+<p class="note">Twelve roots sampled across the frequency ranking rather than the
+first twelve — ranks 5, 15, 30, 60, 100, 160, 250, 380, 550, 800, 1100, 1500. Each
+shows its commonest attested word and that word’s gloss, because a bare triliteral
+is recognisable to almost nobody and the word is what you actually meet.</p>
+
+<h2>Then the inference, made explicit and optional</h2>
+<div style="max-width:520px;background:${colour('gold-500')}14;
+ border:1px solid ${colour('gold-500')}66;border-radius:${tokens.get('radius-lg')};padding:20px">
+  <p style="margin:0 0 6px;font-weight:600">You knew every root up to rank 100.</p>
+  <p style="margin:0;color:var(--muted);font-size:.84rem">Mark the other 88 roots in
+  that band as known too? Frequency ordering means knowledge is roughly monotonic in
+  rank, so this is usually right — but it is an estimate, not a measurement, and you
+  can correct any of them later.</p>
+  <div class="row" style="gap:10px;margin-top:16px">
+    <span style="background:${colour('gold-500')};color:${colour('ground-950')};padding:11px 18px;
+     border-radius:${tokens.get('radius-md')};font-weight:600;min-height:44px">Yes, mark them</span>
+    <span style="background:transparent;color:${colour('ground-300')};padding:11px 18px;
+     border-radius:${tokens.get('radius-md')};min-height:44px">Only the 12 I answered</span>
+  </div>
+</div>
+<p class="note"><strong>Measurement and inference are separated deliberately.</strong>
+The twelve answers are recorded as fact. The bulk seed is a guess the learner
+accepts or declines, with the assumption behind it stated in the sentence rather
+than buried in a commit message. Every root remains individually reversible through
+the same DELETE the root screen uses.<br><br>
+Placement still has a job — literacy, comprehension, grammar and memorization
+levels shape the lesson path. It just does not get to invent a vocabulary.</p>`,
+  'Twelve sampled roots, a minute of work, and a bulk seed the learner opts into.'
+), 'utf-8');
+
 // Tokens as CSS, for anyone consuming the system directly
 await writeFile(join(OUT, 'colors_and_type.css'),
   `/* Bayan design tokens — GENERATED from src/app/styles/globals.css.\n` +
