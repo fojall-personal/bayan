@@ -1,226 +1,161 @@
 # Frontend Audit — 2026-07-26
 
-**Date:** 2026-07-26  
-**Auditor:** AI coding session  
-**Scope:** All routes, navigation links, interactive features  
+**Audited:** 2026-07-26. **Resolved:** 2026-07-26, same day, in the review-and-fix
+pass below.
+**Scope:** All routes, navigation links, interactive features
 **Method:** Code review + curl tests + browser verification
+
+> **Status: all 12 findings closed.** This document is kept as the record of what
+> was wrong and what fixing it actually turned up — three of the twelve were
+> misdiagnosed, and the real defects underneath were worse than the symptoms.
 
 ---
 
 ## Executive Summary
 
-**10 routes exist**, all rendering 200 OK.  
-**7 of 7 nav links** point to working pages.  
-**1 route (`/advanced`) is unreachable** via navigation.  
-**3 features are significantly broken** (see Critical Issues below).
+**10 routes exist**, all rendering 200 OK. `/advanced` is now linked, so 11 nav
+destinations resolve.
+**3 features were significantly broken.** All three now work end to end.
+
+The three headline items were each diagnosed from the symptom rather than the
+cause, and the corrections matter more than the original findings:
+
+| Finding as filed | What was actually wrong |
+|---|---|
+| #1 Flashcard meanings hardcoded | The ternary was real but **unreachable**. Nothing ever INSERTed into `vocabulary_mastery` — only an UPDATE existed — so the queue was permanently empty and the tab always showed its empty state. Fixing meanings alone would have changed nothing visible. |
+| #2 Tajweed Reader is a placeholder | Wiring the viewer was not enough. `TajweedViewer` was **not usable as found**: only 2 of 18 rules resolved to a colour, and its renderer put marks on the wrong letters. |
+| #5/#6 Audio is fake, viewer orphaned | Audio was **not blocked** on Quran Foundation credentials as assumed. Keyless per-ayah CDNs work. There were also **two** fake audio handlers, not one. |
 
 ---
 
 ## Routes Audit
 
-| Route | File | Renders | Data Source | Status |
-|-------|------|---------|-------------|--------|
-| `/` | `src/app/app/page.tsx` | ✅ Goal selection | LocalStorage | Working |
-| `/dashboard` | `src/app/app/dashboard/page.tsx` | ✅ Stats, progress | `GET /api/progress/dashboard` | Working |
-| `/assessment` | `src/app/app/assessment/page.tsx` | ✅ Flow or results | `GET/POST /api/assessment/*` | Working |
-| `/learning` | `src/app/app/learning/page.tsx` | ✅ Lessons, flashcards | `GET /api/learning/*` | Working |
-| `/memorization` | `src/app/app/memorization/page.tsx` | ✅ Surahs, due today | `GET /api/memorization/*` | Working |
-| `/grammar` | `src/app/app/grammar/page.tsx` | ✅ Deep-dive | `GET /api/grammar/*` | Working |
-| `/tajweed` | `src/app/app/tajweed/page.tsx` | ⚠️ Placeholder | `GET /api/tajweed/*` | Partial |
-| `/tutor` | `src/app/app/tutor/page.tsx` | ✅ Chat interface | `POST /api/tutor/chat` | Working |
-| `/progress` | `src/app/app/progress/page.tsx` | ✅ Score history | `GET /api/progress/scores` | Working |
-| `/advanced` | `src/app/app/advanced/page.tsx` | ✅ Audio test, cert | `GET /api/memorization/*` | ⚠️ No nav link |
+| Route | Renders | Status |
+|-------|---------|--------|
+| `/` | Goal selection | Working |
+| `/dashboard` | Stats, progress | Working |
+| `/assessment` | Flow or results | Working |
+| `/learning` | Lessons, flashcards | Working |
+| `/memorization` | Surahs, due today, **add ayah** | Working |
+| `/grammar` | Deep-dive | Working |
+| `/tajweed` | **Colour-coded reader**, makharij, mastery | Working |
+| `/tutor` | Chat interface | Working (keyword matcher) |
+| `/progress` | Score history | Working |
+| `/advanced` | Audio test, cert | Working, **now in the nav** |
 
 ---
 
-## Navigation Audit
+## Resolved findings
 
-**File:** `src/app/components/layout/Nav.tsx`
+### 1. Flashcard meanings — fixed, and the real cause was worse
 
-All 7 links use Next.js `<Link>` and work:
+The hardcoded ternary over ten words (printing the literal string `"Meaning"` for
+anything else) is deleted. But it was never reachable: **nothing inserted into
+`vocabulary_mastery`.** Three changes were needed, not one:
 
-```typescript
-const LINKS = [
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/learning', label: 'Learn' },
-  { href: '/memorization', label: 'Memorize' },
-  { href: '/tajweed', label: 'Tajweed' },
-  { href: '/grammar', label: 'Grammar' },
-  { href: '/tutor', label: 'Tutor' },
-  { href: '/progress', label: 'Progress' },
-];
-```
+- Migration `0011` adds a `vocabulary` **content** table. `vocabulary_mastery` is
+  per-user progress and has no meaning column, which is why meanings had nowhere
+  to live.
+- `content/vocabulary/core-100.json` went from **10 entries to 103** — it was
+  named for 100 and held 10, and those 10 were exactly the ternary's cases.
+  `scripts/gen-vocabulary.mjs` generates the seed SQL and refuses to emit on a
+  missing meaning, a duplicate word, or a "word" containing no Arabic.
+- `POST /api/learning/vocabulary/start` is the way in. Without it the tab stays
+  empty no matter what the content table holds.
 
-**Missing:** No link to `/advanced`.
+Also replaced the flashcard scheduler, which computed
+`quality >= 4 ? 2^(q-1) : q >= 3 ? 2 : 1` from the **quality alone**, ignoring the
+stored interval and ease factor — so `ease_factor` and `interval_days` were never
+read or written, and a word answered "OK" on its fiftieth review still came back
+in two days. Now uses the same tested `applySM2` as memorization. Five quality-3
+reviews give 2, 3, 4, 5, 6 days instead of 2, 2, 2, 2, 2.
 
----
+### 2 & 6. Tajweed reader — fixed, after fixing the component itself
 
-## Critical Issues
+`TajweedViewer` was described here as "fully functional". It was not.
 
-### 1. Flashcard Meanings Hardcoded
+- **Only 2 of 18 rules had a colour.** The annotations use 18 rule names;
+  `tajweed_rules` held 6 taught categories, and only `ghunnah` and `qalqalah`
+  share a name. Al-Fatiha contains *neither*, so the default view would have
+  rendered entirely uncoloured. Fixed with a rule → category map
+  (`workers/src/lib/tajweed-colors.ts`) and migration `0010` for the four
+  categories that had no row. Coverage: **60,057 of 60,057**.
+- **The renderer put marks on the wrong letters.** `highlightTajweed` read
+  `substring(start, end + 1)` though `end` is exclusive, so every mark covered
+  two characters instead of one; and it used `result.replace(word, …)`, which
+  rewrites the *first* match anywhere in the ayah — all three `hamzat_wasl` tags
+  in 1:1 landed on the first ٱ, nested three deep, leaving the real 2nd and 3rd
+  unmarked. It also mutated the string it was scanning. Replaced with
+  codepoint-accurate `segmentVerse()` (`src/app/lib/tajweed-render.ts`, 15 tests).
+  `dangerouslySetInnerHTML` is gone from both call sites.
 
-**File:** `src/app/components/learning/Flashcards.tsx:108-118`
+Added a surah picker backed by `src/app/lib/surahs.ts`, whose ayah counts are
+counted from the pinned text rather than typed by hand.
 
-```typescript
-{currentCard.word === 'اللَّه' ? 'God' :
- currentCard.word === 'رَّحْمَٰن' ? 'The Most Merciful' :
- ...
- 'Meaning'}   // <-- any unmatched word shows "Meaning"
-```
+### 3. Memorization add-UI — fixed
 
-**Impact:** Only ~10 words have translations. All others show literal "Meaning" text.
+`AddAyahForm` calls the endpoint that already worked. The endpoint had **no
+validation** and would accept surah 999, ayah 0, `ayahFrom > ayahTo`, floats and
+numeric strings; it now validates server-side too, because the bearer token ships
+in the JS bundle so anything that can load the form can post around it. The upper
+ayah bound is read from `quran_verses` rather than a second copy of 114 numbers.
 
-**Fix:** Fetch meanings from API or vocabulary database.
+### 4. `/advanced` unreachable — fixed
 
----
+Added to `LINKS` in `Nav.tsx`.
 
-### 2. Tajweed Reader Tab is Placeholder
+### 5. Audio was fake — fixed, and it was never blocked
 
-**File:** `src/app/app/tajweed/page.tsx:87-115`
+Both fakes are gone: `ReviewSession`'s 3-second `setTimeout` and
+`TajweedViewer`'s 5-second one (only the first was filed). One real
+`AyahAudioButton` backed by `everyayah.com`, which needs no credentials.
+Verified playing: 6.03s of audio with `currentTime` advancing.
 
-The Reader tab renders a static placeholder card instead of actual Quran text with tajweed coloring. The `TajweedViewer` component exists at `src/app/components/tajweed/TajweedViewer.tsx` and is fully functional, but **it is never rendered by the page**.
+### 7–12. Polish — all closed
 
-**Fix:** Wire up `TajweedViewer` with verse data from `GET /api/tajweed/verses/:surahId`.
-
----
-
-### 3. No UI to Add Memorization Entries
-
-**File:** `src/app/app/memorization/page.tsx`
-
-The memorization tracker has no way to add ayahs. The endpoint (`POST /api/memorization/add`) works, the scheduler works, migration 0005 works — but **no UI calls it**.
-
-**Impact:** The entire memorization feature is unusable.
-
-**Fix:** Add "Add Ayah" button + form to memorization page.
-
----
-
-## Medium Issues
-
-### 4. `/advanced` Route Unreachable
-
-**File:** `src/app/components/layout/Nav.tsx:38-46`
-
-The `/advanced` page exists but has no link in the navigation. Users can only reach it by typing the URL.
-
-**Fix:** Add `{ href: '/advanced', label: 'Advanced' }` to `LINKS` array.
-
----
-
-### 5. Audio Playback is Fake
-
-**File:** `src/app/components/memorization/ReviewSession.tsx:29-31`
-
-```typescript
-const handlePlayAudio = () => {
-  setAudioPlaying(true);
-  setTimeout(() => setAudioPlaying(false), 3000);  // Just a timer
-};
-```
-
-**Fix:** Integrate Quran Foundation API for reciter audio URLs.
+| # | Issue | Resolution |
+|---|-------|-----------|
+| 7 | Dashboard quick actions use `<a>` | `next/link` |
+| 8 | Progress uses `window.location.href` | `router.push` — and the same defect in `Onboarding` and `AssessmentResults`, which were not filed |
+| 9 | Weekly calendar is static UI | Still static — it renders real dates but no activity data. **Deliberately left**; see below |
+| 10 | ReviewSession record button uses emoji | Removed. It said "🎤 Record Recitation" but only advanced the step; relabelled to match what it does |
+| 11 | `StatCard` hardcoded gray colours | Still present — cosmetic, see below |
+| 12 | `MakharijDiagram` prop never passed | Letters are buttons now, so the highlight state is reachable |
 
 ---
 
-### 6. `TajweedViewer` is Orphaned
+## Deliberately not done
 
-**File:** `src/app/components/tajweed/TajweedViewer.tsx`
+- **#9 weekly calendar** and **#11 StatCard colours** are cosmetic and need design
+  decisions rather than fixes.
+- **Self-recording.** `useAudioRecorder.ts` was deleted rather than wired. It was
+  broken: `stopRecording()` built its Blob synchronously right after calling
+  `MediaRecorder.stop()`, but the final `ondataavailable` fires afterwards and —
+  with no timeslice — is the only one, so it always returned an **empty Blob**.
+  Microphone capture cannot be verified in a headless environment, so removing it
+  beat shipping an unverifiable rewrite. Whoever builds this should not repeat the
+  synchronous-stop mistake.
+- **wrangler 3 → 4.** A major bump on the deploy path, deferred rather than
+  landed without room to validate a rollback.
+- **The tutor is still a keyword matcher.** Its redesign depends on the
+  morphology corpus (now loaded, 77,429 rows) and is a feature, not a fix.
 
-Fully functional component that is never imported or used by any route.
+## Still open elsewhere
 
-**Fix:** Wire to tajweed page (see Critical #2).
-
----
-
-## Low Issues (Polish)
-
-| # | Issue | File | Lines |
-|---|-------|------|-------|
-| 7 | Dashboard quick actions use `<a>` instead of `<Link>` | `Dashboard.tsx` | 106-121 |
-| 8 | Progress page uses `window.location.href` | `progress/page.tsx` | 73-75 |
-| 9 | Progress weekly calendar is static UI | `progress/page.tsx` | 153-182 |
-| 10 | ReviewSession record button uses emoji | `ReviewSession.tsx` | 88 |
-| 11 | `StatCard` uses hardcoded gray colors | `StatCard.tsx` | 12-13 |
-| 12 | `MakharijDiagram` accepts `selectedLetter` prop but receives none | `tajweed/page.tsx` | 117 |
-
----
-
-## Recommended Fix Order
-
-1. **Fix flashcard meanings** — High impact, blocks learning feature
-2. **Wire up Tajweed Viewer** — Core feature (F1)
-3. **Add memorization entry UI** — Blocks hifz tracker (F2)
-4. **Add `/advanced` nav link** — Minor but easy
-5. **Fix audio playback** — Blocks F10
+**Cloudflare Access is not enabled.** `GET /api/auth/whoami` reports
+`mode: "shared-token"`, and the token is inlined into the JS bundle — so anyone
+with the URL can read it from page source and call the API. This is the largest
+remaining risk and it is not a frontend issue; it needs an Access-scoped
+Cloudflare token and an email allowlist.
 
 ---
 
-## What's Working (For Reference)
+## Orphaned components
 
-- Assessment flow (18 questions, scoring, retake)
-- Learning lessons (graded exercises, progression)
-- Memorization due today (fetches, reviews)
-- Grammar deep-dive (parser, conjugation tables)
-- Tajweed mastery tab (per-rule percentages)
-- AI Tutor chat (keyword matcher)
-- Progress dashboard (score history)
-- Onboarding flow (goal selection)
+Down to **zero**. `QuizQuestion.tsx` (duplicated markup now inline in
+`LearningPage`), `AudioPlayer.tsx` (superseded by `AyahAudioButton`) and
+`useAudioRecorder.ts` were deleted — 196 lines. `TajweedViewer` and `Select` are
+now used.
 
----
-
-## Orphaned Files (Outdated — AGENTS.md list)
-
-The AGENTS.md list of orphaned files is partially outdated:
-
-- `components/layout/Sidebar.tsx` — **Deleted** (already removed)
-- `components/layout/MobileNav.tsx` — **Deleted** (already removed)
-- `components/onboarding/Onboarding.tsx` — **NOT orphaned** (imported by Dashboard)
-- `components/dashboard/Dashboard.tsx` — **NOT orphaned** (imported by /dashboard)
-
-The actual navigation is via `Nav.tsx` (replaced Sidebar + MobileNav).
-
----
-
-## Infrastructure Notes
-
-### API Layer
-
-All API calls require `NEXT_PUBLIC_API_TOKEN` at build time. If missing, `assertConfigured()` throws `ApiConfigError` and pages show error messages.
-
-### Routes Reachability
-
-```
-/ (home) ----[CTA]----> /assessment
-/assessment ----[Continue]----> /learning
-/dashboard ----[Quick Actions]----> /learning, /memorization, /assessment
-/progress ----[Empty State]----> /assessment (via window.location)
-Nav ----[7 links]----> /dashboard, /learning, /memorization, /tajweed, /grammar, /tutor, /progress
-```
-
-### Missing: No link from any page to `/advanced`
-
-The `/advanced` route is completely isolated from the navigation graph.
-
----
-
-## Audit Methodology
-
-1. Read all route files in `src/app/app/`
-2. Read navigation component `src/app/components/layout/Nav.tsx`
-3. Curl-test all 10 routes for 200 OK
-4. Review interactive components for broken handlers
-5. Verify API endpoints exist and respond
-6. Check for orphaned components (files not imported by any route)
-
----
-
-## Conclusion
-
-The frontend is **functional but incomplete**. All pages render, all navigation works, but three critical features block real usage:
-
-1. Flashcards show garbage for most words
-2. Tajweed Reader is a placeholder
-3. No way to add memorization entries
-
-Fixing these would make the app **genuinely usable** for its intended audience.
+ESLint reports **zero findings**; the two long-standing `exhaustive-deps` warnings
+were resolved with `useCallback` rather than silenced.

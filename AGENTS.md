@@ -95,7 +95,7 @@ Modules are grouped into phases. Each phase must be completed before the next be
 These modules are **buildable artifacts**, not documentation. They establish the visual and structural layer that every subsequent module builds on.
 
 1. ✅ **09-design-system** — Tailwind config, CSS custom properties, color tokens, typography, spacing, shadows, radius, motion, anti-slop checklist. Applied to `tailwind.config.ts` and global CSS.
-2. ✅ **11-component-library** — 18+ React components (`Card`, `Button`, `ProgressBar`, `Badge`, `Input`, `Select`, `StatCard`, `LessonCard`, `MemorizationEntry`, `QuizQuestion`, `AudioPlayer`, `EmptyState`, `AppShell`, `Sidebar`, `MobileNav`, `PageHeader`). Implemented in `src/app/components/`.
+2. ✅ **11-component-library** — 18+ React components (`Card`, `Button`, `ProgressBar`, `Badge`, `Input`, `Select`, `StatCard`, `LessonCard`, `MemorizationEntry`, `EmptyState`, `AppShell`, `PageHeader`, `Tabs`, `AyahAudioButton`). Implemented in `src/app/components/`.
 3. ✅ **00-project-scaffolding** — Next.js app structure, routing, auth, shared types. Built on top of the design system and components.
 
 #### Phase 1: MVP Feature Modules ✅ COMPLETE
@@ -306,7 +306,8 @@ GET  /api/grammar/deepdive/:category
 POST /api/grammar/exercise
 GET  /api/grammar/mastery
 POST /api/grammar/parse
-GET  /api/learning/flashcards
+GET  /api/learning/flashcards       (LEFT JOINs vocabulary for meaning/transliteration/root)
+POST /api/learning/vocabulary/start (adds next unlearned words to the review queue)
 POST /api/learning/flashcards/review
 GET  /api/learning/lessons
 GET  /api/learning/lessons/:id
@@ -314,7 +315,7 @@ POST /api/learning/lessons/:id/submit
 GET  /api/learning/next
 POST /api/memorization/:id/recall
 POST /api/memorization/:id/review
-POST /api/memorization/add
+POST /api/memorization/add          (validated: surah 1-114, ayah bounds from quran_verses)
 GET  /api/memorization/all
 GET  /api/memorization/review/today
 GET  /api/memorization/surah/:surahId
