@@ -28,3 +28,15 @@ workers/.dev.vars
 
 # Cloudflare/CI secret bundle handed over for the local session — never commit
 languagebuilder.env
+
+# Generated design-system bundle for claude.ai/design (regenerate with
+# scripts/gen-design-system.mjs; published via DesignSync, not committed).
+.design-system/
+
+# Local audit harness: serves the built app with a throwaway localhost token.
+.claude/launch.json
+
+# Local wrangler state: miniflare D1 (tens of MB), dev bundles, caches.
+# workers/.wrangler was already covered; the repo root one appeared when
+# `wrangler pages dev` ran from here for the UI audit.
+.wrangler/

@@ -1,5 +1,10 @@
 # Language Builder — DESIGN.md
 
+> **Palette section superseded.** The 12-tell anti-slop audit below is live
+> guidance and `globals.css` cites it. The COLOUR values are from the pre-rebrand
+> palette and no longer apply — take colours from `src/app/styles/globals.css`.
+
+
 > Design token specification for Language Builder.
 > Consumed by: all design and engineering agents working on this product.
 > Last updated: 2026-07-24.

@@ -78,8 +78,8 @@
     --tajweed-makharij:    #b99bf0; /* violet  */
 
     /* ── Type
-     * --font-arabic / --font-display / --font-body / --font-mono are defined by
-     * next/font on the <html> element (app/layout.tsx). The fallbacks below only
+     * --font-arabic / --font-naskh / --font-display / --font-body / --font-mono
+     * are defined by next/font on the <html> element (app/layout.tsx). The fallbacks below only
      * apply if that ever fails to render. */
     --font-fallback-display: 'Amiri', serif;
     --font-fallback-body: system-ui, sans-serif;

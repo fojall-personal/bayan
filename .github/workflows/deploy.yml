@@ -55,6 +55,15 @@ jobs:
       - name: Check the learning path is walkable
         run: node scripts/check-pedagogy.mjs
 
+      # globals.css and tailwind.config.ts are a palette and its mirror, and
+      # nothing failed when they diverged. The hand-written "visual verification
+      # page" ended up rendering 38 of its 39 colours from the pre-rebrand
+      # palette — the one artifact whose job was to show the design system showed
+      # the wrong one. This also catches a --font-* variable with no Tailwind
+      # utility, which is how `font-naskh` compiled to nothing.
+      - name: Assert the design tokens agree
+        run: node scripts/gen-design-system.mjs --check
+
       # 39 tests over grading, scoring, the SM-2 scheduler and the Quran ingest
       # alignment gate. Every case corresponds to a bug that shipped or a
       # behaviour previously checked only by hand. Adding them found a live one:

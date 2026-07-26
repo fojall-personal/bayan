@@ -83,6 +83,11 @@ const config: Config = {
         display: ['var(--font-display)', 'Amiri', 'serif'],
         body: ['var(--font-body)', 'system-ui', 'sans-serif'],
         arabic: ['var(--font-arabic)', 'serif'],
+        // Noto Naskh, for instructional Arabic. globals.css already used
+        // var(--font-naskh) in .text-naskh, but without this entry the obvious
+        // `font-naskh` utility compiled to nothing — the same silent failure as
+        // the `arabic-green` token. gen-design-system.mjs --check now catches it.
+        naskh: ['var(--font-naskh)', 'var(--font-arabic)', 'serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       fontSize: {

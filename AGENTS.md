@@ -74,14 +74,28 @@ languagebuilder/
 
 ## Design System
 
-See `modules/09-design-system.md` and `modules/10-ux-design-specification.md`.
+**Single source of truth: `src/app/styles/globals.css`.** `tailwind.config.ts`
+mirrors it and `node scripts/gen-design-system.mjs --check` fails the build if the
+two disagree. The published reference lives in the "Bayan — Design System" project
+on claude.ai/design and is generated from globals.css, never hand-written.
+
+`modules/09-design-system.md` and `modules/10-ux-design-specification.md` are the
+ORIGINAL specs and describe a palette the app no longer uses. Do not take colours
+from them.
 
 **Key design principles:**
-- Dark mode default (gray-950 background)
-- Arabic green primary (#22c55e)
-- Gold secondary (#f59e0b)
-- Arabic text requires generous line-height (2.0)
-- Functional tajweed colors (not decorative)
+- Always dark. No light mode, no `dark:` variants.
+- Deep green ground (`ground-950` #071411 canvas), gold accent (`gold-500`
+  #c9a227), living green for progress (`leaf-500` #3e9b72)
+- Never pure white text — cream ink (`ground-50` #f2ead7) at 15.7:1
+- Gold means "act here". Progress and success use leaf, so the accent keeps its
+  meaning
+- Arabic needs room: `leading-arabic` is 2.1
+- Two Arabic faces, one job each: Amiri for ayat, Noto Naskh for teaching text.
+  Never set `direction` on mixed text — use `.text-naskh` with `dir="auto"`
+- Functional tajweed colors (not decorative) — do not borrow them for decoration
+- Write full class names. `bg-${x}-500` generates nothing, and neither does a
+  token the palette never defined
 - No fake metrics, no placeholder stats
 - Every screen has a clear next action
 
