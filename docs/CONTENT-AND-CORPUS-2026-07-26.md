@@ -281,10 +281,143 @@ fabrications. Occurrence counts ranged from إِيَّاكَ (8) to لَا (4,38
   deprecation annotation was about the actions' own runtime, not the
   `node-version` input changed earlier — a correction to what I claimed then.
 
+## 8. Checked against outside sources, and what that found
+
+Everything above was verified against the corpus, the pinned text, or the
+generator that produced it. None of that can catch an error the source itself
+contains, or a claim I made confidently and never looked up. So: the glosses
+against translators who are not our source, and every grammatical claim in the
+ten lessons against outside references.
+
+### The glosses hold. One earlier claim did not.
+
+**A correction first.** I wrote that the 1,200 comprehension items were
+"re-verified against the cached source independently of the generator." That was
+weaker than it sounded: `gen-comprehension.mjs` builds *both* the exercise bank
+and the gloss table from `data/wbw`, so agreement proves faithful transcription
+and nothing about correctness.
+
+**Alignment, properly independent.** Against the pinned Tanzil Uthmani text — a
+different project from the gloss source — 6,236 ayahs and 77,429 words compared:
+**1,196 of 1,200 items sit at the identical word position**, and the four
+exceptions are the same word encoded differently (`ٱلْـَٔاخِرَةِ` against
+`ٱلْءَاخِرَةِ`). Two structural differences are accounted for rather than waved
+past: 112 ayahs where Tanzil folds the basmala into ayah 1, and 37:130, where
+`إِلْ يَاسِينَ` is one word in one file and two in the other. This is the check
+that matters, because a one-position shift would make every affected exercise
+wrong while looking perfectly well-formed.
+
+**corpus.quran.com cannot corroborate meaning.** Fetching 19:2 and 25:25 returned
+glosses identical to ours word for word — quran.com serves the Leeds text. Worth
+recording before someone cites it as a second opinion.
+
+**Meaning, against five translators who are not our source.** Saheeh
+International, Pickthall, Yusuf Ali, Hilali-Khan and Arberry, via tanzil.net:
+**861 of 895** glosses with checkable content share vocabulary with at least one
+— 96.2%. All 33 distinct exceptions read as translator divergence (`قَدْ` →
+"Indeed" where all five say "already"), name transliteration (Maryam/Mary,
+Isa/Jesus), or British spelling. No factual errors. Three upstream glosses are
+weak — `عَلَيْهِمْ` → "on themselves" (1:7:7) and `هُمُ` → "themselves" (2:12:3,
+2:13:15), where "them"/"they" is what the grammar supports. Left as the source
+has them.
+
+One source alone was useless: Saheeh International by itself flagged 17.9%, because
+a word-by-word gloss and flowing prose legitimately choose different words. Five
+sources with an any-match rule is what made the screen readable.
+
+### Two real defects in the comprehension bank
+
+- **Every item came from surahs 1–26, and 54% from surah 2 alone.** Nothing from
+  Juz 30 — the short surahs a beginner memorises first. Candidates are generated
+  in text order and the per-bucket cap took the first N, so the bank never reached
+  the back of the book. Same mistake as the `LIMIT 20000` in the tutor's word
+  lookup: the head of an ordered list where a spread was needed. Now a
+  deterministic round-robin over surahs: **114 of 114 surahs, largest single-surah
+  share 1.8%, all 37 Juz 30 surahs present.**
+- **Four items had a distractor that was also correct** — "and the sky" against
+  "the sky", and worst, `[the] people` against `(the) People`, which differ only
+  in bracket style. Options were compared as lowercased strings. They are now
+  compared on a normalised key that drops brackets, articles and leading
+  particles. A fifth defect surfaced while fixing it: 17:72 says `أَعْمَىٰ` twice
+  with two different glosses, so the gloss-uniqueness check passed while the
+  options listed the same Arabic twice — one of two identical buttons marked
+  wrong. Ayahs that repeat a word are now skipped.
+
+Also fixed: `find_word` always asked about `teachable[0]`, the first eligible word
+of the ayah, which made every item answerable by position rather than by meaning.
+
+### Four confirmed defects in the lessons
+
+Prose is the part no generator can check, and it is where the errors were.
+
+1. **grammar-05 broke the rule grammar-01 teaches, three times.** All three
+   examples spelled `الْرَّجُلُ` with both a sukoon on the lām and a shadda on the
+   ر — asserting the lām is pronounced and assimilated at once. Sun letters take
+   no sukoon on the lām. grammar-01 spells `الشَّمْسُ` correctly two lessons
+   earlier, so the app taught the rule and then contradicted it.
+2. **grammar-07 was a lesson on attached pronouns containing no attached
+   pronoun.** `إِيَّاكَ` is a *detached* accusative pronoun (ضمير نصب منفصل), and
+   the corpus settles it: `<iy~aAka` is tagged `STEM|POS:PRON|LEM:<iy~aA`, while
+   genuine attached pronouns are `SUFFIX|PRON:3MS`. `نَعْبُدُ` is a single segment
+   with no pronoun at all — its subject is implied (ضمير مستتر). Replaced with
+   `رَبِّكَ` and `فِيهِ`, both real suffix cases, plus a rule naming the three
+   categories so the contrast is explicit rather than accidental.
+3. **grammar-04's prose contradicted its own conjugation table.** It listed the
+   prefixes as "ت (you/he/she)"; ت never marks "he". And it gave the masculine
+   plural suffix as `وُنا`, which is not the suffix — it is `ـُونَ`. The table
+   itself was right.
+4. **grammar-06 gave the wrong reason for a right answer.** "Both nouns genitive
+   because the phrase follows مَٰلِكِ." The external i'rab of 1:4 has `يَوْمِ`
+   genitive as the possessed term and `ٱلدِّينِ` as the second possessor in a
+   *chained* idafa.
+
+Two smaller ones: grammar-09 cited `ذَٰلِكَ ٱلْكِتَابُ` with a full alef where the
+Quran writes a dagger alef, and grammar-10 omitted لم — which the reference calls
+the main way to negate a past-tense verb — while teaching ما as though it were the
+only one.
+
+**Verified correct, which is most of it:** grammar-01's sun and moon lists are both
+exactly 14 with ض present; grammar-08 is right on every count, including its claim
+that the corpus marks Forms II–XII, which the file confirms exactly (II through XII
+present, no Form I marker); grammar-10's four particle claims all match the
+reference; grammar-09, grammar-03 and grammar-02's paradigm are sound.
+
+### The gate now covers what it missed
+
+`check-content.mjs` gained three checks, and **all seven seeded defects make it
+exit non-zero** — including the two that got through last round:
+
+- **Sun-letter orthography**, both directions: no sukoon on the lām of ال before a
+  sun letter, no shadda on a moon letter directly after it. Decidable from the
+  codepoints.
+- **Arabic everywhere in a lesson, not just `content.examples`.** The previous
+  check only walked the field I happened to think of, which is how two spellings
+  in `rules[].description` shipped unexamined. Vocalised Arabic is treated as a
+  quotation and must occur in the pinned text; unvocalised Arabic is metalanguage
+  (المضاف إليه, حروف شمسية) and is skipped, which is what keeps the output
+  readable. Authored teaching sentences declare themselves with `"quranic": false`
+  — the default is the strict one, because both missed spellings were undeclared.
+- **Options that mean the same thing**, on the same normalised key the generator
+  now uses, plus repeated options and out-of-range `correct` indices.
+
+**`scripts/gen-lessons-sql.mjs` is new, and closes a silent drift.**
+`seed-lessons.sql` was hand-produced, so editing `lessons.json` changed the file
+the gate reads and left the file the database is seeded from untouched — green
+gate, stale content, no diff. `--check` runs in CI, the same pattern as
+`sync-pages-config.mjs`.
+
 ## Still open
 
 - **Level 5 verb_form is 34 items, not 150** — rare roots do not supply enough
   whole-word verb candidates. Reported short rather than padded.
+- **The 96.2% gloss agreement is a screen, not a proof.** A correct word-by-word
+  gloss can use vocabulary no flowing translation chose, and content-word matching
+  with a truncating stemmer will both miss subtle errors and flag correct glosses.
+  It rules out gross errors; it cannot certify nuance. No bulk gloss source of
+  documented provenance independent of Leeds was findable.
+- **The lessons' pedagogy is unexamined.** Their factual claims are now checked
+  against outside references; sequencing, difficulty ramp and whether the
+  explanations land are not.
 - **Self-recording is unimplemented**, deliberately excluded. The original hook
   was broken and microphone capture cannot be verified headlessly.
 - **The D1 Time Travel drill was retired**, not deferred: every large table is

@@ -130,13 +130,15 @@
           "arabic": "الْكِتَابُ مَفْتُوحٌ",
           "transliteration": "al-kitābu maftūḥun",
           "meaning": "The book is open",
-          "structure": "مبتدأ + خبر"
+          "structure": "مبتدأ + خبر",
+          "quranic": false
         },
         {
           "arabic": "اللَّهُ كَبِيرٌ",
           "transliteration": "allāhu kabīrun",
           "meaning": "God is Great",
-          "structure": "مبتدأ + خبر"
+          "structure": "مبتدأ + خبر",
+          "quranic": false
         }
       ]
     },
@@ -150,7 +152,8 @@
           "the whole sentence"
         ],
         "correct": 1,
-        "explanation": "الْبَابُ is the مبتدأ (subject/noun that begins the sentence)."
+        "explanation": "الْبَابُ is the مبتدأ (subject/noun that begins the sentence).",
+        "quranic": false
       }
     ]
   },
@@ -164,7 +167,7 @@
     ],
     "estimated_minutes": 25,
     "content": {
-      "explanation": "The present tense (مضارع) is formed by adding prefixes to the verb root. The prefix indicates the subject: أ (I), ت (you/he/she), ي (he/she), ن (we).",
+      "explanation": "The present tense (مضارع) is formed with a prefix, and often a suffix too. The prefix indicates the subject: أ (I), ن (we), ت (you — and “she” in the third person singular), ي (he). Note that ت never marks “he”, and that ي also carries the third person feminine plural, as in يَكْتُبْنَ.",
       "conjugation_table": {
         "root": "ك ت ب",
         "meaning": "to write",
@@ -184,7 +187,7 @@
         "type": "fill_blank",
         "question": "Complete: يَكْتُبُ → they (men) write = ___",
         "correct": "يَكْتُبُونَ",
-        "explanation": "The plural masculine suffix is وُنا for present tense."
+        "explanation": "The masculine plural present suffix is ُونَ (-ūna) — waw, then noon with a fatha."
       }
     ]
   },
@@ -201,22 +204,25 @@
       "explanation": "Arabic nouns change their ending based on their grammatical role in the sentence. This is called i'rab (إعراب). The three cases are: nominative (مرفوع) with ـُ, accusative (منصوب) with ـَ, genitive (مجرور) with ـِ.",
       "examples": [
         {
-          "arabic": "جَاءَ الْرَّجُلُ",
+          "arabic": "جَاءَ الرَّجُلُ",
           "transliteration": "jā'a ar-rajulu",
           "meaning": "The man came",
-          "case": "مرفوع (nominative — subject)"
+          "case": "مرفوع (nominative — subject)",
+          "quranic": false
         },
         {
-          "arabic": "رَأَيْتُ الْرَّجُلَ",
+          "arabic": "رَأَيْتُ الرَّجُلَ",
           "transliteration": "ra'aytu ar-rajula",
           "meaning": "I saw the man",
-          "case": "منصوب (accusative — object)"
+          "case": "منصوب (accusative — object)",
+          "quranic": false
         },
         {
-          "arabic": "ذَهَبْتُ إِلَى الْرَّجُلِ",
+          "arabic": "ذَهَبْتُ إِلَى الرَّجُلِ",
           "transliteration": "dhahabtu ilā ar-rajuli",
           "meaning": "I went to the man",
-          "case": "مجرور (genitive — after preposition)"
+          "case": "مجرور (genitive — after preposition)",
+          "quranic": false
         }
       ]
     },
@@ -256,7 +262,7 @@
           "arabic": "يَوْمِ ٱلدِّينِ",
           "transliteration": "yawmi d-dīni",
           "meaning": "the Day of Judgement",
-          "rule": "Both nouns genitive here, because the phrase follows مَٰلِكِ"
+          "rule": "A chained idafa: مَٰلِكِ possesses the day, and the day possesses the judgement. Each noun puts the next in the genitive."
         }
       ],
       "rules": [
@@ -310,26 +316,30 @@
       "explanation": "Arabic attaches pronouns directly to the end of nouns, verbs and prepositions rather than writing them separately. On a noun the pronoun means possession; on a verb it is the object; on a preposition it is what the preposition governs. The same ending does all three jobs, so context decides.",
       "examples": [
         {
-          "arabic": "إِيَّاكَ",
-          "transliteration": "iyyāka",
-          "meaning": "You alone",
-          "rule": "The isolated object pronoun, used to front the object"
+          "arabic": "رَبِّكَ",
+          "transliteration": "rabbika",
+          "meaning": "your Lord",
+          "rule": "Noun + attached possessive كَ — “your”. Occurs 81 times as a word on its own."
         },
         {
-          "arabic": "نَعْبُدُ",
-          "transliteration": "naʿbudu",
-          "meaning": "we worship",
-          "rule": "The نـ prefix carries “we”, so no separate pronoun is needed"
+          "arabic": "فِيهِ",
+          "transliteration": "fīhi",
+          "meaning": "in it",
+          "rule": "Preposition + attached هِ — what the preposition governs"
         }
       ],
       "rules": [
         {
           "name": "On a noun — possession",
-          "description": "كِتَابُهُ means “his book”. The ـهُ is the possessor."
+          "description": "رَبِّكَ is “your Lord”. The كَ is the possessor, written as part of the word."
         },
         {
           "name": "On a verb — object",
-          "description": "The same ـهُ attached to a verb is the thing acted upon, not the actor."
+          "description": "The same endings attach to a verb as its object, not its subject. In فِيهِ the هِ is what فِي governs."
+        },
+        {
+          "name": "Not to be confused with إِيَّاكَ",
+          "description": "إِيَّاكَ is a DETACHED pronoun (ضمير منفصل), a word of its own. And نَعْبُدُ carries no attached pronoun at all — its “we” is the نـ prefix, an implied pronoun (ضمير مستتر). Three different categories."
         }
       ]
     },
@@ -443,7 +453,7 @@
         },
         {
           "name": "With a definite noun",
-          "description": "ذَٰلِكَ ٱلْكِتَابُ is “that book” — a phrase. Without ال it would read as a full sentence."
+          "description": "ذَٰلِكَ ٱلْكِتَٰبُ (2:2) is “that Book” — a phrase, not a sentence. Drop the ال and ذَٰلِكَ becomes the subject of its own sentence: “that is a book”."
         }
       ]
     },
@@ -472,7 +482,7 @@
     ],
     "estimated_minutes": 20,
     "content": {
-      "explanation": "Arabic negates with different particles depending on what is being negated and when. لَا negates a present-tense verb or, in another use, negates a category outright. مَا negates a past-tense verb. لَنْ negates the future and puts the verb in the subjunctive. Choosing the wrong particle changes the tense, not just the tone.",
+      "explanation": "Arabic negates with different particles depending on what is negated and when. لَا negates a present-tense verb, or negates a category outright. لَمْ is the usual way to negate the past: it precedes a present-tense verb and puts it in the jussive. مَا also negates the past, before a past-tense verb. لَنْ negates the future and takes the subjunctive. Choosing the wrong particle changes the tense, not just the tone.",
       "examples": [
         {
           "arabic": "لَا",
@@ -495,6 +505,10 @@
         {
           "name": "مَا with the past",
           "description": "مَا قَالَ — “he did not say”. The verb keeps its past form."
+        },
+        {
+          "name": "لَمْ with the jussive",
+          "description": "لَمْ يَكُنْ — “he was not”. The verb looks present but the meaning is past, and the ending is jussive."
         }
       ]
     },
@@ -509,7 +523,7 @@
           "لَيْسَ"
         ],
         "correct": 1,
-        "explanation": "مَا negates the past. لَا handles the present and لَنْ the future."
+        "explanation": "مَا negates a past-tense verb. لَمْ also negates the past but takes a present-tense verb in the jussive, لَا handles the present, and لَنْ the future."
       },
       {
         "type": "multiple_choice",

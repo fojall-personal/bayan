@@ -195,6 +195,200 @@ for (const [i, e] of vocab.entries()) {
   if (!Number.isInteger(e.frequency_rank)) fail(where, 'frequency_rank must be an integer');
 }
 
+// ── Sun-letter orthography ──────────────────────────────────────────────────
+//
+// A sun letter assimilates the ل of ال, so the ل carries NO sukoon and the sun
+// letter carries a shadda. Writing both — الْرَّجُلُ — claims the ل is pronounced
+// and assimilated at once. All three examples in grammar-05 shipped that way,
+// contradicting grammar-01, which spells الشَّمْسُ correctly two lessons earlier.
+//
+// Decidable from the codepoints alone, so it belongs here.
+const LAM = 'ل';
+const SUKUN = 'ْ';
+const SHADDA = 'ّ';
+const ALEF = 'ا';
+
+function checkSunLetterSpelling(where, text) {
+  if (typeof text !== 'string') return;
+  for (let i = 0; i + 2 < text.length; i += 1) {
+    if (text[i] !== ALEF || text[i + 1] !== LAM || text[i + 2] !== SUKUN) continue;
+    const letter = text[i + 3];
+    if (!letter || !SUN.has(letter)) continue; // moon letters take the sukoon
+    fail(
+      where,
+      `"${text.slice(i, i + 6)}" puts a sukoon on the ل of ال before the sun ` +
+        `letter ${letter}. A sun letter assimilates the ل: no sukoon, and a ` +
+        `shadda on the ${letter}.`
+    );
+  }
+  // The mirror error: a shadda on a moon letter directly after ال.
+  for (let i = 0; i + 3 < text.length; i += 1) {
+    if (text[i] !== ALEF || text[i + 1] !== LAM) continue;
+    const letter = text[i + 2];
+    if (!MOON.has(letter)) continue;
+    if (text[i + 3] === SHADDA) {
+      fail(
+        where,
+        `"${text.slice(i, i + 6)}" puts a shadda on the moon letter ${letter} ` +
+          `right after ال. Moon letters do not assimilate the ل.`
+      );
+    }
+  }
+}
+
+// ── Every Arabic string in a lesson, not just content.examples ──────────────
+//
+// The last round verified that each entry in content.examples occurs in the
+// pinned text — and missed two spellings sitting in rules[].description, because
+// nothing walked them: ذَٰلِكَ ٱلْكِتَابُ and كِتَابُهُ, both written with a full
+// alef where the Quran uses a dagger alef. A check that only visits the field you
+// remembered is a check you will outgrow.
+const DIAC_SET = new Set([
+  ...range(0x0610, 0x061a), ...range(0x064b, 0x065f), 0x0670, 0x0640,
+  ...range(0x06d6, 0x06ed),
+]);
+function range(a, b) {
+  const out = [];
+  for (let i = a; i <= b; i += 1) out.push(i);
+  return out;
+}
+const FOLD = new Map([
+  [0x0671, ALEF], [0x0623, ALEF], [0x0625, ALEF], [0x0622, ALEF], [0x0649, 'ي'],
+]);
+const normalise = (s) =>
+  [...(s ?? '')]
+    .filter((c) => !DIAC_SET.has(c.codePointAt(0)))
+    .map((c) => FOLD.get(c.codePointAt(0)) ?? c)
+    .join('');
+
+let quranText = null;
+try {
+  quranText = normalise(await readFile(join(root, 'data/quran-uthmani.txt'), 'utf-8'));
+} catch {
+  // data/ is gitignored and regenerable, so a missing text is a skip, not a
+  // failure — otherwise a fresh clone cannot run the gate at all.
+  notes.push('data/quran-uthmani.txt not present — skipped Quranic occurrence checks');
+}
+
+const AR_RUN = /[؀-ۿݐ-ݿ]+(?:[ ‏]+[؀-ۿݐ-ݿ]+)*/g;
+
+/** Walk every string in a lesson, remembering where it came from. */
+function* strings(node, where) {
+  if (typeof node === 'string') yield [where, node];
+  else if (Array.isArray(node)) {
+    for (const [i, v] of node.entries()) yield* strings(v, `${where}[${i}]`);
+  } else if (node && typeof node === 'object') {
+    for (const [k, v] of Object.entries(node)) yield* strings(v, where ? `${where}.${k}` : k);
+  }
+}
+
+// Vocalised Arabic is a quotation; unvocalised Arabic is metalanguage. Lesson
+// titles and grammatical terms — المضاف إليه, حروف شمسية, أسماء الإشارة — are
+// written without harakat and are not claims about the text, so checking them
+// produces twenty notes that bury the one that matters. A phrase carrying
+// harakat is being presented as real Quranic Arabic, and that is checkable.
+const HARAKAT = /[ً-ْٰ]/;
+
+for (const lesson of Array.isArray(lessons) ? lessons : []) {
+  const base = `grammar/${lesson.id ?? '?'}`;
+  for (const [path, text] of strings(lesson, '')) {
+    checkSunLetterSpelling(`${base} ${path}`, text);
+  }
+  if (!quranText) continue;
+
+  // An example is a quotation unless it declares otherwise. grammar-03 and
+  // grammar-05 teach case and word order with sentences of their own making;
+  // those carry "quranic": false. Anything that forgets to declare it gets
+  // checked — the default has to be the strict one, because the two spellings
+  // this check exists to catch were both undeclared.
+  for (const [i, ex] of (lesson.content?.examples ?? []).entries()) {
+    if (ex.quranic === false) continue;
+    const phrase = (ex.arabic ?? '').trim();
+    if (!phrase || !HARAKAT.test(phrase)) continue;
+    if (!quranText.includes(normalise(phrase))) {
+      fail(
+        `${base} example[${i}]`,
+        `"${phrase}" does not occur in the pinned Quran text. Fix the spelling, ` +
+          `or set "quranic": false if it is an authored teaching example.`
+      );
+    }
+  }
+
+  // Rules and exercise explanations cite Arabic too, and nothing walked them
+  // before: ذَٰلِكَ ٱلْكِتَابُ and كِتَابُهُ both sat in rules[].description with a
+  // full alef where the Quran writes a dagger alef, and both passed a check that
+  // only ever looked at content.examples.
+  for (const [path, text] of strings(
+    {
+      rules: lesson.content?.rules ?? [],
+      exercises: (lesson.exercises ?? []).filter((e) => e.quranic !== false),
+    },
+    ''
+  )) {
+    for (const run of text.match(AR_RUN) ?? []) {
+      const phrase = run.trim();
+      if (!phrase.includes(' ') || !HARAKAT.test(phrase)) continue;
+      const bare = normalise(phrase);
+      if (bare.replace(/\s/g, '').length < 6) continue;
+      if (!quranText.includes(bare)) {
+        fail(
+          `${base} ${path}`,
+          `cites "${phrase}", which does not occur in the pinned Quran text`
+        );
+      }
+    }
+  }
+}
+
+// ── Exercise options that are really the same answer ───────────────────────
+//
+// Four generated items shipped with a distractor that was also correct — one
+// offered "[the] people" against "(the) People", differing only in brackets. The
+// authored exercises can drift the same way, and an item with two right answers
+// looks perfectly well-formed from the outside.
+const LEADING_FUNCTION =
+  /^(?:and|or|then|so|but|for|with|in|on|at|to|of|from|by|the|a|an|is|are|was|were|be|been)\b\s*/;
+function answerKey(s) {
+  let out = String(s ?? '')
+    .toLowerCase()
+    .replace(/[[\]()]/g, ' ')
+    .replace(/[^a-z؀-ۿ ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  let prev;
+  do {
+    prev = out;
+    out = out.replace(LEADING_FUNCTION, '').trim();
+  } while (out !== prev);
+  return out.replace(/\b(?:the|a|an)\b/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+for (const lesson of Array.isArray(lessons) ? lessons : []) {
+  for (const [i, exr] of (lesson.exercises ?? []).entries()) {
+    const where = `grammar/${lesson.id}/exercise[${i}]`;
+    const options = exr.options;
+    if (!Array.isArray(options)) continue;
+    if (new Set(options).size !== options.length) {
+      fail(where, 'lists the same option twice');
+    }
+    const keys = options.map(answerKey);
+    for (let a = 0; a < keys.length; a += 1) {
+      for (let b = a + 1; b < keys.length; b += 1) {
+        if (keys[a] && keys[a] === keys[b]) {
+          fail(
+            where,
+            `options "${options[a]}" and "${options[b]}" mean the same thing, so ` +
+              'the item has two right answers'
+          );
+        }
+      }
+    }
+    if (Number.isInteger(exr.correct) && (exr.correct < 0 || exr.correct >= options.length)) {
+      fail(where, `correct index ${exr.correct} is outside 0..${options.length - 1}`);
+    }
+  }
+}
+
 // ── Report ──────────────────────────────────────────────────────────────────
 for (const n of notes) process.stdout.write(`  note  ${n}\n`);
 

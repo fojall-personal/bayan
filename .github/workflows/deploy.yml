@@ -40,6 +40,13 @@ jobs:
       - name: Check authored content
         run: node scripts/check-content.mjs
 
+      # seed-lessons.sql was hand-produced, so editing lessons.json changed the
+      # file the content gate reads and left the file the database is seeded from
+      # untouched — a green gate over content the app never serves, with no diff
+      # to notice. Same failure shape as the Pages bindings.
+      - name: Assert seed-lessons.sql matches lessons.json
+        run: node scripts/gen-lessons-sql.mjs --check
+
       # 39 tests over grading, scoring, the SM-2 scheduler and the Quran ingest
       # alignment gate. Every case corresponds to a bug that shipped or a
       # behaviour previously checked only by hand. Adding them found a live one:
