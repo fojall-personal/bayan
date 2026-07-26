@@ -129,10 +129,19 @@ export function buckwalterToArabicBare(input: string): string {
  * Render a root for display: letters separated by spaces, the way roots are
  * conventionally written. `ktb` → `ك ت ب`.
  */
+/**
+ * A root as a connected Arabic word: `qwl` → `قول`.
+ *
+ * This used to join the letters with a space, on the stated grounds that roots are
+ * "conventionally written" that way. Whatever the convention in a linguistics paper,
+ * on screen it renders every letter in its ISOLATED form — Arabic is cursive and a
+ * space is a word boundary, so ق و ل can never connect. Joining with nothing lets
+ * the shaping engine do its job: it knows ق connects forward, و does not, and a
+ * final ل takes its connected form.
+ */
 export function rootToArabic(root: string | null | undefined): string | null {
   if (!root) return null;
-  const letters = [...root].map((c) => TO_ARABIC[c] ?? c);
-  return letters.join(' ');
+  return [...root].map((c) => TO_ARABIC[c] ?? c).join('');
 }
 
 /** Any Buckwalter character this table does not know about. */

@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { rootToArabic } from '@/lib/arabic-root';
 import { apiFetch, apiErrorMessage, ApiError } from '@/lib/api';
 
 interface Member {
@@ -33,15 +34,21 @@ interface Family {
   totalOccurrences: number;
 }
 
-/** Roots worth starting from — common, and each attests several forms. */
+/**
+ * Roots worth starting from — common, and each attests several forms.
+ *
+ * The Arabic is derived rather than written out. It was hard-coded here with the
+ * letters spaced, which renders them as isolated standalone glyphs instead of a
+ * connected word, and it is the fourth place that same mistake had been copied to.
+ */
 const SUGGESTIONS = [
-  { bw: 'ktb', ar: 'ك ت ب', gloss: 'writing' },
-  { bw: 'Elm', ar: 'ع ل م', gloss: 'knowing' },
-  { bw: 'nzl', ar: 'ن ز ل', gloss: 'sending down' },
-  { bw: 'Amn', ar: 'ا م ن', gloss: 'believing, safety' },
-  { bw: 'qwl', ar: 'ق و ل', gloss: 'saying' },
-  { bw: 'rHm', ar: 'ر ح م', gloss: 'mercy' },
-];
+  { bw: 'ktb', gloss: 'writing' },
+  { bw: 'Elm', gloss: 'knowing' },
+  { bw: 'nzl', gloss: 'sending down' },
+  { bw: 'Amn', gloss: 'believing, safety' },
+  { bw: 'qwl', gloss: 'saying' },
+  { bw: 'rHm', gloss: 'mercy' },
+].map((s) => ({ ...s, ar: rootToArabic(s.bw) }));
 
 export function RootExplorer() {
   const [query, setQuery] = useState('');

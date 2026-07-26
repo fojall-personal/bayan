@@ -13,7 +13,7 @@
     "meaning": "God",
     "part_of_speech": "proper noun",
     "frequency_rank": 2,
-    "root": "أ ل ه",
+    "root": "أله",
     "quran_occurrences": 2160
   },
   {
@@ -30,7 +30,7 @@
     "meaning": "upon, on",
     "part_of_speech": "preposition",
     "frequency_rank": 4,
-    "root": "ع ل و",
+    "root": "علو",
     "quran_occurrences": 694
   },
   {
@@ -39,7 +39,7 @@
     "meaning": "earth, land",
     "part_of_speech": "noun",
     "frequency_rank": 5,
-    "root": "أ ر ض",
+    "root": "أرض",
     "quran_occurrences": 448
   },
   {
@@ -56,7 +56,7 @@
     "meaning": "to say",
     "part_of_speech": "verb",
     "frequency_rank": 7,
-    "root": "ق و ل",
+    "root": "قول",
     "quran_occurrences": 416
   },
   {
@@ -65,7 +65,7 @@
     "meaning": "to be",
     "part_of_speech": "verb",
     "frequency_rank": 8,
-    "root": "ك و ن",
+    "root": "كون",
     "quran_occurrences": 333
   },
   {
@@ -74,7 +74,7 @@
     "meaning": "punishment, torment",
     "part_of_speech": "noun",
     "frequency_rank": 9,
-    "root": "ع ذ ب",
+    "root": "عذب",
     "quran_occurrences": 295
   },
   {
@@ -83,7 +83,7 @@
     "meaning": "day",
     "part_of_speech": "noun",
     "frequency_rank": 10,
-    "root": "ي و م",
+    "root": "يوم",
     "quran_occurrences": 292
   },
   {
@@ -92,7 +92,7 @@
     "meaning": "book, scripture",
     "part_of_speech": "noun",
     "frequency_rank": 11,
-    "root": "ك ت ب",
+    "root": "كتب",
     "quran_occurrences": 246
   },
   {
@@ -101,7 +101,7 @@
     "meaning": "all, every",
     "part_of_speech": "noun",
     "frequency_rank": 12,
-    "root": "ك ل ل",
+    "root": "كلل",
     "quran_occurrences": 245
   },
   {
@@ -110,7 +110,7 @@
     "meaning": "people, mankind",
     "part_of_speech": "noun",
     "frequency_rank": 13,
-    "root": "أ ن س",
+    "root": "أنس",
     "quran_occurrences": 241
   },
   {
@@ -119,7 +119,7 @@
     "meaning": "believer",
     "part_of_speech": "participle",
     "frequency_rank": 14,
-    "root": "أ م ن",
+    "root": "أمن",
     "quran_occurrences": 217
   },
   {
@@ -128,7 +128,7 @@
     "meaning": "way, path",
     "part_of_speech": "noun",
     "frequency_rank": 15,
-    "root": "س ب ل",
+    "root": "سبل",
     "quran_occurrences": 165
   },
   {
@@ -137,7 +137,7 @@
     "meaning": "all-knowing",
     "part_of_speech": "adjective",
     "frequency_rank": 16,
-    "root": "ع ل م",
+    "root": "علم",
     "quran_occurrences": 160
   },
   {
@@ -146,7 +146,7 @@
     "meaning": "messenger",
     "part_of_speech": "noun",
     "frequency_rank": 17,
-    "root": "ر س ل",
+    "root": "رسل",
     "quran_occurrences": 154
   },
   {
@@ -155,7 +155,7 @@
     "meaning": "after",
     "part_of_speech": "preposition",
     "frequency_rank": 18,
-    "root": "ب ع د",
+    "root": "بعد",
     "quran_occurrences": 146
   },
   {
@@ -164,7 +164,7 @@
     "meaning": "people, nation",
     "part_of_speech": "noun",
     "frequency_rank": 19,
-    "root": "ق و م",
+    "root": "قوم",
     "quran_occurrences": 144
   },
   {
@@ -173,7 +173,7 @@
     "meaning": "righteous",
     "part_of_speech": "adjective",
     "frequency_rank": 20,
-    "root": "ص ل ح",
+    "root": "صلح",
     "quran_occurrences": 133
   },
   {
@@ -182,7 +182,7 @@
     "meaning": "wrongdoer, oppressor",
     "part_of_speech": "participle",
     "frequency_rank": 21,
-    "root": "ظ ل م",
+    "root": "ظلم",
     "quran_occurrences": 132
   },
   {
@@ -191,7 +191,7 @@
     "meaning": "good, better",
     "part_of_speech": "noun",
     "frequency_rank": 22,
-    "root": "خ ي ر",
+    "root": "خير",
     "quran_occurrences": 130
   },
   {
@@ -200,7 +200,7 @@
     "meaning": "mother",
     "part_of_speech": "noun",
     "frequency_rank": 23,
-    "root": "أ م م",
+    "root": "أمم",
     "quran_occurrences": 130
   },
   {
@@ -209,7 +209,7 @@
     "meaning": "lord, master",
     "part_of_speech": "noun",
     "frequency_rank": 24,
-    "root": "ر ب ب",
+    "root": "ربب",
     "quran_occurrences": 128
   },
   {
@@ -218,7 +218,7 @@
     "meaning": "disbeliever",
     "part_of_speech": "participle",
     "frequency_rank": 25,
-    "root": "ك ف ر",
+    "root": "كفر",
     "quran_occurrences": 128
   },
   {
@@ -227,7 +227,7 @@
     "meaning": "fire",
     "part_of_speech": "noun",
     "frequency_rank": 26,
-    "root": "ن و ر",
+    "root": "نور",
     "quran_occurrences": 125
   },
   {
@@ -236,7 +236,7 @@
     "meaning": "sky, heaven",
     "part_of_speech": "noun",
     "frequency_rank": 27,
-    "root": "س م و",
+    "root": "سمو",
     "quran_occurrences": 119
   },
   {
@@ -245,7 +245,7 @@
     "meaning": "before",
     "part_of_speech": "preposition",
     "frequency_rank": 28,
-    "root": "ق ب ل",
+    "root": "قبل",
     "quran_occurrences": 118
   },
   {
@@ -254,7 +254,7 @@
     "meaning": "the Most Compassionate",
     "part_of_speech": "adjective",
     "frequency_rank": 29,
-    "root": "ر ح م",
+    "root": "رحم",
     "quran_occurrences": 115
   },
   {
@@ -263,7 +263,7 @@
     "meaning": "mighty, magnificent",
     "part_of_speech": "adjective",
     "frequency_rank": 30,
-    "root": "ع ظ م",
+    "root": "عظم",
     "quran_occurrences": 107
   },
   {
@@ -272,7 +272,7 @@
     "meaning": "all-wise",
     "part_of_speech": "adjective",
     "frequency_rank": 31,
-    "root": "ح ك م",
+    "root": "حكم",
     "quran_occurrences": 97
   },
   {
@@ -281,7 +281,7 @@
     "meaning": "knowledge",
     "part_of_speech": "noun",
     "frequency_rank": 32,
-    "root": "ع ل م",
+    "root": "علم",
     "quran_occurrences": 88
   },
   {
@@ -290,7 +290,7 @@
     "meaning": "most forgiving",
     "part_of_speech": "adjective",
     "frequency_rank": 33,
-    "root": "غ ف ر",
+    "root": "غفر",
     "quran_occurrences": 83
   },
   {
@@ -299,7 +299,7 @@
     "meaning": "faith",
     "part_of_speech": "noun",
     "frequency_rank": 34,
-    "root": "أ م ن",
+    "root": "أمن",
     "quran_occurrences": 78
   },
   {
@@ -308,7 +308,7 @@
     "meaning": "worlds, all creation",
     "part_of_speech": "noun",
     "frequency_rank": 35,
-    "root": "ع ل م",
+    "root": "علم",
     "quran_occurrences": 76
   },
   {
@@ -317,7 +317,7 @@
     "meaning": "command, matter",
     "part_of_speech": "noun",
     "frequency_rank": 36,
-    "root": "أ م ر",
+    "root": "أمر",
     "quran_occurrences": 76
   },
   {
@@ -326,7 +326,7 @@
     "meaning": "guidance",
     "part_of_speech": "noun",
     "frequency_rank": 37,
-    "root": "ه د ي",
+    "root": "هدي",
     "quran_occurrences": 76
   },
   {
@@ -335,7 +335,7 @@
     "meaning": "garden, paradise",
     "part_of_speech": "noun",
     "frequency_rank": 38,
-    "root": "ج ن ن",
+    "root": "جنن",
     "quran_occurrences": 75
   },
   {
@@ -344,7 +344,7 @@
     "meaning": "satan, devil",
     "part_of_speech": "noun",
     "frequency_rank": 39,
-    "root": "ش ط ن",
+    "root": "شطن",
     "quran_occurrences": 70
   },
   {
@@ -353,7 +353,7 @@
     "meaning": "remembrance, reminder",
     "part_of_speech": "noun",
     "frequency_rank": 40,
-    "root": "ذ ك ر",
+    "root": "ذكر",
     "quran_occurrences": 64
   },
   {
@@ -362,7 +362,7 @@
     "meaning": "angel",
     "part_of_speech": "noun",
     "frequency_rank": 41,
-    "root": "م ل ك",
+    "root": "ملك",
     "quran_occurrences": 62
   },
   {
@@ -371,7 +371,7 @@
     "meaning": "king",
     "part_of_speech": "noun",
     "frequency_rank": 42,
-    "root": "م ل ك",
+    "root": "ملك",
     "quran_occurrences": 62
   },
   {
@@ -380,7 +380,7 @@
     "meaning": "some",
     "part_of_speech": "noun",
     "frequency_rank": 43,
-    "root": "ب ع ض",
+    "root": "بعض",
     "quran_occurrences": 61
   },
   {
@@ -397,7 +397,7 @@
     "meaning": "the Most Merciful",
     "part_of_speech": "adjective",
     "frequency_rank": 45,
-    "root": "ر ح م",
+    "root": "رحم",
     "quran_occurrences": 57
   },
   {
@@ -406,7 +406,7 @@
     "meaning": "soul, self",
     "part_of_speech": "noun",
     "frequency_rank": 46,
-    "root": "ن ف س",
+    "root": "نفس",
     "quran_occurrences": 56
   },
   {
@@ -415,7 +415,7 @@
     "meaning": "daytime",
     "part_of_speech": "noun",
     "frequency_rank": 47,
-    "root": "ن ه ر",
+    "root": "نهر",
     "quran_occurrences": 56
   },
   {
@@ -424,7 +424,7 @@
     "meaning": "all-seeing",
     "part_of_speech": "adjective",
     "frequency_rank": 48,
-    "root": "ب ص ر",
+    "root": "بصر",
     "quran_occurrences": 53
   },
   {
@@ -433,7 +433,7 @@
     "meaning": "water",
     "part_of_speech": "noun",
     "frequency_rank": 49,
-    "root": "م و ه",
+    "root": "موه",
     "quran_occurrences": 52
   },
   {
@@ -442,7 +442,7 @@
     "meaning": "community, nation",
     "part_of_speech": "noun",
     "frequency_rank": 50,
-    "root": "أ م م",
+    "root": "أمم",
     "quran_occurrences": 52
   },
   {
@@ -451,7 +451,7 @@
     "meaning": "misguidance, error",
     "part_of_speech": "noun",
     "frequency_rank": 51,
-    "root": "ض ل ل",
+    "root": "ضلل",
     "quran_occurrences": 47
   },
   {
@@ -460,7 +460,7 @@
     "meaning": "path, way",
     "part_of_speech": "noun",
     "frequency_rank": 52,
-    "root": "ص ر ط",
+    "root": "صرط",
     "quran_occurrences": 45
   },
   {
@@ -469,7 +469,7 @@
     "meaning": "all-hearing",
     "part_of_speech": "adjective",
     "frequency_rank": 53,
-    "root": "س م ع",
+    "root": "سمع",
     "quran_occurrences": 45
   },
   {
@@ -478,7 +478,7 @@
     "meaning": "all-powerful",
     "part_of_speech": "adjective",
     "frequency_rank": 54,
-    "root": "ق د ر",
+    "root": "قدر",
     "quran_occurrences": 44
   },
   {
@@ -487,7 +487,7 @@
     "meaning": "the God-conscious",
     "part_of_speech": "participle",
     "frequency_rank": 55,
-    "root": "و ق ي",
+    "root": "وقي",
     "quran_occurrences": 43
   },
   {
@@ -496,7 +496,7 @@
     "meaning": "mercy",
     "part_of_speech": "noun",
     "frequency_rank": 56,
-    "root": "ر ح م",
+    "root": "رحم",
     "quran_occurrences": 41
   },
   {
@@ -505,7 +505,7 @@
     "meaning": "prophet",
     "part_of_speech": "noun",
     "frequency_rank": 57,
-    "root": "ن ب أ",
+    "root": "نبأ",
     "quran_occurrences": 41
   },
   {
@@ -514,7 +514,7 @@
     "meaning": "great, large",
     "part_of_speech": "adjective",
     "frequency_rank": 58,
-    "root": "ك ب ر",
+    "root": "كبر",
     "quran_occurrences": 39
   },
   {
@@ -523,7 +523,7 @@
     "meaning": "straight",
     "part_of_speech": "adjective",
     "frequency_rank": 59,
-    "root": "ق و م",
+    "root": "قوم",
     "quran_occurrences": 37
   },
   {
@@ -532,7 +532,7 @@
     "meaning": "to disbelieve",
     "part_of_speech": "verb",
     "frequency_rank": 60,
-    "root": "ك ف ر",
+    "root": "كفر",
     "quran_occurrences": 36
   },
   {
@@ -541,7 +541,7 @@
     "meaning": "truth, right",
     "part_of_speech": "noun",
     "frequency_rank": 61,
-    "root": "ح ق ق",
+    "root": "حقق",
     "quran_occurrences": 34
   },
   {
@@ -550,7 +550,7 @@
     "meaning": "peace",
     "part_of_speech": "noun",
     "frequency_rank": 62,
-    "root": "س ل م",
+    "root": "سلم",
     "quran_occurrences": 33
   },
   {
@@ -559,7 +559,7 @@
     "meaning": "sea",
     "part_of_speech": "noun",
     "frequency_rank": 63,
-    "root": "ب ح ر",
+    "root": "بحر",
     "quran_occurrences": 33
   },
   {
@@ -568,7 +568,7 @@
     "meaning": "sun",
     "part_of_speech": "noun",
     "frequency_rank": 64,
-    "root": "ش م س",
+    "root": "شمس",
     "quran_occurrences": 32
   },
   {
@@ -577,7 +577,7 @@
     "meaning": "son",
     "part_of_speech": "noun",
     "frequency_rank": 65,
-    "root": "ب ن ي",
+    "root": "بني",
     "quran_occurrences": 28
   },
   {
@@ -586,7 +586,7 @@
     "meaning": "moon",
     "part_of_speech": "noun",
     "frequency_rank": 66,
-    "root": "ق م ر",
+    "root": "قمر",
     "quran_occurrences": 26
   },
   {
@@ -595,7 +595,7 @@
     "meaning": "light",
     "part_of_speech": "noun",
     "frequency_rank": 67,
-    "root": "ن و ر",
+    "root": "نور",
     "quran_occurrences": 21
   },
   {
@@ -604,7 +604,7 @@
     "meaning": "speech, report",
     "part_of_speech": "noun",
     "frequency_rank": 68,
-    "root": "ح د ث",
+    "root": "حدث",
     "quran_occurrences": 21
   },
   {
@@ -613,7 +613,7 @@
     "meaning": "word",
     "part_of_speech": "noun",
     "frequency_rank": 69,
-    "root": "ك ل م",
+    "root": "كلم",
     "quran_occurrences": 19
   },
   {
@@ -622,7 +622,7 @@
     "meaning": "house",
     "part_of_speech": "noun",
     "frequency_rank": 70,
-    "root": "ب ي ت",
+    "root": "بيت",
     "quran_occurrences": 19
   },
   {
@@ -631,7 +631,7 @@
     "meaning": "God-consciousness",
     "part_of_speech": "noun",
     "frequency_rank": 71,
-    "root": "و ق ي",
+    "root": "وقي",
     "quran_occurrences": 17
   },
   {
@@ -640,7 +640,7 @@
     "meaning": "deed, work",
     "part_of_speech": "noun",
     "frequency_rank": 72,
-    "root": "ع م ل",
+    "root": "عمل",
     "quran_occurrences": 17
   },
   {
@@ -649,7 +649,7 @@
     "meaning": "bird",
     "part_of_speech": "noun",
     "frequency_rank": 73,
-    "root": "ط ي ر",
+    "root": "طير",
     "quran_occurrences": 16
   },
   {
@@ -658,7 +658,7 @@
     "meaning": "evil, worse",
     "part_of_speech": "noun",
     "frequency_rank": 74,
-    "root": "ش ر ر",
+    "root": "شرر",
     "quran_occurrences": 15
   },
   {
@@ -667,7 +667,7 @@
     "meaning": "to believe",
     "part_of_speech": "verb",
     "frequency_rank": 75,
-    "root": "أ م ن",
+    "root": "أمن",
     "quran_occurrences": 15
   },
   {
@@ -676,7 +676,7 @@
     "meaning": "supplication, call",
     "part_of_speech": "noun",
     "frequency_rank": 76,
-    "root": "د ع و",
+    "root": "دعو",
     "quran_occurrences": 14
   },
   {
@@ -685,7 +685,7 @@
     "meaning": "eye, spring",
     "part_of_speech": "noun",
     "frequency_rank": 77,
-    "root": "ع ي ن",
+    "root": "عين",
     "quran_occurrences": 13
   },
   {
@@ -694,7 +694,7 @@
     "meaning": "man",
     "part_of_speech": "noun",
     "frequency_rank": 78,
-    "root": "ر ج ل",
+    "root": "رجل",
     "quran_occurrences": 13
   },
   {
@@ -703,7 +703,7 @@
     "meaning": "most appreciative",
     "part_of_speech": "adjective",
     "frequency_rank": 79,
-    "root": "ش ك ر",
+    "root": "شكر",
     "quran_occurrences": 12
   },
   {
@@ -712,7 +712,7 @@
     "meaning": "tongue, language",
     "part_of_speech": "noun",
     "frequency_rank": 80,
-    "root": "ل س ن",
+    "root": "لسن",
     "quran_occurrences": 10
   },
   {
@@ -721,7 +721,7 @@
     "meaning": "face",
     "part_of_speech": "noun",
     "frequency_rank": 81,
-    "root": "و ج ه",
+    "root": "وجه",
     "quran_occurrences": 10
   },
   {
@@ -730,7 +730,7 @@
     "meaning": "door, gate",
     "part_of_speech": "noun",
     "frequency_rank": 82,
-    "root": "ب و ب",
+    "root": "بوب",
     "quran_occurrences": 10
   },
   {
@@ -739,7 +739,7 @@
     "meaning": "to worship, to serve",
     "part_of_speech": "verb",
     "frequency_rank": 83,
-    "root": "ع ب د",
+    "root": "عبد",
     "quran_occurrences": 9
   },
   {
@@ -748,7 +748,7 @@
     "meaning": "servant, slave",
     "part_of_speech": "noun",
     "frequency_rank": 84,
-    "root": "ع ب د",
+    "root": "عبد",
     "quran_occurrences": 9
   },
   {
@@ -757,7 +757,7 @@
     "meaning": "submission",
     "part_of_speech": "noun",
     "frequency_rank": 85,
-    "root": "س ل م",
+    "root": "سلم",
     "quran_occurrences": 8
   },
   {
@@ -766,7 +766,7 @@
     "meaning": "chapter",
     "part_of_speech": "noun",
     "frequency_rank": 86,
-    "root": "س و ر",
+    "root": "سور",
     "quran_occurrences": 7
   },
   {
@@ -775,7 +775,7 @@
     "meaning": "tree",
     "part_of_speech": "noun",
     "frequency_rank": 87,
-    "root": "ش ج ر",
+    "root": "شجر",
     "quran_occurrences": 7
   },
   {
@@ -784,7 +784,7 @@
     "meaning": "patience, perseverance",
     "part_of_speech": "noun",
     "frequency_rank": 88,
-    "root": "ص ب ر",
+    "root": "صبر",
     "quran_occurrences": 6
   },
   {
@@ -793,7 +793,7 @@
     "meaning": "mountain",
     "part_of_speech": "noun",
     "frequency_rank": 89,
-    "root": "ج ب ل",
+    "root": "جبل",
     "quran_occurrences": 6
   },
   {
@@ -802,7 +802,7 @@
     "meaning": "heart",
     "part_of_speech": "noun",
     "frequency_rank": 90,
-    "root": "ق ل ب",
+    "root": "قلب",
     "quran_occurrences": 3
   },
   {
@@ -811,7 +811,7 @@
     "meaning": "sign, verse",
     "part_of_speech": "noun",
     "frequency_rank": 91,
-    "root": "أ ي ي",
+    "root": "أيي",
     "quran_occurrences": 3
   },
   {
@@ -820,7 +820,7 @@
     "meaning": "hand",
     "part_of_speech": "noun",
     "frequency_rank": 92,
-    "root": "ي د ي",
+    "root": "يدي",
     "quran_occurrences": 3
   },
   {
@@ -829,7 +829,7 @@
     "meaning": "woman",
     "part_of_speech": "noun",
     "frequency_rank": 93,
-    "root": "م ر أ",
+    "root": "مرأ",
     "quran_occurrences": 3
   },
   {
@@ -838,7 +838,7 @@
     "meaning": "gratitude",
     "part_of_speech": "noun",
     "frequency_rank": 94,
-    "root": "ش ك ر",
+    "root": "شكر",
     "quran_occurrences": 2
   },
   {
@@ -847,7 +847,7 @@
     "meaning": "brother",
     "part_of_speech": "noun",
     "frequency_rank": 95,
-    "root": "أ خ و",
+    "root": "أخو",
     "quran_occurrences": 2
   },
   {
@@ -856,7 +856,7 @@
     "meaning": "guide us",
     "part_of_speech": "verb",
     "frequency_rank": 96,
-    "root": "ه د ي",
+    "root": "هدي",
     "quran_occurrences": 1
   },
   {
@@ -865,7 +865,7 @@
     "meaning": "those incurring wrath",
     "part_of_speech": "participle",
     "frequency_rank": 97,
-    "root": "غ ض ب",
+    "root": "غضب",
     "quran_occurrences": 1
   },
   {
@@ -874,7 +874,7 @@
     "meaning": "recitation, Quran",
     "part_of_speech": "noun",
     "frequency_rank": 98,
-    "root": "ق ر أ",
+    "root": "قرأ",
     "quran_occurrences": 1
   },
   {
@@ -883,7 +883,7 @@
     "meaning": "prayer",
     "part_of_speech": "noun",
     "frequency_rank": 99,
-    "root": "ص ل و",
+    "root": "صلو",
     "quran_occurrences": 0
   },
   {
@@ -892,7 +892,7 @@
     "meaning": "almsgiving, purification",
     "part_of_speech": "noun",
     "frequency_rank": 100,
-    "root": "ز ك و",
+    "root": "زكو",
     "quran_occurrences": 0
   },
   {
@@ -901,7 +901,7 @@
     "meaning": "fasting",
     "part_of_speech": "noun",
     "frequency_rank": 101,
-    "root": "ص و م",
+    "root": "صوم",
     "quran_occurrences": 0
   },
   {
@@ -910,7 +910,7 @@
     "meaning": "night",
     "part_of_speech": "noun",
     "frequency_rank": 102,
-    "root": "ل ي ل",
+    "root": "ليل",
     "quran_occurrences": 0
   },
   {
@@ -919,7 +919,7 @@
     "meaning": "father",
     "part_of_speech": "noun",
     "frequency_rank": 103,
-    "root": "أ ب و",
+    "root": "أبو",
     "quran_occurrences": 0
   }
 ]

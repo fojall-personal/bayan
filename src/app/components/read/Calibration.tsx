@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { rootToArabic as rootArabic } from '@/lib/arabic-root';
 import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
 
 interface Item {
@@ -34,14 +35,6 @@ interface Saved {
   ayahsTotal: number;
 }
 
-const BW: Record<string, string> = {
-  "'": 'ء', '|': 'آ', '>': 'أ', '&': 'ؤ', '<': 'إ', '}': 'ئ', A: 'ا', b: 'ب',
-  p: 'ة', t: 'ت', v: 'ث', j: 'ج', H: 'ح', x: 'خ', d: 'د', '*': 'ذ', r: 'ر',
-  z: 'ز', s: 'س', $: 'ش', S: 'ص', D: 'ض', T: 'ط', Z: 'ظ', E: 'ع', g: 'غ',
-  f: 'ف', q: 'ق', k: 'ك', l: 'ل', m: 'م', n: 'ن', h: 'ه', w: 'و', y: 'ي',
-  Y: 'ى', '`': 'ٰ',
-};
-const rootArabic = (r: string) => [...r].map((c) => BW[c] ?? c).join(' ');
 
 export function Calibration() {
   const router = useRouter();

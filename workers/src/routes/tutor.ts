@@ -327,8 +327,8 @@ async function answerRoot(db: Database, root: string): Promise<string> {
   if (rows.length === 0) {
     return (
       `The corpus has no occurrences of the root \`${root}\`.\n\n` +
-      `Roots are written in Buckwalter here — \`ktb\` for ك ت ب, \`Elm\` for ` +
-      `ع ل م. If you meant a different root, try that form.`
+      `Roots are written in Buckwalter here — \`ktb\` for كتب, \`Elm\` for ` +
+      `علم. If you meant a different root, try that form.`
     );
   }
 

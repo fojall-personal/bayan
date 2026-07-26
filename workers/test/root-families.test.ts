@@ -57,7 +57,7 @@ describe('buildFamily', () => {
   const family = buildFamily('ktb', KTB);
 
   it('renders the root in Arabic, spaced', () => {
-    expect(family.rootArabic).toBe('ك ت ب');
+    expect(family.rootArabic).toBe('كتب');
   });
 
   it('converts lemmas out of Buckwalter', () => {
@@ -140,7 +140,7 @@ describe('grammarFacts', () => {
     const facts = grammarFacts(
       row({ lemma: 'qamar', root: 'qmr', pos: 'N', case_case: 'NOM', gender: 'M' })
     );
-    expect(facts.root).toBe('ق م ر');
+    expect(facts.root).toBe('قمر');
     expect(facts.lemma).toBe('قَمَر');
     expect(facts.partOfSpeech).toBe('noun');
     expect(facts.grammaticalCase).toBe('nominative (مرفوع)');

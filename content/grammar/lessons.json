@@ -78,7 +78,7 @@
     "content": {
       "explanation": "Arabic verbs change based on the subject. The past tense (ماضي) is the simplest form — add suffixes to the root to indicate who performed the action.",
       "conjugation_table": {
-        "root": "ك ت ب",
+        "root": "كتب",
         "meaning": "to write",
         "forms": {
           "he": "كَتَبَ",
@@ -205,7 +205,7 @@
     "content": {
       "explanation": "The present tense (مضارع) is formed with a prefix, and often a suffix too. The prefix indicates the subject: أ (I), ن (we), ت (you — and “she” in the third person singular), ي (he). Note that ت never marks “he”, and that ي also carries the third person feminine plural, as in يَكْتُبْنَ.",
       "conjugation_table": {
-        "root": "ك ت ب",
+        "root": "كتب",
         "meaning": "to write",
         "forms": {
           "I": "أَكْتُبُ",
@@ -447,7 +447,7 @@
           "arabic": "أَنزَلَ",
           "transliteration": "anzala",
           "meaning": "he sent down",
-          "rule": "Form IV of ن ز ل — causative"
+          "rule": "Form IV of نزل — causative"
         },
         {
           "arabic": "نَزَّلَ",
@@ -478,7 +478,7 @@
           "Nothing — they are spelling variants"
         ],
         "correct": 1,
-        "explanation": "أَنزَلَ is Form IV and نَزَّلَ is Form II. Same root ن ز ل, different pattern."
+        "explanation": "أَنزَلَ is Form IV and نَزَّلَ is Form II. Same root نزل, different pattern."
       },
       {
         "type": "multiple_choice",

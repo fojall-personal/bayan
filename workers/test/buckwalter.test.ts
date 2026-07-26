@@ -102,14 +102,24 @@ describe('buckwalterToArabicBare', () => {
 });
 
 describe('rootToArabic', () => {
-  it('spaces the letters, as roots are conventionally written', () => {
-    expect(rootToArabic('ktb')).toBe('ك ت ب');
-    expect(rootToArabic('qmr')).toBe('ق م ر');
+  it('joins the letters so Arabic can shape them', () => {
+    // This asserted 'ك ت ب' on the grounds that roots are "conventionally written"
+    // spaced. On screen that renders every letter in its ISOLATED form, because
+    // Arabic is cursive and a space is a word boundary — the letters could never
+    // connect. Joining with nothing lets the shaping engine decide.
+    expect(rootToArabic('ktb')).toBe('كتب');
+    expect(rootToArabic('qmr')).toBe('قمر');
   });
 
   it('handles a hamzated root', () => {
     // The root of الله, which the corpus writes with a bare alef.
-    expect(rootToArabic('Alh')).toBe('ا ل ه');
+    expect(rootToArabic('Alh')).toBe('اله');
+  });
+
+  it('never emits a space, which would break the join', () => {
+    for (const r of ['qwl', 'Elm', 'rHm', 'nzl', 'ktb', 'Amn', 'wqy']) {
+      expect(rootToArabic(r)).not.toContain(' ');
+    }
   });
 
   it('returns null for absent roots rather than an empty string', () => {

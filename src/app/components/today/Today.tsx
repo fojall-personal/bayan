@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { rootToArabic as rootArabic } from '@/lib/arabic-root';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
 import { getSurah } from '@/lib/surahs';
 
@@ -45,15 +46,6 @@ interface NextLesson {
   estimated_minutes?: number;
 }
 
-/** Buckwalter → Arabic, for showing a root as letters rather than as ASCII. */
-const BW: Record<string, string> = {
-  "'": 'ء', '|': 'آ', '>': 'أ', '&': 'ؤ', '<': 'إ', '}': 'ئ', A: 'ا', b: 'ب',
-  p: 'ة', t: 'ت', v: 'ث', j: 'ج', H: 'ح', x: 'خ', d: 'د', '*': 'ذ', r: 'ر',
-  z: 'ز', s: 'س', '$': 'ش', S: 'ص', D: 'ض', T: 'ط', Z: 'ظ', E: 'ع', g: 'غ',
-  f: 'ف', q: 'ق', k: 'ك', l: 'ل', m: 'م', n: 'ن', h: 'ه', w: 'و', y: 'ي',
-  Y: 'ى', '`': 'ٰ',
-};
-const rootArabic = (r: string) => [...r].map((c) => BW[c] ?? c).join(' ');
 
 export function Today() {
   const [coverage, setCoverage] = useState<Coverage | null>(null);

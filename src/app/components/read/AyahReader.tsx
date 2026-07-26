@@ -20,6 +20,7 @@ import { Tabs } from '@/components/ui/Tabs';
 import { Select } from '@/components/ui/Select';
 import { AyahAudioButton } from '@/components/audio/AyahAudioButton';
 import { segmentVerse } from '@/lib/tajweed-render';
+import { rootToArabic as rootArabic } from '@/lib/arabic-root';
 import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
 import { SURAHS, getSurah } from '@/lib/surahs';
 
@@ -68,15 +69,6 @@ interface Ayah {
   fullyReadable: boolean;
 }
 
-/** Buckwalter → Arabic letters, spaced, so a root reads as letters not ASCII. */
-const BW: Record<string, string> = {
-  "'": 'ء', '|': 'آ', '>': 'أ', '&': 'ؤ', '<': 'إ', '}': 'ئ', A: 'ا', b: 'ب',
-  p: 'ة', t: 'ت', v: 'ث', j: 'ج', H: 'ح', x: 'خ', d: 'د', '*': 'ذ', r: 'ر',
-  z: 'ز', s: 'س', $: 'ش', S: 'ص', D: 'ض', T: 'ط', Z: 'ظ', E: 'ع', g: 'غ',
-  f: 'ف', q: 'ق', k: 'ك', l: 'ل', m: 'م', n: 'ن', h: 'ه', w: 'و', y: 'ي',
-  Y: 'ى', '`': 'ٰ',
-};
-const rootArabic = (r: string) => [...r].map((c) => BW[c] ?? c).join(' ');
 
 const POS: Record<string, string> = {
   N: 'Noun', V: 'Verb', ADJ: 'Adjective', PN: 'Proper noun', P: 'Preposition',

@@ -140,6 +140,54 @@ for (const rel of SEGMENT_RENDERERS) {
   }
 }
 
+// ── Arabic roots must read as words, not isolated letters ────────────────────
+//
+// `rootToArabic` joined the letters with a space, on the stated grounds that roots
+// are "conventionally written" that way — and the same fifteen lines had been
+// copy-pasted into three components, so every root in the app rendered as standalone
+// glyphs (ق و ل) rather than a connected word (قول). Arabic is cursive: a space is a
+// word boundary, and the shaping engine correctly isolates the letters on both sides
+// of it. They were never going to join.
+//
+// Genuine LISTS of letters are a different thing and stay spaced — the fourteen sun
+// letters, the fourteen moon letters, the five qalqalah letters. So this checks the
+// fields that name a single root, not every spaced Arabic string.
+const rootFields = [];
+{
+  const vocab = JSON.parse(await readFile(join(root, 'content/vocabulary/core-100.json'), 'utf-8'));
+  for (const [i, e] of vocab.entries()) {
+    if (typeof e.root === 'string') rootFields.push([`core-100[${i}].root`, e.root]);
+  }
+  const lessons = JSON.parse(await readFile(join(root, 'content/grammar/lessons.json'), 'utf-8'));
+  const walk = (node, path) => {
+    if (Array.isArray(node)) node.forEach((v, i) => walk(v, `${path}[${i}]`));
+    else if (node && typeof node === 'object') {
+      for (const [k, v] of Object.entries(node)) {
+        if (k === 'letters') continue; // a list of letters, correctly spaced
+        if (k === 'root' && typeof v === 'string') rootFields.push([`${path}.root`, v]);
+        else walk(v, `${path}.${k}`);
+      }
+    }
+  };
+  lessons.forEach((l) => walk(l, l.id));
+}
+const SPACED_LETTERS = /^[\u0600-\u06FF](?: [\u0600-\u06FF])+$/;
+for (const [where, value] of rootFields) {
+  if (SPACED_LETTERS.test(value.trim())) {
+    problems.push(
+      `${where} is "${value}" — a root written as spaced letters renders every one in ` +
+        'its isolated form. Join them and let Arabic shape the word.'
+    );
+  }
+}
+// And the helper itself, in both copies.
+for (const rel of ['workers/src/lib/buckwalter.ts', 'src/app/lib/arabic-root.ts']) {
+  const src = await readFile(join(root, rel), 'utf-8');
+  if (/rootToArabic[\s\S]{0,400}?\.join\('\s'\)/.test(src)) {
+    problems.push(`${rel}: rootToArabic joins the letters with a space, which prevents them shaping`);
+  }
+}
+
 if (problems.length) {
   for (const p of problems) process.stderr.write(`  ✘ ${p}\n`);
   process.stderr.write(`\n${problems.length} design-token problem(s).\n`);
