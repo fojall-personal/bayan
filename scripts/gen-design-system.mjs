@@ -103,6 +103,43 @@ for (const f of referenced) {
   }
 }
 
+// ── Arabic shaping: the tajweed renderers may style colour and nothing else ──
+//
+// Wrapping part of a word in a span with horizontal padding forces the shaping
+// engine to break the cursive run: بِسْمِ went 57.6px to 102.4px, a 78% inflation,
+// with letters rendering in isolated rather than connected forms. Measured in a
+// browser, a span setting only `color` is byte-identical to plain text — the
+// basmala across 13 spans came to 207.5px either way.
+//
+// segmentVerse's round-trip is already unit-tested, so the characters are safe. This
+// guards the presentation, which is where the defect actually shipped: any padding,
+// margin, background, border or inline-block on a segment span silently un-joins the
+// script, and nothing else in the pipeline would notice.
+const SEGMENT_RENDERERS = [
+  'src/app/components/read/AyahReader.tsx',
+  'src/app/components/tajweed/TajweedViewer.tsx',
+];
+const SHAPE_BREAKERS = /\b(padding|margin|background|backgroundColor|border|borderRadius|display)\s*:/;
+for (const rel of SEGMENT_RENDERERS) {
+  let src;
+  try {
+    src = await readFile(join(root, rel), 'utf-8');
+  } catch {
+    problems.push(`${rel} is missing — it renders tajweed segments and must be checked`);
+    continue;
+  }
+  // The style object applied to a coloured segment span, wherever it appears.
+  for (const m of src.matchAll(/seg\.color\s*\?[\s\S]{0,400}?<span[^>]*style=\{\{([^}]*)\}\}/g)) {
+    const style = m[1];
+    if (SHAPE_BREAKERS.test(style)) {
+      problems.push(
+        `${rel}: a tajweed segment span sets ${style.trim().slice(0, 60)} — anything ` +
+          'beyond `color` breaks Arabic cursive joining. Colour the text, never box it.'
+      );
+    }
+  }
+}
+
 if (problems.length) {
   for (const p of problems) process.stderr.write(`  ✘ ${p}\n`);
   process.stderr.write(`\n${problems.length} design-token problem(s).\n`);

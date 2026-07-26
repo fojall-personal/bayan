@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { Tabs } from '@/components/ui/Tabs';
 import { Select } from '@/components/ui/Select';
 import { AyahAudioButton } from '@/components/audio/AyahAudioButton';
+import { segmentVerse } from '@/lib/tajweed-render';
 import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
 import { SURAHS, getSurah } from '@/lib/surahs';
 
@@ -218,11 +219,24 @@ export function AyahReader() {
           dir="rtl"
           lang="ar"
         >
-          {lens === 'recite'
-            ? data.words.map((w) => (
-                <span key={w.position}>{w.arabic} </span>
-              ))
-            : data.textUthmani}
+          {lens === 'recite' ? (
+            // segmentVerse splits the ayah at the annotation boundaries and returns
+            // runs with a colour. Colour ONLY — no padding, background or radius —
+            // because a span carrying horizontal padding breaks the Arabic cursive
+            // join, which is how the old reader inflated بِسْمِ by 78% and rendered
+            // its letters in isolated forms.
+            segmentVerse(data.textUthmani, data.tajweed).map((seg, i) =>
+              seg.color ? (
+                <span key={i} style={{ color: seg.color }} title={seg.rule ?? undefined}>
+                  {seg.text}
+                </span>
+              ) : (
+                <span key={i}>{seg.text}</span>
+              )
+            )
+          ) : (
+            data.textUthmani
+          )}
         </p>
 
         {/* Word chips. Gold with a dotted underline means "you do not know this

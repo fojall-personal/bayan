@@ -272,6 +272,16 @@ export function Today() {
             readable end to end. Whole surahs come much later — they need every rare
             word too, so ayahs are the metric that actually moves.
           </p>
+          {/* Always reachable, not only while coverage is zero. Someone who skipped
+              calibration, or whose estimate came out wrong, previously had no way
+              back to it — /calibrate worked but nothing linked to it. */}
+          <p className="mt-3 text-xs">
+            <Link href="/calibrate" className="text-gold-400 hover:underline">
+              {coverage.rootsKnown === 0
+                ? 'Tell us which roots you already know →'
+                : 'Recheck which roots you know →'}
+            </Link>
+          </p>
         </Card>
       )}
     </div>
