@@ -3,7 +3,7 @@
 //
 // UNUSED AND UNVERIFIED — nothing imports this module, and none of the three
 // endpoints below has been exercised against the live services. Known problems
-// before wiring it up (see docs/CODE-AUDIT-2026-07-25.md §8):
+// before wiring it up:
 //   - getAudioUrl concatenates surah+ayah then pads, so 1:1 becomes "000011";
 //     the islamic.network CDN indexes by global ayah number (1-6236).
 //   - `${TANZIL_BASE}/quran-${surah}.json` is not a real Tanzil endpoint.

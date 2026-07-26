@@ -42,10 +42,14 @@ export function AdvancedMemorizationTools() {
     setUserAnswer('');
 
     // This used to award a point for any input longer than five characters,
-    // which made the score meaningless. Grading needs the ayah text, which is
-    // not loaded yet (quran_verses is empty until the ingest runs — see
-    // docs/HANDOFF-LOCAL-SESSION.md), so count attempts instead of pretending
-    // to mark them.
+    // which made the score meaningless, so it counts attempts instead of
+    // pretending to mark them.
+    //
+    // NOTE: the reason for not grading has expired. This deferred because
+    // quran_verses was empty; it now holds all 6,236 verses with translations,
+    // so real grading against the ayah text is possible and this should be
+    // revisited. Left as counting rather than changed quietly, because marking
+    // someone's recall is a behaviour change, not a comment fix.
     setAttempted((prev) => prev + 1);
 
     // Load next ayah

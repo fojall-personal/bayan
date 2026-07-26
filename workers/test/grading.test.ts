@@ -3,7 +3,6 @@
  *
  * Every case here corresponds to a bug that was actually shipped, or to a
  * behaviour that was verified by hand once and would otherwise have no guard.
- * See docs/CODE-AUDIT-2026-07-25.md §5.1.
  */
 
 import { describe, expect, it } from 'vitest';

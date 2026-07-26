@@ -12,8 +12,7 @@ A web application for learning Classical Arabic with focus on Quran comprehensio
 
 ## ✨ Features
 
-What works today, honestly — see `docs/APPLICATION-PLAN-v2.md` §1 for the
-per-module detail:
+What works today, honestly:
 
 - **Placement assessment** — 18 questions across literacy, comprehension, grammar
   and memorization, about 15 minutes. Text only; there is no audio module, by
@@ -22,13 +21,16 @@ per-module detail:
   weakest domain, and the result is stored rather than re-derived.
 - **Learning** — lessons with graded exercises, sticky completion, best-of
   scoring, and a flashcard queue.
-- **Spaced repetition** — an SM-2 scheduler for memorization. Working API; **no UI
-  adds an ayah yet**, which is the next thing to build.
-- **Tajweed** — per-rule mastery tracking works. Colour-coded verse rendering
-  waits on the text ingest (`docs/HANDOFF-LOCAL-SESSION.md` §4).
-- **Grammar** — sentence parsing and conjugation tables.
-- **Tutor** — currently a keyword matcher, not a model. Its redesign is blocked on
-  the morphology corpus, not on an AI provider.
+- **Spaced repetition** — an SM-2 scheduler for memorization, with an add-ayah UI, a
+  due-today queue and a 908-unit ordered curriculum.
+- **Tajweed** — per-rule mastery, and colour-coded verses across all 6,236 ayahs.
+  Ten rule colours, each ≥4.5:1 on the canvas, applied to the script rather than
+  boxed behind it so Arabic stays joined.
+- **Grammar** — sentence parsing, conjugation tables and corpus root families.
+- **Tutor** — corpus lookups, not a model. It answers a word, a root, a location or a
+  named tajweed rule, and refuses rather than inventing Arabic.
+- **Coverage** — how much of the Quran you can read, computed from the roots you
+  know. 400 roots make half of all 6,236 ayahs readable end to end.
 
 ## 🛠 Tech Stack
 
@@ -317,8 +319,6 @@ marks real activity, `StatCard`'s positive trend had been using a token the pale
 never defined and is fixed, and wrangler is on 4. Self-recording is still out —
 microphone capture cannot be verified headlessly.
 
-See `docs/FRONTEND-AUDIT-2026-07-26.md` for full details.
-
 ### Plan items F1–F9
 
 | | | |
@@ -350,23 +350,28 @@ which is the only remaining risk no gate can cover.
 - **Coverage** — How much of the Quran you can read, from the roots you know
 
 A note on process: **a green build is not evidence a feature works.** See
-`docs/APPLICATION-PLAN-v2.md` §11 for what "done" requires.
+the F1–F9 table above for what remains.
 
 ## 📚 Documentation
 
-Three current documents, in reading order:
+Two live documents. Both are partly generated, so they cannot drift from the code:
 
-- **`docs/APPLICATION-PLAN-v2.md`** — the plan in force. §1 is measured current
-  state, §10 the staged roadmap, §11 what "done" requires.
-- **`docs/HANDOFF-LOCAL-SESSION.md`** — what is blocked and on whom. Start at §1
-  if you are picking this up on a local machine.
-- **`docs/CODE-AUDIT-2026-07-25.md`** — historical. The audit those two came from;
-  most findings are resolved, and its header says which.
+- **`AGENTS.md`** — coding standards, the design-system rules, and generated lists of
+  every live endpoint and page (`scripts/gen-api-docs.mjs --check` gates them).
+- **`docs/CONTENT-AND-CORPUS-2026-07-26.md`** — how the content was built and
+  verified: the corpus recovery, the correctness gates, the UI audit, and the
+  coverage model.
+
+The visual reference is the **"Bayan — Design System"** project on claude.ai/design,
+generated from `src/app/styles/globals.css` by `scripts/gen-design-system.mjs`.
+
+Removed as spent: `APPLICATION-PLAN-v2.md`, `CODE-AUDIT-2026-07-25.md`,
+`FRONTEND-AUDIT-2026-07-26.md` and `HANDOFF-LOCAL-SESSION.md`. Every finding in them
+is closed or recorded above, and a handoff describing a finished session reads as
+current instructions to whoever opens it next.
 
 Also:
 
-- `AGENTS.md` — coding standards, the real endpoint list, agent workflow notes
-- `src/styles/DESIGN.md` — design token specification
 - `PLAN.md` — superseded; kept for its research summary and content sources
 - `modules/` — per-module design documentation from the original planning
 

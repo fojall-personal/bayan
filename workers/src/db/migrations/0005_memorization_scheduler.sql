@@ -7,9 +7,9 @@
 --   2. `id` was INTEGER PRIMARY KEY AUTOINCREMENT while the code inserted a
 --      crypto.randomUUID(), a datatype mismatch.
 --
--- NOTE: interval/ease_factor are SM-2 state. The plan (docs/APPLICATION-PLAN-v2.md
--- §7) adopts FSRS, whose state is stability/difficulty. That swap is Stage 7 and
--- gets its own migration; this one only makes the existing code correct.
+-- NOTE: interval/ease_factor are SM-2 state. An earlier plan adopted FSRS, whose
+-- state is stability/difficulty; that swap would need its own migration and has not
+-- happened. This one only makes the existing code correct.
 
 CREATE TABLE memorization_new (
   id TEXT PRIMARY KEY,

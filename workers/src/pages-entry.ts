@@ -3,7 +3,7 @@
  * root of the build output that handles every request — /api/* through the Hono
  * app, everything else from the static assets binding.
  *
- * Why one origin (docs/APPLICATION-PLAN-v2.md §5, Change 1): Cloudflare Access
+ * Why one origin: Cloudflare Access
  * cookies are per-hostname. With the site on pages.dev and the API on
  * workers.dev, a single logged-in session cannot span both without a custom
  * domain, which costs money. Access can protect *.pages.dev, so collapsing to

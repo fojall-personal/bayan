@@ -8,10 +8,10 @@
 > marked eleven modules complete while six endpoints returned 500 and the
 > frontend could not reach the backend at all.
 >
-> Current documents:
-> - `docs/APPLICATION-PLAN-v2.md` — the plan in force, with measured status
-> - `docs/CODE-AUDIT-2026-07-25.md` — what was actually true, and why
-> - `docs/HANDOFF-LOCAL-SESSION.md` — what is blocked and on whom
+> Current documents: `AGENTS.md` and
+> `docs/CONTENT-AND-CORPUS-2026-07-26.md`. The three that used to be listed here —
+> the v2 plan, the code audit and the local-session handoff — are removed; their
+> findings are closed and recorded in those two.
 >
 > Sections 1 (research summary), 3 (assessment methodology) and 7 (content
 > sources) are still useful; the rest is not.

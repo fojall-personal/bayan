@@ -7,8 +7,8 @@
  * six would have landed on the wrong letter.
  *
  * These tests exercise the gate's logic on small fixtures, so a future change
- * cannot quietly loosen it. Running the real ingest needs the pinned text —
- * see docs/HANDOFF-LOCAL-SESSION.md.
+ * cannot quietly loosen it. The real ingest has since run: data/ carries the
+ * pinned text and quran_verses holds all 6,236 verses.
  */
 
 import { describe, expect, it } from 'vitest';

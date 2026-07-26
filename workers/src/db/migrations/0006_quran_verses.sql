@@ -7,8 +7,8 @@
 -- one naming; memorization.ts is corrected to match.
 --
 -- Populated from the pinned Tanzil Uthmani text plus cpfair/quran-tajweed
--- annotations — see docs/APPLICATION-PLAN-v2.md §6. Empty until that ingest
--- runs, which is correct: the routes return empty rather than erroring.
+-- annotations. Populated: 6,236 verses, each with tajweed tags, and since
+-- filled with the Saheeh International translation via scripts/ingest-translation.mjs.
 
 CREATE TABLE IF NOT EXISTS quran_verses (
   surah INTEGER NOT NULL,

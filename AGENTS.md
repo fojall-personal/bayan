@@ -381,13 +381,14 @@ the URL, which is how `/dashboard` went unnoticed after the nav shrank.
 /tutor
 ```
 
-Two of these return empty until the Quran text is ingested, which is blocked —
-see `docs/HANDOFF-LOCAL-SESSION.md`:
-`GET /api/tajweed/verses/:surahId` and the joined text in
-`GET /api/memorization/review/today`.
+The text ingest has run, so nothing here returns empty for want of data:
+`quran_verses` holds all 6,236 verses with tajweed tags and a Saheeh International
+translation, `quran_word_gloss` 77,429 word glosses, and `quran_word_morphology`
+128,219 segments.
 
-`POST /api/tutor/*` is answered by a keyword matcher, not a model. `POST
-/api/tutor/feedback` returns a fixed string.
+`POST /api/tutor/chat` is corpus lookups, not a model — it answers a word, a root, a
+location or a named tajweed rule, and says the corpus is silent rather than guessing.
+`POST /api/tutor/feedback` still returns a fixed string.
 
 ---
 
