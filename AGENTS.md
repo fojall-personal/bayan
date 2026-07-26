@@ -306,6 +306,8 @@ GET  /api/grammar/deepdive/:category
 GET  /api/grammar/root/:root              (corpus-derived root family, Arabic script)
 GET  /api/grammar/word/:surah/:ayah/:word (grounded i'rab, one entry per segment)
 GET  /api/grammar/drills/forms            (pattern drills; distractors are attested)
+GET  /api/grammar/exercises               (754-item graded bank; ?level=1-5 &kind=)
+GET  /api/grammar/exercises/summary       (counts by kind and level)
 POST /api/grammar/exercise
 GET  /api/grammar/mastery
 POST /api/grammar/parse
@@ -319,6 +321,7 @@ GET  /api/learning/next
 POST /api/memorization/:id/recall
 POST /api/memorization/:id/review
 POST /api/memorization/add          (validated: surah 1-114, ayah bounds from quran_verses)
+GET  /api/memorization/curriculum   (908 ordered units; ?level=1-6 &limit &offset)
 GET  /api/memorization/all
 GET  /api/memorization/review/today
 GET  /api/memorization/surah/:surahId

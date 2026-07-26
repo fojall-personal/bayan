@@ -281,3 +281,83 @@ grammarRoutes.get('/drills/forms', async (c) => {
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
+
+// GET /api/grammar/exercises?level=&kind=&limit=
+//
+// The derived exercise bank: 780 items across 5 kinds and 5 levels, every one
+// generated from a corpus row and carrying its source location, so a wrong item
+// can be traced and disproved. Levels come from root frequency — a word from a
+// root occurring 300+ times is a level 1 question.
+grammarRoutes.get('/exercises', async (c) => {
+  const db = getDb(c);
+  const level = c.req.query('level');
+  const kind = c.req.query('kind');
+  const limit = Math.min(Number(c.req.query('limit') ?? 10) || 10, 50);
+
+  const where: string[] = [];
+  const params: unknown[] = [];
+  if (level) {
+    const n = Number(level);
+    if (!Number.isInteger(n) || n < 1 || n > 5) {
+      return c.json({ error: 'level must be an integer 1–5' }, 400);
+    }
+    where.push('level = ?');
+    params.push(n);
+  }
+  if (kind) {
+    const allowed = ['verb_form', 'case_ending', 'root_id', 'pos_id', 'aspect'];
+    if (!allowed.includes(kind)) {
+      return c.json({ error: `kind must be one of ${allowed.join(', ')}` }, 400);
+    }
+    where.push('kind = ?');
+    params.push(kind);
+  }
+
+  try {
+    const rows = await db.query<Record<string, unknown>>(
+      `SELECT id, kind, level, word_arabic, prompt, answer, options, explanation,
+              surah_id, ayah_id, root
+       FROM grammar_exercise_bank
+       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+       ORDER BY level ASC, id ASC
+       LIMIT ?`,
+      [...params, limit]
+    );
+
+    return c.json({
+      data: rows.map((r) => ({
+        id: r.id,
+        kind: r.kind,
+        level: r.level,
+        word: r.word_arabic,
+        prompt: r.prompt,
+        answer: r.answer,
+        options: JSON.parse((r.options as string) ?? '[]'),
+        explanation: r.explanation,
+        // Provenance travels with the item so the UI can cite it.
+        source: `${r.surah_id}:${r.ayah_id}`,
+        root: r.root,
+      })),
+      attribution: CORPUS_ATTRIBUTION,
+    });
+  } catch (error) {
+    console.error('Exercise bank error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// GET /api/grammar/exercises/summary — counts by kind and level, for the UI's picker.
+grammarRoutes.get('/exercises/summary', async (c) => {
+  const db = getDb(c);
+  try {
+    const rows = await db.query<{ kind: string; level: number; n: number }>(
+      `SELECT kind, level, COUNT(*) AS n FROM grammar_exercise_bank
+       GROUP BY kind, level ORDER BY kind, level`
+    );
+    const total = rows.reduce((n, r) => n + r.n, 0);
+    return c.json({ data: { total, breakdown: rows }, attribution: CORPUS_ATTRIBUTION });
+  } catch (error) {
+    console.error('Exercise summary error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});

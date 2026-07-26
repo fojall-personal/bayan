@@ -284,3 +284,72 @@ memorizationRoutes.get('/surahs', async (c) => {
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
+
+// GET /api/memorization/curriculum?level=&limit=&offset=
+//
+// 908 ordered units derived from the pinned text. The tracker worked before this
+// but a learner had to invent their own plan — pick a surah, pick a range, guess
+// what was a sensible amount. Short surahs are whole units; longer ones are cut
+// into reviewable groups, and each unit says why it sits where it does.
+memorizationRoutes.get('/curriculum', async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+  const level = c.req.query('level');
+  const limit = Math.min(Number(c.req.query('limit') ?? 25) || 25, 100);
+  const offset = Math.max(Number(c.req.query('offset') ?? 0) || 0, 0);
+
+  const where: string[] = [];
+  const params: unknown[] = [];
+  if (level) {
+    const n = Number(level);
+    if (!Number.isInteger(n) || n < 1 || n > 6) {
+      return c.json({ error: 'level must be an integer 1–6' }, 400);
+    }
+    where.push('u.level = ?');
+    params.push(n);
+  }
+
+  try {
+    // LEFT JOIN so a unit the learner has already started is marked as such
+    // rather than being offered again as if new.
+    const rows = await db.query<Record<string, unknown>>(
+      `SELECT u.id, u.sequence, u.level, u.surah_id, u.ayah_from, u.ayah_to,
+              u.ayah_count, u.surah_name, u.rationale,
+              m.status AS tracked_status
+       FROM memorization_units u
+       LEFT JOIN memorization m
+         ON m.user_id = ? AND m.surah_id = u.surah_id
+        AND m.ayah_from = u.ayah_from AND m.ayah_to = u.ayah_to
+       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+       ORDER BY u.sequence ASC
+       LIMIT ? OFFSET ?`,
+      [userId, ...params, limit, offset]
+    );
+
+    const totalRow = await db.get<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM memorization_units${level ? ' WHERE level = ?' : ''}`,
+      level ? [Number(level)] : []
+    );
+
+    return c.json({
+      data: rows.map((r) => ({
+        id: r.id,
+        sequence: r.sequence,
+        level: r.level,
+        surahId: r.surah_id,
+        surahName: r.surah_name,
+        ayahFrom: r.ayah_from,
+        ayahTo: r.ayah_to,
+        ayahCount: r.ayah_count,
+        rationale: r.rationale,
+        tracked: r.tracked_status !== null && r.tracked_status !== undefined,
+        status: r.tracked_status ?? null,
+      })),
+      total: totalRow?.n ?? 0,
+      attribution: { source: 'Tanzil Uthmani text', url: 'https://tanzil.net', licence: 'CC-BY' },
+    });
+  } catch (error) {
+    console.error('Curriculum error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});

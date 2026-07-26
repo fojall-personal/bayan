@@ -64,6 +64,37 @@ const TO_ARABIC: Record<string, string> = {
   '~': 'ّ', // shadda
   o: 'ْ', // sukun
   '`': 'ٰ', // dagger/superscript alef
+
+  // ── Quranic annotation marks ────────────────────────────────────────────
+  //
+  // The corpus uses an EXTENDED Buckwalter for the mushaf's annotation marks,
+  // and these are not in the standard table. Without them 12,795 forms rendered
+  // with stray ASCII: ضَّا^لِّينَ instead of ضَّآلِّينَ.
+  //
+  // Derived empirically rather than from memory. Each corpus word was rebuilt
+  // from its segments, mapped with the known table, and diffed against the same
+  // word in the pinned Tanzil text; the leftover codepoint identifies the
+  // character. Confidence ran 90–100% per mark, the shortfall being alignment
+  // noise rather than disagreement.
+  //
+  // Corroboration: [ and ] resolve to the small high and small low meem, which
+  // are independently the two iqlab notation marks found while fixing the
+  // tajweed colouring. Two separate investigations agreeing is worth more than
+  // either alone.
+  '^': 'ٓ', // U+0653 maddah above                       (5,376 occurrences)
+  '@': '۟', // U+06DF small high rounded zero — silent    (3,988)
+  ',': 'ۥ', // U+06E5 small waw                           (1,257)
+  '.': 'ۦ', // U+06E6 small yeh                             (995)
+  '[': 'ۢ', // U+06E2 small high meem — iqlab               (510)
+  '#': 'ٔ', // U+0654 hamza above                           (496)
+  ']': 'ۭ', // U+06ED small low meem — iqlab                 (99)
+  '"': '۠', // U+06E0 small high upright rectangular zero     (66)
+  ':': 'ۜ', // U+06DC small high seen                          (2)
+  '-': '۪', // U+06EA empty centre low stop                    (1)
+  '+': '۫', // U+06EB empty centre high stop                   (1)
+  '!': 'ۨ', // U+06E8 small high noon                          (1)
+  '%': '۬', // U+06EC rounded high stop with filled centre     (1)
+  ';': 'ۣ', // U+06E3 small low seen                           (1)
 };
 
 /** Diacritics, for the unvocalised variant. */

@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { SurahProgress } from '@/components/memorization/SurahProgress';
 import { ReviewSession } from '@/components/memorization/ReviewSession';
 import { AddAyahForm } from '@/components/memorization/AddAyahForm';
+import { CurriculumPicker } from '@/components/memorization/CurriculumPicker';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
@@ -34,7 +35,7 @@ interface MemorizationEntry {
 }
 
 export default function MemorizationPage() {
-  const [view, setView] = useState<'surahs' | 'review'>('surahs');
+  const [view, setView] = useState<'surahs' | 'curriculum' | 'review'>('surahs');
   const [surahs, setSurahs] = useState<SurahSummary[]>([]);
   const [dueEntries, setDueEntries] = useState<MemorizationEntry[]>([]);
   const [currentEntry, setCurrentEntry] = useState<MemorizationEntry | null>(null);
@@ -44,8 +45,12 @@ export default function MemorizationPage() {
   useEffect(() => {
     if (view === 'surahs') {
       fetchSurahs();
-    } else {
+    } else if (view === 'review') {
       fetchTodayReview();
+    } else {
+      // The curriculum view loads its own data. Without this the page-level
+      // `loading` flag would stay true and blank the whole tab.
+      setLoading(false);
     }
   }, [view]);
 
@@ -140,6 +145,7 @@ export default function MemorizationPage() {
             onChange={setView}
             items={[
               { id: 'surahs', label: 'Surahs' },
+              { id: 'curriculum', label: 'Curriculum' },
               { id: 'review', label: 'Due today' },
             ]}
           />
@@ -202,6 +208,10 @@ export default function MemorizationPage() {
             </div>
           )}
         </div>
+      )}
+
+      {view === 'curriculum' && (
+        <CurriculumPicker onAdded={() => fetchSurahs({ silent: true })} />
       )}
 
       {view === 'review' && (

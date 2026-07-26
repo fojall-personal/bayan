@@ -3,8 +3,11 @@
 import { useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { DeepDiveView } from '@/components/grammar/DeepDiveView';
-import { Button } from '@/components/ui/Button';
+import { ExerciseRunner } from '@/components/grammar/ExerciseRunner';
+import { RootExplorer } from '@/components/grammar/RootExplorer';
+import { Tabs } from '@/components/ui/Tabs';
 
+type View = 'exercises' | 'roots' | 'deepdive';
 type GrammarCategory = 'nahw' | 'sarf' | 'balagha';
 
 const CATEGORIES: { id: GrammarCategory; name: string; arabic: string }[] = [
@@ -16,34 +19,60 @@ const CATEGORIES: { id: GrammarCategory; name: string; arabic: string }[] = [
 ];
 
 export default function GrammarPage() {
+  // Exercises first: it is the only view with real depth behind it — 780
+  // corpus-derived items — whereas the deep-dive reads the five authored lessons.
+  const [view, setView] = useState<View>('exercises');
   const [category, setCategory] = useState<GrammarCategory>('nahw');
 
   return (
     <div>
       <PageHeader
-        title="Grammar Deep-Dive"
-        subtitle="Advanced grammar: nahw, sarf, and balagha"
+        title="Grammar"
+        subtitle="Exercises drawn from the Quranic corpus, root families, and deep-dive lessons"
+        actions={
+          <Tabs
+            label="Grammar views"
+            value={view}
+            onChange={setView}
+            items={[
+              { id: 'exercises', label: 'Exercises' },
+              { id: 'roots', label: 'Roots' },
+              { id: 'deepdive', label: 'Deep-dive' },
+            ]}
+          />
+        }
       />
 
-      {/* Category selector */}
-      <div className="flex gap-3 mb-6">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setCategory(cat.id)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-              category === cat.id
-                ? 'border-leaf-500 bg-leaf-500/10 text-leaf-400'
-                : 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300'
-            }`}
-          >
-            <span className="text-xl"></span>
-            <span className="font-medium">{cat.name}</span>
-          </button>
-        ))}
-      </div>
+      {view === 'exercises' && <ExerciseRunner />}
 
-      <DeepDiveView category={category} />
+      {view === 'roots' && <RootExplorer />}
+
+      {view === 'deepdive' && (
+        <div>
+          <div className="flex flex-wrap gap-3 mb-6">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setCategory(cat.id)}
+                aria-pressed={category === cat.id}
+                className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
+                  category === cat.id
+                    ? 'border-leaf-500 bg-leaf-500/10 text-leaf-400'
+                    : 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300'
+                }`}
+              >
+                <span className="font-medium">{cat.name}</span>
+                <span className="text-naskh text-sm text-gray-500" dir="rtl">
+                  {cat.arabic}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <DeepDiveView category={category} />
+        </div>
+      )}
     </div>
   );
 }

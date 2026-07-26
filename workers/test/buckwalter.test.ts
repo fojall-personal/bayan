@@ -77,7 +77,10 @@ describe('buckwalterToArabic', () => {
   it('passes unknown characters through rather than dropping them', () => {
     // A silently shortened word looks like a real Arabic word and is the wrong
     // one. A visible stray character is a bug you can see.
-    expect(buckwalterToArabic('qamar#')).toBe('قَمَر#');
+    // Uses '=' rather than '#': # WAS the example here until it turned out to
+    // be U+0654 hamza above in the corpus's extended table. Nearly every ASCII
+    // character carries meaning there, so pick one that does not.
+    expect(buckwalterToArabic('qamar=')).toBe('قَمَر=');
   });
 
   it('returns empty for empty input', () => {
@@ -126,6 +129,46 @@ describe('unmappedCharacters', () => {
   });
 
   it('reports genuinely unknown characters', () => {
-    expect(unmappedCharacters('qamar#@')).toEqual(['#', '@']);
+    // '#' and '@' were the original examples; both are mapped now.
+    expect(unmappedCharacters('qamar=?')).toEqual(['=', '?']);
+  });
+});
+
+describe('extended Buckwalter — Quranic annotation marks', () => {
+  // The corpus uses an extended table the standard mapping omits. Without these
+  // 12,795 forms rendered with stray ASCII, e.g. ضَّا^لِّينَ for ضَّآلِّينَ.
+  // Mappings were derived by diffing corpus words against the pinned Tanzil
+  // text, not recalled.
+  it('maps the maddah above, the commonest of them', () => {
+    expect(buckwalterToArabic('^')).toBe('\u0653');
+  });
+
+  it('maps the silent-letter zero', () => {
+    expect(buckwalterToArabic('@')).toBe('\u06DF');
+  });
+
+  it('maps the small waw and small yeh, which are distinct', () => {
+    expect(buckwalterToArabic(',')).toBe('\u06E5');
+    expect(buckwalterToArabic('.')).toBe('\u06E6');
+  });
+
+  it('maps both iqlab meems — the same marks the tajweed work identified', () => {
+    // [ is the small HIGH meem, ] the small LOW meem. Two independent
+    // investigations landing on the same pair is the corroboration here.
+    expect(buckwalterToArabic('[')).toBe('\u06E2');
+    expect(buckwalterToArabic(']')).toBe('\u06ED');
+  });
+
+  it('leaves no ASCII in a real annotated corpus form', () => {
+    // 1:7 ٱلضَّآلِّينَ — the word that exposed the gap.
+    const out = buckwalterToArabic('D~aA^l~iyna');
+    expect(/[\x21-\x7E]/.test(out)).toBe(false);
+    expect(out).toContain('\u0653');
+  });
+
+  it('reports no unmapped characters across a sample of annotated forms', () => {
+    for (const f of ['D~aA^l~iyna', '>uw@la`^}ika', 'hu,', 'hi.', '>aliymN[', 'kaAfirK]']) {
+      expect(unmappedCharacters(f)).toEqual([]);
+    }
   });
 });
