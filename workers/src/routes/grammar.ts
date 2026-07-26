@@ -4,6 +4,13 @@ import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 
 import { parseArabicSentence, checkGrammarErrors, VERB_CONJUGATIONS } from '../lib/grammar-parser';
+import { buckwalterToArabic } from '../lib/buckwalter';
+import {
+  buildFamily,
+  drillsFromFamily,
+  grammarFacts,
+  type MorphRow,
+} from '../lib/root-families';
 
 export const grammarRoutes = new Hono<AppEnv>();
 
@@ -142,6 +149,135 @@ grammarRoutes.get('/mastery', async (c) => {
     });
   } catch (error) {
     console.error('Grammar mastery error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// ── Corpus-derived endpoints ────────────────────────────────────────────────
+//
+// Everything below reads the Quranic Arabic Corpus rather than authored content,
+// which is the point: the facts are checkable against source data, and no model
+// is involved in producing them (plan §F8 — "the model only narrates it").
+//
+// These became possible only after migration 0012. Before it the corpus was
+// stored one row per WORD instead of per segment, so 40% of rows were missing
+// and root 'qmr' did not exist in the table at all.
+//
+// ATTRIBUTION: Quranic Arabic Corpus v0.4, Kais Dukes, GNU GPL. Callers must
+// surface the corpus.quran.com link — it is returned in `attribution` so the UI
+// cannot forget it (plan risk R3).
+
+const CORPUS_ATTRIBUTION = {
+  source: 'Quranic Arabic Corpus (v0.4)',
+  url: 'https://corpus.quran.com',
+  licence: 'GNU GPL',
+};
+
+// GET /api/grammar/root/:root — the family for one root, in Arabic script.
+// Buckwalter in, Arabic out; the corpus stores ASCII and a learner cannot read it.
+grammarRoutes.get('/root/:root', async (c) => {
+  const { root } = c.req.param();
+  const db = getDb(c);
+
+  try {
+    const rows = await db.query<MorphRow>(
+      `SELECT lemma, root, pos, verb_form, aspect, voice, case_case, gender, number, person
+       FROM quran_word_morphology
+       WHERE root = ?`,
+      [root]
+    );
+
+    if (rows.length === 0) {
+      // Honest 404. 58% of segments carry no root at all, and inventing a family
+      // for an unattested root is exactly the failure F8 exists to avoid.
+      return c.json(
+        { error: `No occurrences of root "${root}" in the corpus`, attribution: CORPUS_ATTRIBUTION },
+        404
+      );
+    }
+
+    const family = buildFamily(root, rows);
+    return c.json({ data: family, drills: drillsFromFamily(family), attribution: CORPUS_ATTRIBUTION });
+  } catch (error) {
+    console.error('Root family error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// GET /api/grammar/word/:surah/:ayah/:word — grounded i'rab for one word (F8).
+// Returns only what the corpus states; absent features come back null so the UI
+// can say "not annotated" rather than guess.
+grammarRoutes.get('/word/:surah/:ayah/:word', async (c) => {
+  const { surah, ayah, word } = c.req.param();
+  const db = getDb(c);
+
+  try {
+    const rows = await db.query<MorphRow & { segment_index: number; form: string | null; tag: string | null }>(
+      `SELECT segment_index, form, tag, lemma, root, pos, verb_form, aspect, voice,
+              case_case, gender, number, person
+       FROM quran_word_morphology
+       WHERE surah_id = ? AND ayah_id = ? AND word_index = ?
+       ORDER BY segment_index ASC`,
+      [Number(surah), Number(ayah), Number(word)]
+    );
+
+    if (rows.length === 0) {
+      return c.json({ error: 'No such word in the corpus' }, 404);
+    }
+
+    return c.json({
+      data: {
+        surah: Number(surah),
+        ayah: Number(ayah),
+        word: Number(word),
+        // One entry per segment. A word like ٱلْقَمَرُ is (al)(qamar): the
+        // determiner carries no root, the stem carries qmr. Collapsing them is
+        // what broke this table in the first place.
+        segments: rows.map((r) => ({
+          segment: r.segment_index,
+          arabic: r.form ? buckwalterToArabic(r.form) : null,
+          tag: r.tag,
+          facts: grammarFacts(r),
+        })),
+      },
+      attribution: CORPUS_ATTRIBUTION,
+    });
+  } catch (error) {
+    console.error('Grounded i’rab error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// GET /api/grammar/drills/forms — pattern drills (F9), derived not authored.
+// Only roots attesting 2+ forms yield a drill, so distractors are always real.
+grammarRoutes.get('/drills/forms', async (c) => {
+  const db = getDb(c);
+  const limit = Math.min(Number(c.req.query('limit') ?? 20) || 20, 100);
+
+  try {
+    const candidates = await db.query<{ root: string }>(
+      `SELECT root FROM quran_word_morphology
+       WHERE verb_form IS NOT NULL AND root IS NOT NULL
+       GROUP BY root
+       HAVING COUNT(DISTINCT verb_form) > 1
+       ORDER BY COUNT(*) DESC
+       LIMIT ?`,
+      [limit]
+    );
+
+    const drills = [];
+    for (const { root } of candidates) {
+      const rows = await db.query<MorphRow>(
+        `SELECT lemma, root, pos, verb_form, aspect, voice, case_case, gender, number, person
+         FROM quran_word_morphology WHERE root = ?`,
+        [root]
+      );
+      drills.push(...drillsFromFamily(buildFamily(root, rows)));
+    }
+
+    return c.json({ data: drills, attribution: CORPUS_ATTRIBUTION });
+  } catch (error) {
+    console.error('Form drills error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

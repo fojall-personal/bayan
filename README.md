@@ -287,8 +287,10 @@ pages render, the database has 6,236 Quran verses and 77K morphology rows.
 | API (36 endpoints) | ✅ All resolving |
 | Database (D1) | ✅ 9 migrations applied, seeded |
 | Quran text | ✅ 6,236 verses with tajweed tags |
-| Morphology corpus | ✅ 77K rows, 50K lemmas |
+| Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |
 | Cloudflare Access | ✅ Enforcing — every path 302s to the login |
+| Grammar (corpus-derived) | ✅ Root families, grounded i'rab, form drills |
+| Content correctness | ✅ Gated in CI (scripts/check-content.mjs) |
 | Auth | ✅ Per-user identity via Access JWT; shared token retired |
 
 ### Known issues (from frontend audit 2026-07-26)

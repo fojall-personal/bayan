@@ -124,6 +124,22 @@ Verified playing: 6.03s of audio with `currentTime` advancing.
 
 ---
 
+## Found later, after this audit
+
+Two more issues surfaced when the assessment was actually used, both of a class
+this audit did not test for:
+
+- **Text direction.** `AssessmentFlow.tsx:149` and `TutorChat.tsx:109` forced
+  `direction: rtl` whenever a string contained any Arabic, so mixed
+  English/Arabic sentences were reordered and their trailing `?` moved to the
+  left. Fixed with `dir="auto"`. See docs/CONTENT-AND-CORPUS-2026-07-26.md §3.
+- **Arabic legibility.** Amiri sits small on the em, which reads as cramped in
+  running UI text. Noto Naskh Arabic now carries instructional Arabic; Amiri
+  stays for ayat.
+
+And the content itself had factual errors the audit did not check — five in the
+first grammar lesson alone. `scripts/check-content.mjs` now gates them in CI.
+
 ## Deliberately not done
 
 - **#9 weekly calendar** and **#11 StatCard colours** are cosmetic and need design

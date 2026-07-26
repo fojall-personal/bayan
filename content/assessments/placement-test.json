@@ -318,7 +318,7 @@
         {
           "id": "gram-03",
           "type": "identification",
-          "instruction": "In the sentence 'الْكِتَابُ مَفْتُوحٌ', what is the grammatical role of الْمَفْتُوحُ؟",
+          "instruction": "In the sentence 'الْكِتَابُ مَفْتُوحٌ', what is the grammatical role of الْمَفْتُوحُ?",
           "options": [
             {
               "text": "مبتدأ (subject)",

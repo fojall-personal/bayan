@@ -105,9 +105,20 @@ export function TutorChat() {
                   : 'bg-gray-700 text-gray-100'
               }`}
             >
-              <p className={`whitespace-pre-wrap text-sm ${
-              /[\u0600-\u06FF]/.test(msg.content) ? 'text-right arabic-text' : ''
-            }`}>{msg.content}</p>
+              {/* Same fix as AssessmentFlow: dir="auto" instead of forcing RTL
+                  whenever a message contains any Arabic. Tutor replies mix
+                  English prose with Arabic terms constantly, and forcing RTL
+                  reordered the English and threw its punctuation to the wrong
+                  end. This is the third instance of that mistake in this
+                  codebase \u2014 the tutor INPUT was hardcoded RTL once too. */}
+              <p
+                dir="auto"
+                className={`whitespace-pre-wrap text-sm ${
+                  /[\u0600-\u06FF]/.test(msg.content) ? 'text-naskh' : ''
+                }`}
+              >
+                {msg.content}
+              </p>
               {msg.topics && msg.topics.length > 0 && (
                 <div className="mt-2 flex gap-1">
                   {msg.topics.map((topic) => (

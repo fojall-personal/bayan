@@ -32,6 +32,14 @@ jobs:
         working-directory: workers
         run: npx tsc --noEmit
 
+      # Sun and moon letters are closed sets of 14, so "is this example in the
+      # right class" is decidable — and the first grammar lesson shipped with
+      # five separate factual errors of exactly that kind, including three
+      # sun-letter examples that all began with moon letters. Anything decidable
+      # belongs here rather than in a reviewer's patience.
+      - name: Check authored content
+        run: node scripts/check-content.mjs
+
       # 39 tests over grading, scoring, the SM-2 scheduler and the Quran ingest
       # alignment gate. Every case corresponds to a bug that shipped or a
       # behaviour previously checked only by hand. Adding them found a live one:

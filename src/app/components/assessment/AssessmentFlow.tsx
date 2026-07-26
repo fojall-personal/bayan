@@ -145,9 +145,24 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
 
       {/* Question */}
       <Card>
-        <h2 className={`text-xl font-semibold mb-4 ${
-          /[\u0600-\u06FF]/.test(currentQuestion.instruction) ? 'text-right arabic-text' : ''
-        }`}>{currentQuestion.instruction}</h2>
+        {/* dir="auto" rather than forcing RTL when any Arabic is present.
+            `.arabic-text` sets direction: rtl, so a mostly-English instruction
+            like "What does '\u0645\u0627\u0644\u0643 \u064A\u0648\u0645 \u0627\u0644\u062F\u064A\u0646' mean?" was reordered by the
+            bidirectional algorithm and its trailing ? jumped to the LEFT of the
+            line \u2014 the backwards question marks.
+
+            dir="auto" takes base direction from the first STRONG character: LTR
+            for that sentence, RTL for a wholly Arabic prompt. Correct in both
+            cases. `.text-naskh` supplies the Arabic face and leading WITHOUT
+            touching direction, which is the distinction `.arabic-text` blurs. */}
+        <h2
+          dir="auto"
+          className={`text-xl font-semibold mb-4 ${
+            /[\u0600-\u06FF]/.test(currentQuestion.instruction) ? 'text-naskh' : ''
+          }`}
+        >
+          {currentQuestion.instruction}
+        </h2>
 
         {currentQuestion.display && (
           <p

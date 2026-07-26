@@ -181,6 +181,22 @@
     line-height: var(--leading-arabic);
   }
 
+  /* Arabic in INSTRUCTIONAL text — questions, tutor replies, vocabulary.
+   *
+   * Amiri (.text-arabic / .arabic-text) is the right face for ayat but sits
+   * small on the em, so it reads cramped in running UI text. Noto Naskh is
+   * larger at the same font-size and holds up under full vocalisation.
+   *
+   * Note what this does NOT do: set `direction`. That is the whole point. The
+   * older `.arabic-text` bundles font, leading AND direction: rtl, so applying
+   * it to a mixed English/Arabic string reordered the English and threw its
+   * punctuation to the wrong end. Pair this with dir="auto" and let the
+   * bidirectional algorithm decide, which it does correctly. */
+  .text-naskh {
+    font-family: var(--font-naskh), var(--font-arabic), var(--font-fallback-arabic);
+    line-height: var(--leading-arabic);
+  }
+
   /* Tajweed colours as text utilities. Tailwind also generates
    * text-tajweed-* from the palette; these are the CSS-var equivalents for
    * cases where the rule name arrives at runtime. */

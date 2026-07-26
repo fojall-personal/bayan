@@ -188,7 +188,7 @@ export const ASSESSMENT_MODULES: AssessmentModule[] = [
       },
       {
         "id": "gram-03",
-        "instruction": "In the sentence 'الْكِتَابُ مَفْتُوحٌ', what is the grammatical role of الْمَفْتُوحُ؟",
+        "instruction": "In the sentence 'الْكِتَابُ مَفْتُوحٌ', what is the grammatical role of الْمَفْتُوحُ?",
         "display": null,
         "options": [
           "مبتدأ (subject)",

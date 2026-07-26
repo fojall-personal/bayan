@@ -1,5 +1,11 @@
 import type { Metadata } from 'next';
-import { Amiri, IBM_Plex_Mono, IBM_Plex_Sans, Reem_Kufi } from 'next/font/google';
+import {
+  Amiri,
+  IBM_Plex_Mono,
+  IBM_Plex_Sans,
+  Noto_Naskh_Arabic,
+  Reem_Kufi,
+} from 'next/font/google';
 import '@/styles/globals.css';
 import { Nav } from '@/components/layout/Nav';
 
@@ -20,6 +26,26 @@ const arabic = Amiri({
   weight: ['400', '700'],
   display: 'swap',
   variable: '--font-arabic',
+});
+
+/**
+ * Arabic for INSTRUCTIONAL text — questions, tutor replies, vocabulary.
+ *
+ * Amiri stays the face for Quranic ayat, where it is the reference for Uthmani
+ * script and handles stacked diacritics cleanly. But it has a small apparent
+ * size on the em: at a given font-size it renders visibly smaller and tighter
+ * than most faces, which reads as cramped in running UI text. That is what
+ * "squished" was — not leading, which is already 2.1.
+ *
+ * Noto Naskh Arabic is considerably larger on the same em and is designed to stay
+ * legible under full vocalisation, so it carries the teaching text while Amiri
+ * carries the scripture.
+ */
+const naskh = Noto_Naskh_Arabic({
+  subsets: ['arabic'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-naskh',
 });
 
 const display = Reem_Kufi({
@@ -75,7 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       dir="ltr"
-      className={`${arabic.variable} ${display.variable} ${body.variable} ${mono.variable}`}
+      className={`${arabic.variable} ${naskh.variable} ${display.variable} ${body.variable} ${mono.variable}`}
     >
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />

@@ -303,6 +303,9 @@ GET  /api/auth/whoami
 GET  /api/certificate/export
 GET  /api/grammar/conjugations
 GET  /api/grammar/deepdive/:category
+GET  /api/grammar/root/:root              (corpus-derived root family, Arabic script)
+GET  /api/grammar/word/:surah/:ayah/:word (grounded i'rab, one entry per segment)
+GET  /api/grammar/drills/forms            (pattern drills; distractors are attested)
 POST /api/grammar/exercise
 GET  /api/grammar/mastery
 POST /api/grammar/parse
