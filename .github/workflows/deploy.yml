@@ -64,6 +64,15 @@ jobs:
       - name: Assert the design tokens agree
         run: node scripts/gen-design-system.mjs --check
 
+      # AGENTS.md is the file an agent reads first, and its API list has been wrong
+      # once already — it named five endpoints that never existed and omitted a
+      # dozen that did. Rewriting it by hand fixed that instance and left the hazard,
+      # so four endpoints added later went undocumented. This also flags a page
+      # nothing links to, which is how /dashboard went unreachable when the nav
+      # shrank from eight items to six.
+      - name: Assert AGENTS.md documents the live API and pages
+        run: node scripts/gen-api-docs.mjs --check
+
       # 39 tests over grading, scoring, the SM-2 scheduler and the Quran ingest
       # alignment gate. Every case corresponds to a bug that shipped or a
       # behaviour previously checked only by hand. Adding them found a live one:

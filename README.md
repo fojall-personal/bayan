@@ -312,32 +312,42 @@ unreachable because nothing ever inserted into `vocabulary_mastery`; the tajweed
 component resolved only 2 of 18 rules to a colour and placed marks on the wrong
 letters; and audio was never blocked on Quran Foundation credentials.
 
-Deliberately left, with reasons in the audit: the static weekly calendar and
-`StatCard` colours (cosmetic), self-recording (the hook was broken and cannot be
-verified headlessly), and the wrangler 3 → 4 bump (major version on the deploy
-path).
+Of the four deferred at the time, three were later done: the weekly calendar now
+marks real activity, `StatCard`'s positive trend had been using a token the palette
+never defined and is fixed, and wrangler is on 4. Self-recording is still out —
+microphone capture cannot be verified headlessly.
 
 See `docs/FRONTEND-AUDIT-2026-07-26.md` for full details.
 
-### Next priorities (F1–F7 from plan)
+### Plan items F1–F9
 
-1. **F1. Reader** — Wire up `TajweedViewer` with verse data
-2. **F2. Hifz tracker** — Add UI to add ayahs (currently no UI)
-3. **F3. Vocabulary SRS** — Words scoped to hifz plan
-4. **F4. Comprehension checks** — Generated from corpus data
-5. **F5. Diagnostic placement** — Text-only assessment (existing)
-6. **F6. Tajweed track** — Rule reference + practice (working)
-7. **F7. Progress** — Dashboard with streaks + FSRS forecasting
+| | | |
+|---|---|---|
+| F1 | Reader | ✅ `/read` — one ayah, five lenses, plus the whole-surah tajweed reader |
+| F2 | Hifz tracker | ✅ add-ayah UI, 908-unit curriculum, SM-2 review |
+| F3 | Vocabulary SRS | ◻ words are not yet scoped to the hifz plan |
+| F4 | Comprehension checks | ✅ 1,200 items from 77,429 word glosses |
+| F5 | Diagnostic placement | ✅ and no longer a gate — skippable, with root calibration instead |
+| F6 | Tajweed track | ✅ rule reference, per-rule mastery, ten colours all ≥4.5:1 |
+| F7 | Progress | ✅ streaks, plus coverage — ayahs readable from known roots |
+| F8 | Tutor | ✅ rewritten as corpus lookups; it refuses rather than inventing Arabic |
+| F9 | Root families | ✅ 4,950 derived exercises, all 25 (kind, level) buckets full |
+
+**Next, in rough order:** decide the fate of the orphaned `/dashboard`; scope
+vocabulary SRS to the hifz plan (F3); and have a human read the ten grammar lessons,
+which is the only remaining risk no gate can cover.
 
 ### What's working today
 
-- **Placement assessment** — 18 questions, 15 minutes, text only
+- **Placement assessment** — 18 questions, about 15 minutes, text only, optional
 - **Adaptive paths** — Assigns curriculum from weakest domain
 - **Learning** — Lessons with graded exercises, flashcard queue
-- **Spaced repetition** — SM-2 scheduler API works (no UI yet)
-- **Tajweed** — Per-rule mastery tracking works
-- **Grammar** — Sentence parsing and conjugation tables
-- **Tutor** — Keyword matcher (F8 redesign blocked on corpus)
+- **Spaced repetition** — SM-2 scheduler with review UI and a due-today queue
+- **Tajweed** — Per-rule mastery, and coloured script that keeps Arabic joined
+- **Grammar** — Sentence parsing, conjugation tables, root families
+- **Tutor** — Corpus lookups over word, root, location and tajweed rule. No model
+  call, and it says so when the corpus is silent rather than guessing
+- **Coverage** — How much of the Quran you can read, from the roots you know
 
 A note on process: **a green build is not evidence a feature works.** See
 `docs/APPLICATION-PLAN-v2.md` §11 for what "done" requires.
