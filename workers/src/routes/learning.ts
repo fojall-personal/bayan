@@ -3,6 +3,7 @@ import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 import type { LessonRow } from '../types';
+import { applySM2 } from '../lib/space-repetition';
 
 export interface Exercise {
   type: 'multiple_choice' | 'fill_blank' | 'match' | string;
@@ -339,11 +340,16 @@ learningRoutes.get('/flashcards', async (c) => {
   const db = getDb(c);
 
   try {
+    // LEFT JOIN, not an inner join: a word already in someone's queue should
+    // still appear if it is missing from the content table, rather than silently
+    // vanishing from their review list.
     const dueCards = await db.query<Record<string, unknown>>(
-      `SELECT word, meaning_known, reading_known, next_review, reviews
-       FROM vocabulary_mastery
-       WHERE user_id = ? AND next_review <= datetime('now')
-       ORDER BY next_review ASC
+      `SELECT vm.word, vm.meaning_known, vm.reading_known, vm.next_review, vm.reviews,
+              v.meaning, v.transliteration, v.root, v.part_of_speech
+       FROM vocabulary_mastery vm
+       LEFT JOIN vocabulary v ON v.word = vm.word
+       WHERE vm.user_id = ? AND vm.next_review <= datetime('now')
+       ORDER BY vm.next_review ASC
        LIMIT 20`,
       [userId]
     );
@@ -351,6 +357,13 @@ learningRoutes.get('/flashcards', async (c) => {
     return c.json({
       data: dueCards.map((card) => ({
         word: card.word,
+        // Previously absent, which is why Flashcards.tsx carried a hardcoded
+        // ternary over ten words and printed the literal string "Meaning" for
+        // everything else.
+        meaning: card.meaning ?? null,
+        transliteration: card.transliteration ?? null,
+        root: card.root ?? null,
+        partOfSpeech: card.part_of_speech ?? null,
         meaningKnown: card.meaning_known,
         readingKnown: card.reading_known,
         dueDate: card.next_review,
@@ -363,6 +376,63 @@ learningRoutes.get('/flashcards', async (c) => {
   }
 });
 
+// POST /api/learning/vocabulary/start — Add the next unlearned words to the queue
+//
+// The missing link. Nothing ever inserted into vocabulary_mastery — only an
+// UPDATE existed — so the review queue could never be anything but empty, and the
+// Flashcards tab always showed its empty state regardless of what the content
+// table held.
+learningRoutes.post('/vocabulary/start', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  let count = 10;
+  try {
+    const body = (await c.req.json()) as { count?: unknown };
+    if (body && body.count !== undefined) {
+      if (!Number.isInteger(body.count) || (body.count as number) < 1) {
+        return c.json({ error: 'count must be a positive integer' }, 400);
+      }
+      count = Math.min(body.count as number, 50);
+    }
+  } catch {
+    // No body is fine — fall back to the default batch size.
+  }
+
+  try {
+    const next = await db.query<{ word: string }>(
+      `SELECT v.word
+       FROM vocabulary v
+       LEFT JOIN vocabulary_mastery vm
+         ON vm.word = v.word AND vm.user_id = ?
+       WHERE vm.word IS NULL
+       ORDER BY v.frequency_rank ASC
+       LIMIT ?`,
+      [userId, count]
+    );
+
+    if (next.length === 0) {
+      return c.json({ added: 0, words: [], message: 'No new words available' });
+    }
+
+    // Due immediately: the point of adding a word is to study it now.
+    for (const row of next) {
+      await db.run(
+        `INSERT INTO vocabulary_mastery
+           (user_id, word, meaning_known, reading_known, last_seen, next_review, reviews, ease_factor, interval_days)
+         VALUES (?, ?, 0, 0, NULL, datetime('now'), 0, 2.5, 1)
+         ON CONFLICT(user_id, word) DO NOTHING`,
+        [userId, row.word]
+      );
+    }
+
+    return c.json({ added: next.length, words: next.map((r) => r.word) });
+  } catch (error) {
+    console.error('Vocabulary start error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 // POST /api/learning/flashcards/review — Submit flashcard review
 learningRoutes.post('/flashcards/review', async (c) => {
   const userId = c.get('userId');
@@ -370,28 +440,72 @@ learningRoutes.post('/flashcards/review', async (c) => {
   const { word, quality } = await c.req.json();
 
   try {
-    // Simple spaced repetition: interval doubles with quality 4-5
-    const interval = quality >= 4
-      ? Math.pow(2, quality - 1)
-      : quality >= 3 ? 2 : 1;
+    // Use the same SM-2 implementation as memorization rather than a second,
+    // untested formula. The old one was `interval = quality >= 4 ? 2^(q-1) : q >= 3
+    // ? 2 : 1`, computed from the QUALITY alone and ignoring the stored interval
+    // and ease factor entirely — so a word answered "OK" on its fiftieth review
+    // still came back in two days, and vocabulary_mastery's ease_factor and
+    // interval_days columns were never read or written. Same class of bug as the
+    // one already fixed in the memorization scheduler.
+    const current = await db.get<{
+      interval_days: number;
+      ease_factor: number;
+      reviews: number;
+    }>(
+      `SELECT interval_days, ease_factor, reviews FROM vocabulary_mastery
+       WHERE user_id = ? AND word = ?`,
+      [userId, word]
+    );
 
-    const nextReview = new Date(
-      Date.now() + interval * 24 * 60 * 60 * 1000
-    ).toISOString();
+    if (!current) {
+      return c.json({ error: 'That word is not in your review queue' }, 404);
+    }
+
+    // applySM2 was written for memorization entries; a flashcard only carries the
+    // scheduling fields, so the rest are filled with values it does not read for
+    // scheduling. `status` is not persisted for vocabulary — vocabulary_mastery
+    // tracks meaning_known / reading_known instead.
+    const result = applySM2(
+      {
+        id: word,
+        quality,
+        interval: current.interval_days,
+        ease_factor: current.ease_factor,
+        reviews_count: current.reviews,
+        status: 'learning',
+        next_review: '',
+      },
+      quality
+    );
 
     await db.run(
       `UPDATE vocabulary_mastery SET
          last_seen = datetime('now'),
          next_review = ?,
+         interval_days = ?,
+         ease_factor = ?,
          reviews = reviews + 1,
          meaning_known = CASE WHEN ? >= 4 THEN 1 ELSE meaning_known END,
          reading_known = CASE WHEN ? >= 3 THEN 1 ELSE reading_known END
        WHERE user_id = ? AND word = ?`,
-      [nextReview, quality, quality, userId, word]
+      [
+        result.nextReview,
+        result.interval,
+        result.easeFactor,
+        quality,
+        quality,
+        userId,
+        word,
+      ]
     );
 
     return c.json({
-      data: { success: true, next_review: nextReview, interval },
+      data: {
+        success: true,
+        next_review: result.nextReview,
+        interval: result.interval,
+        ease_factor: result.easeFactor,
+      },
     });
   } catch (error) {
     console.error('Flashcard review error:', error);

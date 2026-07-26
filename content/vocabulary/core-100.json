@@ -3,110 +3,820 @@
     "word": "اللَّه",
     "transliteration": "allāh",
     "meaning": "God",
-    "root": "أ ل ه",
-    "pattern": "فَعْل",
-    "part_of_speech": "noun",
+    "part_of_speech": "proper noun",
     "frequency_rank": 1,
-    "surahs_appearing": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
-    "examples": [{"surah": 1, "ayah": 1, "text": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"}]
+    "root": "أ ل ه"
+  },
+  {
+    "word": "رَبّ",
+    "transliteration": "rabb",
+    "meaning": "lord, master",
+    "part_of_speech": "noun",
+    "frequency_rank": 2,
+    "root": "ر ب ب"
   },
   {
     "word": "رَّحْمَٰن",
     "transliteration": "raḥmān",
-    "meaning": "The Most Merciful",
-    "root": "ر ح م",
-    "pattern": "فَعْلَان",
-    "part_of_speech": "noun",
-    "frequency_rank": 2,
-    "surahs_appearing": [1, 2, 3, 5, 6, 17, 19, 21, 25, 43, 55, 57, 59, 67, 78, 81, 85, 87, 88, 89, 91, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
-    "examples": [{"surah": 1, "ayah": 3, "text": "الرَّحْمَٰنِ الرَّحِيمِ"}]
+    "meaning": "the Most Merciful",
+    "part_of_speech": "adjective",
+    "frequency_rank": 3,
+    "root": "ر ح م"
   },
   {
     "word": "رَّحِيم",
     "transliteration": "raḥīm",
-    "meaning": "The Most Forgiving",
-    "root": "ر ح م",
-    "pattern": "فَعِيل",
-    "part_of_speech": "noun",
-    "frequency_rank": 3,
-    "surahs_appearing": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
-    "examples": [{"surah": 1, "ayah": 3, "text": "الرَّحْمَٰنِ الرَّحِيمِ"}]
+    "meaning": "the Most Compassionate",
+    "part_of_speech": "adjective",
+    "frequency_rank": 4,
+    "root": "ر ح م"
   },
   {
     "word": "يَوْم",
     "transliteration": "yawm",
     "meaning": "day",
-    "root": "ي و م",
-    "pattern": "فَعْل",
     "part_of_speech": "noun",
-    "frequency_rank": 4,
-    "surahs_appearing": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
-    "examples": [{"surah": 1, "ayah": 4, "text": "مَالِكِ يَوْمِ الدِّينِ"}]
+    "frequency_rank": 5,
+    "root": "ي و م"
   },
   {
     "word": "عَالَمِين",
     "transliteration": "ʿālamīn",
-    "meaning": "worlds, all that exists",
-    "root": "ع ل م",
-    "pattern": "فَعَالِيل",
+    "meaning": "worlds, all creation",
     "part_of_speech": "noun",
-    "frequency_rank": 5,
-    "surahs_appearing": [1, 2, 3, 7, 23, 26, 29, 32, 39, 40, 41, 45, 50, 56, 58, 60, 64, 65, 66, 68, 70, 71, 73, 74, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
-    "examples": [{"surah": 1, "ayah": 2, "text": "الرَّحْمَٰنِ الرَّحِيمِ * مَالِكِ يَوْمِ الدِّينِ * إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ * اِهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ * صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ"}]
+    "frequency_rank": 6,
+    "root": "ع ل م"
   },
   {
     "word": "عَبَد",
     "transliteration": "ʿabada",
-    "meaning": "to worship",
-    "root": "ع ب د",
-    "pattern": "فَعَل",
+    "meaning": "to worship, to serve",
     "part_of_speech": "verb",
-    "frequency_rank": 6,
-    "surahs_appearing": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
-    "examples": [{"surah": 1, "ayah": 5, "text": "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ"}]
+    "frequency_rank": 7,
+    "root": "ع ب د"
   },
   {
     "word": "اِهْدِنَا",
-    "transliteration": "ihdINā",
+    "transliteration": "ihdinā",
     "meaning": "guide us",
-    "root": "ه د ي",
-    "pattern": "فَعْل",
     "part_of_speech": "verb",
-    "frequency_rank": 7,
-    "surahs_appearing": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
-    "examples": [{"surah": 1, "ayah": 6, "text": "اِهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ"}]
+    "frequency_rank": 8,
+    "root": "ه د ي"
   },
   {
     "word": "صِرَاط",
     "transliteration": "ṣirāṭ",
     "meaning": "path, way",
-    "root": "ص ر ط",
-    "pattern": "فِعَال",
     "part_of_speech": "noun",
-    "frequency_rank": 8,
-    "surahs_appearing": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
-    "examples": [{"surah": 1, "ayah": 6, "text": "اِهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ"}]
+    "frequency_rank": 9,
+    "root": "ص ر ط"
   },
   {
     "word": "مُسْتَقِيم",
     "transliteration": "mustaqīm",
-    "meaning": "straight, straight path",
-    "root": "ق و م",
-    "pattern": "مُفْتَعِل",
+    "meaning": "straight",
     "part_of_speech": "adjective",
-    "frequency_rank": 9,
-    "surahs_appearing": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
-    "examples": [{"surah": 1, "ayah": 6, "text": "اِهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ"}]
+    "frequency_rank": 10,
+    "root": "ق و م"
   },
   {
     "word": "مَغْضُوب",
     "transliteration": "maghḍūb",
-    "meaning": "angry, enraged",
-    "root": "غ ض ب",
-    "pattern": "مَفْعُول",
+    "meaning": "those incurring wrath",
+    "part_of_speech": "participle",
+    "frequency_rank": 11,
+    "root": "غ ض ب"
+  },
+  {
+    "word": "كِتَاب",
+    "transliteration": "kitāb",
+    "meaning": "book, scripture",
+    "part_of_speech": "noun",
+    "frequency_rank": 12,
+    "root": "ك ت ب"
+  },
+  {
+    "word": "قَال",
+    "transliteration": "qāla",
+    "meaning": "to say",
+    "part_of_speech": "verb",
+    "frequency_rank": 13,
+    "root": "ق و ل"
+  },
+  {
+    "word": "كَان",
+    "transliteration": "kāna",
+    "meaning": "to be",
+    "part_of_speech": "verb",
+    "frequency_rank": 14,
+    "root": "ك و ن"
+  },
+  {
+    "word": "نَاس",
+    "transliteration": "nās",
+    "meaning": "people, mankind",
+    "part_of_speech": "noun",
+    "frequency_rank": 15,
+    "root": "ن و س"
+  },
+  {
+    "word": "أَرْض",
+    "transliteration": "arḍ",
+    "meaning": "earth, land",
+    "part_of_speech": "noun",
+    "frequency_rank": 16,
+    "root": "أ ر ض"
+  },
+  {
+    "word": "سَمَاء",
+    "transliteration": "samāʾ",
+    "meaning": "sky, heaven",
+    "part_of_speech": "noun",
+    "frequency_rank": 17,
+    "root": "س م و"
+  },
+  {
+    "word": "نَفْس",
+    "transliteration": "nafs",
+    "meaning": "soul, self",
+    "part_of_speech": "noun",
+    "frequency_rank": 18,
+    "root": "ن ف س"
+  },
+  {
+    "word": "قَلْب",
+    "transliteration": "qalb",
+    "meaning": "heart",
+    "part_of_speech": "noun",
+    "frequency_rank": 19,
+    "root": "ق ل ب"
+  },
+  {
+    "word": "عِلْم",
+    "transliteration": "ʿilm",
+    "meaning": "knowledge",
+    "part_of_speech": "noun",
+    "frequency_rank": 20,
+    "root": "ع ل م"
+  },
+  {
+    "word": "حَقّ",
+    "transliteration": "ḥaqq",
+    "meaning": "truth, right",
+    "part_of_speech": "noun",
+    "frequency_rank": 21,
+    "root": "ح ق ق"
+  },
+  {
+    "word": "نُور",
+    "transliteration": "nūr",
+    "meaning": "light",
+    "part_of_speech": "noun",
+    "frequency_rank": 22,
+    "root": "ن و ر"
+  },
+  {
+    "word": "سَبِيل",
+    "transliteration": "sabīl",
+    "meaning": "way, path",
+    "part_of_speech": "noun",
+    "frequency_rank": 23,
+    "root": "س ب ل"
+  },
+  {
+    "word": "أَمْر",
+    "transliteration": "amr",
+    "meaning": "command, matter",
+    "part_of_speech": "noun",
+    "frequency_rank": 24,
+    "root": "أ م ر"
+  },
+  {
+    "word": "خَيْر",
+    "transliteration": "khayr",
+    "meaning": "good, better",
+    "part_of_speech": "noun",
+    "frequency_rank": 25,
+    "root": "خ ي ر"
+  },
+  {
+    "word": "شَرّ",
+    "transliteration": "sharr",
+    "meaning": "evil, worse",
+    "part_of_speech": "noun",
+    "frequency_rank": 26,
+    "root": "ش ر ر"
+  },
+  {
+    "word": "كَبِير",
+    "transliteration": "kabīr",
+    "meaning": "great, large",
     "part_of_speech": "adjective",
-    "frequency_rank": 10,
-    "surahs_appearing": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
-    "examples": [{"surah": 1, "ayah": 7, "text": "غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ"}]
+    "frequency_rank": 27,
+    "root": "ك ب ر"
+  },
+  {
+    "word": "عَظِيم",
+    "transliteration": "ʿaẓīm",
+    "meaning": "mighty, magnificent",
+    "part_of_speech": "adjective",
+    "frequency_rank": 28,
+    "root": "ع ظ م"
+  },
+  {
+    "word": "عَلِيم",
+    "transliteration": "ʿalīm",
+    "meaning": "all-knowing",
+    "part_of_speech": "adjective",
+    "frequency_rank": 29,
+    "root": "ع ل م"
+  },
+  {
+    "word": "حَكِيم",
+    "transliteration": "ḥakīm",
+    "meaning": "all-wise",
+    "part_of_speech": "adjective",
+    "frequency_rank": 30,
+    "root": "ح ك م"
+  },
+  {
+    "word": "قَدِير",
+    "transliteration": "qadīr",
+    "meaning": "all-powerful",
+    "part_of_speech": "adjective",
+    "frequency_rank": 31,
+    "root": "ق د ر"
+  },
+  {
+    "word": "غَفُور",
+    "transliteration": "ghafūr",
+    "meaning": "most forgiving",
+    "part_of_speech": "adjective",
+    "frequency_rank": 32,
+    "root": "غ ف ر"
+  },
+  {
+    "word": "شَكُور",
+    "transliteration": "shakūr",
+    "meaning": "most appreciative",
+    "part_of_speech": "adjective",
+    "frequency_rank": 33,
+    "root": "ش ك ر"
+  },
+  {
+    "word": "سَمِيع",
+    "transliteration": "samīʿ",
+    "meaning": "all-hearing",
+    "part_of_speech": "adjective",
+    "frequency_rank": 34,
+    "root": "س م ع"
+  },
+  {
+    "word": "بَصِير",
+    "transliteration": "baṣīr",
+    "meaning": "all-seeing",
+    "part_of_speech": "adjective",
+    "frequency_rank": 35,
+    "root": "ب ص ر"
+  },
+  {
+    "word": "آمَن",
+    "transliteration": "āmana",
+    "meaning": "to believe",
+    "part_of_speech": "verb",
+    "frequency_rank": 36,
+    "root": "أ م ن"
+  },
+  {
+    "word": "مُؤْمِن",
+    "transliteration": "muʾmin",
+    "meaning": "believer",
+    "part_of_speech": "participle",
+    "frequency_rank": 37,
+    "root": "أ م ن"
+  },
+  {
+    "word": "كَفَر",
+    "transliteration": "kafara",
+    "meaning": "to disbelieve",
+    "part_of_speech": "verb",
+    "frequency_rank": 38,
+    "root": "ك ف ر"
+  },
+  {
+    "word": "كَافِر",
+    "transliteration": "kāfir",
+    "meaning": "disbeliever",
+    "part_of_speech": "participle",
+    "frequency_rank": 39,
+    "root": "ك ف ر"
+  },
+  {
+    "word": "صَلَاة",
+    "transliteration": "ṣalāh",
+    "meaning": "prayer",
+    "part_of_speech": "noun",
+    "frequency_rank": 40,
+    "root": "ص ل و"
+  },
+  {
+    "word": "زَكَاة",
+    "transliteration": "zakāh",
+    "meaning": "almsgiving, purification",
+    "part_of_speech": "noun",
+    "frequency_rank": 41,
+    "root": "ز ك و"
+  },
+  {
+    "word": "صَوْم",
+    "transliteration": "ṣawm",
+    "meaning": "fasting",
+    "part_of_speech": "noun",
+    "frequency_rank": 42,
+    "root": "ص و م"
+  },
+  {
+    "word": "جَنَّة",
+    "transliteration": "jannah",
+    "meaning": "garden, paradise",
+    "part_of_speech": "noun",
+    "frequency_rank": 43,
+    "root": "ج ن ن"
+  },
+  {
+    "word": "نَار",
+    "transliteration": "nār",
+    "meaning": "fire",
+    "part_of_speech": "noun",
+    "frequency_rank": 44,
+    "root": "ن و ر"
+  },
+  {
+    "word": "عَذَاب",
+    "transliteration": "ʿadhāb",
+    "meaning": "punishment, torment",
+    "part_of_speech": "noun",
+    "frequency_rank": 45,
+    "root": "ع ذ ب"
+  },
+  {
+    "word": "رَحْمَة",
+    "transliteration": "raḥmah",
+    "meaning": "mercy",
+    "part_of_speech": "noun",
+    "frequency_rank": 46,
+    "root": "ر ح م"
+  },
+  {
+    "word": "هُدَى",
+    "transliteration": "hudā",
+    "meaning": "guidance",
+    "part_of_speech": "noun",
+    "frequency_rank": 47,
+    "root": "ه د ي"
+  },
+  {
+    "word": "ضَلَال",
+    "transliteration": "ḍalāl",
+    "meaning": "misguidance, error",
+    "part_of_speech": "noun",
+    "frequency_rank": 48,
+    "root": "ض ل ل"
+  },
+  {
+    "word": "ذِكْر",
+    "transliteration": "dhikr",
+    "meaning": "remembrance, reminder",
+    "part_of_speech": "noun",
+    "frequency_rank": 49,
+    "root": "ذ ك ر"
+  },
+  {
+    "word": "دُعَاء",
+    "transliteration": "duʿāʾ",
+    "meaning": "supplication, call",
+    "part_of_speech": "noun",
+    "frequency_rank": 50,
+    "root": "د ع و"
+  },
+  {
+    "word": "شُكْر",
+    "transliteration": "shukr",
+    "meaning": "gratitude",
+    "part_of_speech": "noun",
+    "frequency_rank": 51,
+    "root": "ش ك ر"
+  },
+  {
+    "word": "صَبْر",
+    "transliteration": "ṣabr",
+    "meaning": "patience, perseverance",
+    "part_of_speech": "noun",
+    "frequency_rank": 52,
+    "root": "ص ب ر"
+  },
+  {
+    "word": "تَقْوَى",
+    "transliteration": "taqwā",
+    "meaning": "God-consciousness",
+    "part_of_speech": "noun",
+    "frequency_rank": 53,
+    "root": "و ق ي"
+  },
+  {
+    "word": "إِيمَان",
+    "transliteration": "īmān",
+    "meaning": "faith",
+    "part_of_speech": "noun",
+    "frequency_rank": 54,
+    "root": "أ م ن"
+  },
+  {
+    "word": "إِسْلَام",
+    "transliteration": "islām",
+    "meaning": "submission",
+    "part_of_speech": "noun",
+    "frequency_rank": 55,
+    "root": "س ل م"
+  },
+  {
+    "word": "سَلَام",
+    "transliteration": "salām",
+    "meaning": "peace",
+    "part_of_speech": "noun",
+    "frequency_rank": 56,
+    "root": "س ل م"
+  },
+  {
+    "word": "عَمَل",
+    "transliteration": "ʿamal",
+    "meaning": "deed, work",
+    "part_of_speech": "noun",
+    "frequency_rank": 57,
+    "root": "ع م ل"
+  },
+  {
+    "word": "صَالِح",
+    "transliteration": "ṣāliḥ",
+    "meaning": "righteous",
+    "part_of_speech": "adjective",
+    "frequency_rank": 58,
+    "root": "ص ل ح"
+  },
+  {
+    "word": "ظَالِم",
+    "transliteration": "ẓālim",
+    "meaning": "wrongdoer, oppressor",
+    "part_of_speech": "participle",
+    "frequency_rank": 59,
+    "root": "ظ ل م"
+  },
+  {
+    "word": "مُتَّقِين",
+    "transliteration": "muttaqīn",
+    "meaning": "the God-conscious",
+    "part_of_speech": "participle",
+    "frequency_rank": 60,
+    "root": "و ق ي"
+  },
+  {
+    "word": "رَسُول",
+    "transliteration": "rasūl",
+    "meaning": "messenger",
+    "part_of_speech": "noun",
+    "frequency_rank": 61,
+    "root": "ر س ل"
+  },
+  {
+    "word": "نَبِيّ",
+    "transliteration": "nabī",
+    "meaning": "prophet",
+    "part_of_speech": "noun",
+    "frequency_rank": 62,
+    "root": "ن ب أ"
+  },
+  {
+    "word": "مَلَك",
+    "transliteration": "malak",
+    "meaning": "angel",
+    "part_of_speech": "noun",
+    "frequency_rank": 63,
+    "root": "م ل ك"
+  },
+  {
+    "word": "شَيْطَان",
+    "transliteration": "shayṭān",
+    "meaning": "satan, devil",
+    "part_of_speech": "noun",
+    "frequency_rank": 64,
+    "root": "ش ط ن"
+  },
+  {
+    "word": "آيَة",
+    "transliteration": "āyah",
+    "meaning": "sign, verse",
+    "part_of_speech": "noun",
+    "frequency_rank": 65,
+    "root": "أ ي ي"
+  },
+  {
+    "word": "قُرْآن",
+    "transliteration": "qurʾān",
+    "meaning": "recitation, Quran",
+    "part_of_speech": "noun",
+    "frequency_rank": 66,
+    "root": "ق ر أ"
+  },
+  {
+    "word": "سُورَة",
+    "transliteration": "sūrah",
+    "meaning": "chapter",
+    "part_of_speech": "noun",
+    "frequency_rank": 67,
+    "root": "س و ر"
+  },
+  {
+    "word": "حَدِيث",
+    "transliteration": "ḥadīth",
+    "meaning": "speech, report",
+    "part_of_speech": "noun",
+    "frequency_rank": 68,
+    "root": "ح د ث"
+  },
+  {
+    "word": "كَلِمَة",
+    "transliteration": "kalimah",
+    "meaning": "word",
+    "part_of_speech": "noun",
+    "frequency_rank": 69,
+    "root": "ك ل م"
+  },
+  {
+    "word": "لِسَان",
+    "transliteration": "lisān",
+    "meaning": "tongue, language",
+    "part_of_speech": "noun",
+    "frequency_rank": 70,
+    "root": "ل س ن"
+  },
+  {
+    "word": "عَيْن",
+    "transliteration": "ʿayn",
+    "meaning": "eye, spring",
+    "part_of_speech": "noun",
+    "frequency_rank": 71,
+    "root": "ع ي ن"
+  },
+  {
+    "word": "يَد",
+    "transliteration": "yad",
+    "meaning": "hand",
+    "part_of_speech": "noun",
+    "frequency_rank": 72,
+    "root": "ي د ي"
+  },
+  {
+    "word": "وَجْه",
+    "transliteration": "wajh",
+    "meaning": "face",
+    "part_of_speech": "noun",
+    "frequency_rank": 73,
+    "root": "و ج ه"
+  },
+  {
+    "word": "بَيْت",
+    "transliteration": "bayt",
+    "meaning": "house",
+    "part_of_speech": "noun",
+    "frequency_rank": 74,
+    "root": "ب ي ت"
+  },
+  {
+    "word": "بَاب",
+    "transliteration": "bāb",
+    "meaning": "door, gate",
+    "part_of_speech": "noun",
+    "frequency_rank": 75,
+    "root": "ب و ب"
+  },
+  {
+    "word": "مَاء",
+    "transliteration": "māʾ",
+    "meaning": "water",
+    "part_of_speech": "noun",
+    "frequency_rank": 76,
+    "root": "م و ه"
+  },
+  {
+    "word": "شَمْس",
+    "transliteration": "shams",
+    "meaning": "sun",
+    "part_of_speech": "noun",
+    "frequency_rank": 77,
+    "root": "ش م س"
+  },
+  {
+    "word": "قَمَر",
+    "transliteration": "qamar",
+    "meaning": "moon",
+    "part_of_speech": "noun",
+    "frequency_rank": 78,
+    "root": "ق م ر"
+  },
+  {
+    "word": "لَيْل",
+    "transliteration": "layl",
+    "meaning": "night",
+    "part_of_speech": "noun",
+    "frequency_rank": 79,
+    "root": "ل ي ل"
+  },
+  {
+    "word": "نَهَار",
+    "transliteration": "nahār",
+    "meaning": "daytime",
+    "part_of_speech": "noun",
+    "frequency_rank": 80,
+    "root": "ن ه ر"
+  },
+  {
+    "word": "جَبَل",
+    "transliteration": "jabal",
+    "meaning": "mountain",
+    "part_of_speech": "noun",
+    "frequency_rank": 81,
+    "root": "ج ب ل"
+  },
+  {
+    "word": "بَحْر",
+    "transliteration": "baḥr",
+    "meaning": "sea",
+    "part_of_speech": "noun",
+    "frequency_rank": 82,
+    "root": "ب ح ر"
+  },
+  {
+    "word": "شَجَر",
+    "transliteration": "shajar",
+    "meaning": "tree",
+    "part_of_speech": "noun",
+    "frequency_rank": 83,
+    "root": "ش ج ر"
+  },
+  {
+    "word": "طَيْر",
+    "transliteration": "ṭayr",
+    "meaning": "bird",
+    "part_of_speech": "noun",
+    "frequency_rank": 84,
+    "root": "ط ي ر"
+  },
+  {
+    "word": "أَب",
+    "transliteration": "ab",
+    "meaning": "father",
+    "part_of_speech": "noun",
+    "frequency_rank": 85,
+    "root": "أ ب و"
+  },
+  {
+    "word": "أُمّ",
+    "transliteration": "umm",
+    "meaning": "mother",
+    "part_of_speech": "noun",
+    "frequency_rank": 86,
+    "root": "أ م م"
+  },
+  {
+    "word": "اِبْن",
+    "transliteration": "ibn",
+    "meaning": "son",
+    "part_of_speech": "noun",
+    "frequency_rank": 87,
+    "root": "ب ن و"
+  },
+  {
+    "word": "أَخ",
+    "transliteration": "akh",
+    "meaning": "brother",
+    "part_of_speech": "noun",
+    "frequency_rank": 88,
+    "root": "أ خ و"
+  },
+  {
+    "word": "رَجُل",
+    "transliteration": "rajul",
+    "meaning": "man",
+    "part_of_speech": "noun",
+    "frequency_rank": 89,
+    "root": "ر ج ل"
+  },
+  {
+    "word": "اِمْرَأَة",
+    "transliteration": "imraʾah",
+    "meaning": "woman",
+    "part_of_speech": "noun",
+    "frequency_rank": 90,
+    "root": "م ر أ"
+  },
+  {
+    "word": "مَلِك",
+    "transliteration": "malik",
+    "meaning": "king",
+    "part_of_speech": "noun",
+    "frequency_rank": 91,
+    "root": "م ل ك"
+  },
+  {
+    "word": "عَبْد",
+    "transliteration": "ʿabd",
+    "meaning": "servant, slave",
+    "part_of_speech": "noun",
+    "frequency_rank": 92,
+    "root": "ع ب د"
+  },
+  {
+    "word": "قَوْم",
+    "transliteration": "qawm",
+    "meaning": "people, nation",
+    "part_of_speech": "noun",
+    "frequency_rank": 93,
+    "root": "ق و م"
+  },
+  {
+    "word": "أُمَّة",
+    "transliteration": "ummah",
+    "meaning": "community, nation",
+    "part_of_speech": "noun",
+    "frequency_rank": 94,
+    "root": "أ م م"
+  },
+  {
+    "word": "عَلَى",
+    "transliteration": "ʿalā",
+    "meaning": "upon, on",
+    "part_of_speech": "preposition",
+    "frequency_rank": 95,
+    "root": "ع ل و"
+  },
+  {
+    "word": "مِن",
+    "transliteration": "min",
+    "meaning": "from, of",
+    "part_of_speech": "preposition",
+    "frequency_rank": 96
+  },
+  {
+    "word": "إِلَى",
+    "transliteration": "ilā",
+    "meaning": "to, towards",
+    "part_of_speech": "preposition",
+    "frequency_rank": 97
+  },
+  {
+    "word": "فِي",
+    "transliteration": "fī",
+    "meaning": "in",
+    "part_of_speech": "preposition",
+    "frequency_rank": 98
+  },
+  {
+    "word": "مَع",
+    "transliteration": "maʿa",
+    "meaning": "with",
+    "part_of_speech": "preposition",
+    "frequency_rank": 99
+  },
+  {
+    "word": "بَعْد",
+    "transliteration": "baʿda",
+    "meaning": "after",
+    "part_of_speech": "preposition",
+    "frequency_rank": 100,
+    "root": "ب ع د"
+  },
+  {
+    "word": "قَبْل",
+    "transliteration": "qabla",
+    "meaning": "before",
+    "part_of_speech": "preposition",
+    "frequency_rank": 101,
+    "root": "ق ب ل"
+  },
+  {
+    "word": "كُلّ",
+    "transliteration": "kull",
+    "meaning": "all, every",
+    "part_of_speech": "noun",
+    "frequency_rank": 102,
+    "root": "ك ل ل"
+  },
+  {
+    "word": "بَعْض",
+    "transliteration": "baʿḍ",
+    "meaning": "some",
+    "part_of_speech": "noun",
+    "frequency_rank": 103,
+    "root": "ب ع ض"
   }
 ]
