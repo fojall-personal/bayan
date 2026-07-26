@@ -58,7 +58,8 @@ app.use('/api/*', async (c, next) => {
   const aud = c.env.ACCESS_AUD;
 
   if (teamDomain && aud) {
-    const assertion = c.req.header('cf-access-jwt-assertion');
+    // Cloudflare Access injects the JWT in CF_Authorization header for Pages
+    const assertion = c.req.header('cf-authorization') || c.req.header('cf-access-jwt-assertion');
     if (!assertion) {
       // Reaching the origin without an assertion means the request did not come
       // through Access — either the application is misconfigured or something is

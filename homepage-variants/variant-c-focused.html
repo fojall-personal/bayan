@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Language Builder — Variant C: Focused Monolith</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600&family=Reem+Kufi:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --bg-card: #111111;
+      --border: #1e1e1e;
+      --border-strong: #2a2a2a;
+      --text-primary: #ededed;
+      --text-secondary: #a1a1a1;
+      --text-muted: #717171;
+      --accent: #22c55e;
+      --accent-dim: #15803d;
+      --accent-subtle: rgba(34, 197, 94, 0.06);
+      --gold: #f59e0b;
+      --gold-subtle: rgba(245, 158, 11, 0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Subtle geometric border frame */
+    .frame-corner {
+      position: fixed;
+      width: 60px;
+      height: 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .frame-corner--tl { top: 16px; left: 16px; border-top: 1px solid var(--border-strong); border-left: 1px solid var(--border-strong); }
+    .frame-corner--tr { top: 16px; right: 16px; border-top: 1px solid var(--border-strong); border-right: 1px solid var(--border-strong); }
+    .frame-corner--bl { bottom: 16px; left: 16px; border-bottom: 1px solid var(--border-strong); border-left: 1px solid var(--border-strong); }
+    .frame-corner--br { bottom: 16px; right: 16px; border-bottom: 1px solid var(--border-strong); border-right: 1px solid var(--border-strong); }
+
+    nav {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+    }
+
+    .nav-brand {
+      font-family: 'Reem Kufi', 'Amiri', serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text-primary); }
+
+    /* Main - centered, contained column */
+    .main {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 80px 24px 100px;
+    }
+
+    /* Large Arabic heading */
+    .arabic-heading {
+      font-family: 'Amiri', serif;
+      font-size: 4.5rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text-primary);
+      line-height: 1.3;
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+    }
+
+    .arabic-sub {
+      font-family: 'Reem Kufi', serif;
+      font-size: 1.1rem;
+      font-weight: 400;
+      text-align: center;
+      color: var(--text-muted);
+      margin-bottom: 56px;
+      letter-spacing: 0.04em;
+    }
+
+    /* Decorative divider - arabesque line */
+    .divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-strong));
+    }
+
+    .divider-line:last-child {
+      background: linear-gradient(90deg, var(--border-strong), transparent);
+    }
+
+    .divider-diamond {
+      width: 8px;
+      height: 8px;
+      border: 1px solid var(--accent);
+      transform: rotate(45deg);
+      flex-shrink: 0;
+    }
+
+    /* Section heading */
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    /* Cards - single column, large touch targets */
+    .goal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .goal-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 22px 24px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg-card);
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .goal-card:hover {
+      border-color: var(--border-strong);
+      background: #161616;
+    }
+
+    .goal-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-subtle);
+    }
+
+    .goal-card:nth-child(4).selected {
+      border-color: var(--gold);
+      background: var(--gold-subtle);
+    }
+
+    .goal-visual {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1.4rem;
+    }
+
+    .goal-card:nth-child(1) .goal-visual { background: var(--accent-subtle); }
+    .goal-card:nth-child(2) .goal-visual { background: rgba(139, 92, 246, 0.08); }
+    .goal-card:nth-child(3) .goal-visual { background: rgba(6, 182, 212, 0.08); }
+    .goal-card:nth-child(4) .goal-visual { background: var(--gold-subtle); }
+
+    .goal-content {
+      flex: 1;
+      text-align: left;
+    }
+
+    .goal-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+    }
+
+    .goal-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .goal-arrow {
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      transition: all 0.2s;
+    }
+
+    .goal-card:hover .goal-arrow { color: var(--text-secondary); transform: translateX(2px); }
+
+    .goal-card.selected .goal-arrow { color: var(--accent); }
+    .goal-card:nth-child(4).selected .goal-arrow { color: var(--gold); }
+
+    /* CTA */
+    .cta-container {
+      margin-top: 40px;
+    }
+
+    .cta-btn {
+      width: 100%;
+      padding: 16px 32px;
+      background: var(--accent);
+      color: var(--bg);
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Inter', system-ui, sans-serif;
+      letter-spacing: -0.01em;
+    }
+
+    .cta-btn:hover { background: var(--accent-dim); transform: translateY(-1px); }
+
+    .cta-btn:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .cta-subtext {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 16px;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .main { padding: 48px 20px 60px; }
+      .arabic-heading { font-size: 3rem; }
+      nav { padding: 16px 20px; }
+      .nav-links { gap: 16px; }
+      .frame-corner { display: none; }
+      .goal-card { padding: 18px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame-corner frame-corner--tl"></div>
+  <div class="frame-corner frame-corner--tr"></div>
+  <div class="frame-corner frame-corner--bl"></div>
+  <div class="frame-corner frame-corner--br"></div>
+
+  <nav>
+    <a href="#" class="nav-brand">Language Builder</a>
+    <ul class="nav-links">
+      <li><a href="#">Assessment</a></li>
+      <li><a href="#">Learning</a></li>
+      <li><a href="#">Memorization</a></li>
+      <li><a href="#">Progress</a></li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- Large Arabic display heading -->
+    <div class="arabic-heading">اللُّغَة</div>
+    <div class="arabic-sub">Language Builder</div>
+
+    <!-- Arabesque divider -->
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-diamond"></div>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="section-label">What's your goal?</div>
+
+    <div class="goal-list">
+      <div class="goal-card" onclick="selectGoal(this)">
+        <div class="goal-visual">📖</div>
+        <div class="goal-content">
+          <div class="goal-title">Read the Quran fluently</div>
+          <div class="goal-desc">Learn to read Arabic script and understand the text</div>
+        </div>
+        <span class="goal-arrow">›</span>
+      </div>
+      <div class="goal-card" onclick="selectGoal(this)">
+        <div class="goal-visual">🧠</div>
+        <div class="goal-content">
+          <div class="goal-title">Understand Classical Arabic</div>
+          <div class="goal-desc">Master grammar, vocabulary, and comprehension</div>
+        </div>
+        <span class="goal-arrow">›</span>
+      </div>
+      <div class="goal-card" onclick="selectGoal(this)">
+        <div class="goal-visual">📚</div>
+        <div class="goal-content">
+          <div class="goal-title">Memorize the Quran (Hifz)</div>
+          <div class="goal-desc">Systematic memorization with spaced repetition</div>
+        </div>
+        <span class="goal-arrow">›</span>
+      </div>
+      <div class="goal-card" onclick="selectGoal(this)">
+        <div class="goal-visual">✨</div>
+        <div class="goal-content">
+          <div class="goal-title">All of the above</div>
+          <div class="goal-desc">Comprehensive learning path for all goals</div>
+        </div>
+        <span class="goal-arrow">›</span>
+      </div>
+    </div>
+
+    <div class="cta-container">
+      <button class="cta-btn" disabled>Continue to assessment</button>
+      <p class="cta-subtext">Takes about 5 minutes · You can change later</p>
+    </div>
+  </div>
+
+  <script>
+    function selectGoal(el) {
+      document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      document.querySelector('.cta-btn').disabled = false;
+    }
+  </script>
+</body>
+</html>

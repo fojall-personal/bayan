@@ -17,3 +17,8 @@ workers/.wrangler/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Data files (large, can be regenerated from source)
+data/*.txt
+data/*.json
+data/*.zip

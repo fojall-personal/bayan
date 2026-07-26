@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Language Builder — Variant A: Asymmetric Split</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600&family=Reem+Kufi:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --bg-elevated: #141414;
+      --bg-card: #1a1a1a;
+      --border: #2a2a2a;
+      --text-primary: #f5f5f5;
+      --text-secondary: #a3a3a3;
+      --text-muted: #737373;
+      --accent: #22c55e;
+      --accent-dim: #16a34a;
+      --accent-glow: rgba(34, 197, 94, 0.12);
+      --gold: #f59e0b;
+      --gold-dim: #d97706;
+      --gold-glow: rgba(245, 158, 11, 0.1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Arabesque motif - subtle top divider */
+    .motif-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border) 20%, var(--accent) 50%, var(--border) 80%, transparent);
+      margin: 0 auto;
+      max-width: 600px;
+    }
+
+    /* Navigation */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      font-family: 'Reem Kufi', 'Amiri', serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text-primary); }
+
+    /* Main layout - asymmetric split */
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: calc(100vh - 73px);
+    }
+
+    /* Left panel - identity & direction */
+    .panel-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 64px 80px 80px;
+      position: relative;
+    }
+
+    /* Geometric 8-point star watermark */
+    .star-watermark {
+      position: absolute;
+      top: 60px;
+      right: 40px;
+      width: 120px;
+      height: 120px;
+      opacity: 0.04;
+    }
+
+    .star-watermark svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .eyebrow {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-family: 'Amiri', serif;
+      font-size: 3.5rem;
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+    }
+
+    h1 .gold { color: var(--gold); }
+
+    .subtitle {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      max-width: 420px;
+      line-height: 1.7;
+      margin-bottom: 48px;
+    }
+
+    /* Progress indicator */
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .progress-track {
+      display: flex;
+      gap: 8px;
+    }
+
+    .progress-dot {
+      width: 32px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+    }
+
+    .progress-dot.active {
+      background: var(--accent);
+    }
+
+    .progress-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Right panel - choice cards */
+    .panel-right {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 80px 80px 40px;
+      border-left: 1px solid var(--border);
+    }
+
+    .panel-right h2 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+
+    /* Asymmetric card list - NOT a grid */
+    .goal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .goal-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 20px 24px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg-card);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .goal-card:hover {
+      border-color: var(--accent-dim);
+      background: var(--accent-glow);
+    }
+
+    .goal-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .goal-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--accent-glow);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1.25rem;
+    }
+
+    .goal-card:nth-child(4) .goal-icon {
+      background: var(--gold-glow);
+      border-color: rgba(245, 158, 11, 0.2);
+    }
+
+    .goal-content {
+      flex: 1;
+      text-align: left;
+    }
+
+    .goal-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .goal-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .goal-check {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .goal-card.selected .goal-check {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .goal-card.selected .goal-check::after {
+      content: '✓';
+      color: var(--bg);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* CTA */
+    .cta-container {
+      margin-top: 32px;
+    }
+
+    .cta-btn {
+      width: 100%;
+      padding: 16px 32px;
+      background: var(--accent);
+      color: var(--bg);
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    .cta-btn:hover { background: var(--accent-dim); }
+
+    .cta-btn:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .main { grid-template-columns: 1fr; }
+      .panel-left { padding: 48px 24px; }
+      .panel-right { padding: 48px 24px; border-left: none; border-top: 1px solid var(--border); }
+      h1 { font-size: 2.5rem; }
+      nav { padding: 16px 24px; }
+      .nav-links { gap: 20px; }
+      .star-watermark { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="motif-divider"></div>
+
+  <nav>
+    <a href="#" class="nav-brand">Language Builder</a>
+    <ul class="nav-links">
+      <li><a href="#">Assessment</a></li>
+      <li><a href="#">Learning</a></li>
+      <li><a href="#">Memorization</a></li>
+      <li><a href="#">Progress</a></li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- Left: Identity -->
+    <div class="panel-left">
+      <!-- 8-point star watermark -->
+      <div class="star-watermark">
+        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="60" cy="60" r="58" stroke="#22c55e" stroke-width="0.5"/>
+          <circle cx="60" cy="60" r="40" stroke="#22c55e" stroke-width="0.5"/>
+          <line x1="60" y1="5" x2="60" y2="115" stroke="#22c55e" stroke-width="0.5"/>
+          <line x1="5" y1="60" x2="115" y2="60" stroke="#22c5e" stroke-width="0.5"/>
+          <line x1="18" y1="18" x2="102" y2="102" stroke="#22c55e" stroke-width="0.5"/>
+          <line x1="102" y1="18" x2="18" y2="102" stroke="#22c55e" stroke-width="0.5"/>
+          <!-- Diagonal cross lines for 8-point -->
+          <line x1="60" y1="20" x2="60" y2="100" stroke="#22c55e" stroke-width="0.3"/>
+          <line x1="20" y1="60" x2="100" y2="60" stroke="#22c55e" stroke-width="0.3"/>
+        </svg>
+      </div>
+
+      <div class="progress-step">
+        <div class="progress-track">
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <span class="progress-label">Step 1 of 4</span>
+      </div>
+
+      <div class="eyebrow">Classical Arabic</div>
+      <h1>Build a<br>foundation<br>in <span class="gold">Qur'anic</span><br>Arabic</h1>
+      <p class="subtitle">
+        A structured path from Arabic script to Quran comprehension — 
+        grammar, vocabulary, and memorization woven together.
+      </p>
+    </div>
+
+    <!-- Right: Choice -->
+    <div class="panel-right">
+      <h2>What's your goal?</h2>
+      <div class="goal-list">
+        <div class="goal-card" onclick="selectGoal(this)">
+          <div class="goal-icon">📖</div>
+          <div class="goal-content">
+            <div class="goal-title">Read the Quran fluently</div>
+            <div class="goal-desc">Learn to read Arabic script and understand the text</div>
+          </div>
+          <div class="goal-check"></div>
+        </div>
+        <div class="goal-card" onclick="selectGoal(this)">
+          <div class="goal-icon">🧠</div>
+          <div class="goal-content">
+            <div class="goal-title">Understand Classical Arabic</div>
+            <div class="goal-desc">Master grammar, vocabulary, and comprehension</div>
+          </div>
+          <div class="goal-check"></div>
+        </div>
+        <div class="goal-card" onclick="selectGoal(this)">
+          <div class="goal-icon">📚</div>
+          <div class="goal-content">
+            <div class="goal-title">Memorize the Quran (Hifz)</div>
+            <div class="goal-desc">Systematic memorization with spaced repetition</div>
+          </div>
+          <div class="goal-check"></div>
+        </div>
+        <div class="goal-card" onclick="selectGoal(this)">
+          <div class="goal-icon">✨</div>
+          <div class="goal-content">
+            <div class="goal-title">All of the above</div>
+            <div class="goal-desc">Comprehensive learning path for all goals</div>
+          </div>
+          <div class="goal-check"></div>
+        </div>
+      </div>
+      <div class="cta-container">
+        <button class="cta-btn" disabled>Continue to assessment</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function selectGoal(el) {
+      document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      document.querySelector('.cta-btn').disabled = false;
+    }
+  </script>
+</body>
+</html>

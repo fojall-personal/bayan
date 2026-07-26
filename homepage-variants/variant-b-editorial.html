@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Language Builder — Variant B: Editorial Vertical</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600&family=Reem+Kufi:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --bg-elevated: #111111;
+      --bg-card: #161616;
+      --border: #222222;
+      --border-hover: #333333;
+      --text-primary: #f0f0f0;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent: #22c55e;
+      --accent-dim: #16a34a;
+      --accent-subtle: rgba(34, 197, 94, 0.08);
+      --gold: #f59e0b;
+      --gold-subtle: rgba(245, 158, 11, 0.06);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* 8-point star pattern as subtle section texture */
+    .star-pattern {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%2322c55e' stroke-width='0.4'%3E%3Ccircle cx='40' cy='40' r='38'/%3E%3Cline x1='40' y1='2' x2='40' y2='78'/%3E%3Cline x1='2' y1='40' x2='78' y2='40'/%3E%3Cline x1='12' y1='12' x2='68' y2='68'/%3E%3Cline x1='68' y1='12' x2='12' y2='68'/%3E%3Ccircle cx='40' cy='40' r='20'/%3E%3C/g%3E%3C/svg%3E");
+      background-size: 80px 80px;
+    }
+
+    nav {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 48px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      font-family: 'Reem Kufi', 'Amiri', serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text-primary); }
+
+    /* Main content - centered vertical editorial */
+    .main {
+      position: relative;
+      z-index: 1;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 80px 24px 120px;
+    }
+
+    /* Step indicator */
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 56px;
+    }
+
+    .step-num {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .step-track {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+      position: relative;
+    }
+
+    .step-track::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 25%;
+      height: 100%;
+      background: var(--accent);
+    }
+
+    .step-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Hero verse */
+    .verse {
+      font-family: 'Amiri', serif;
+      font-size: 2rem;
+      line-height: 1.8;
+      color: var(--gold);
+      text-align: center;
+      margin-bottom: 12px;
+      letter-spacing: 0.01em;
+    }
+
+    .verse-translation {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      text-align: center;
+      font-style: italic;
+      margin-bottom: 64px;
+      line-height: 1.7;
+    }
+
+    .verse-ref {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: -48px;
+      margin-bottom: 64px;
+      letter-spacing: 0.05em;
+    }
+
+    /* Heading */
+    .section-heading {
+      font-family: 'Reem Kufi', serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    .section-sub {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      text-align: center;
+      max-width: 440px;
+      margin: 0 auto 56px;
+      line-height: 1.7;
+    }
+
+    /* Choice cards - vertical stack, not grid */
+    .goal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .goal-card {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 22px 28px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg-card);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .goal-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: transparent;
+      transition: background 0.25s;
+    }
+
+    .goal-card:hover {
+      border-color: var(--border-hover);
+    }
+
+    .goal-card:hover::before {
+      background: var(--accent);
+    }
+
+    .goal-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-subtle);
+    }
+
+    .goal-card.selected::before {
+      background: var(--accent);
+    }
+
+    .goal-number {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      transition: all 0.25s;
+    }
+
+    .goal-card.selected .goal-number {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .goal-card:nth-child(4).selected .goal-number {
+      border-color: var(--gold);
+      background: var(--gold);
+    }
+
+    .goal-content {
+      flex: 1;
+      text-align: left;
+    }
+
+    .goal-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+    }
+
+    .goal-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* CTA */
+    .cta-container {
+      margin-top: 40px;
+    }
+
+    .cta-btn {
+      width: 100%;
+      padding: 16px 32px;
+      background: var(--accent);
+      color: var(--bg);
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    .cta-btn:hover { background: var(--accent-dim); }
+
+    .cta-btn:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .main { padding: 48px 20px 80px; }
+      .verse { font-size: 1.5rem; }
+      nav { padding: 16px 20px; }
+      .nav-links { gap: 16px; }
+      .nav-links a { font-size: 0.75rem; }
+      .goal-card { padding: 18px 20px; gap: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="star-pattern"></div>
+
+  <nav>
+    <a href="#" class="nav-brand">Language Builder</a>
+    <ul class="nav-links">
+      <li><a href="#">Assessment</a></li>
+      <li><a href="#">Learning</a></li>
+      <li><a href="#">Memorization</a></li>
+      <li><a href="#">Progress</a></li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <div class="step-indicator">
+      <span class="step-num">Step 1</span>
+      <div class="step-track"></div>
+      <span class="step-label">4 steps</span>
+    </div>
+
+    <!-- Quranic verse as opening -->
+    <div class="verse">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+    <div class="verse-translation">"In the name of God, the Most Gracious, the Most Merciful"</div>
+    <div class="verse-ref">— Al-Fatihah 1:1</div>
+
+    <h2 class="section-heading">What's your goal?</h2>
+    <p class="section-sub">
+      Choose the path that fits where you are. You can adjust later.
+    </p>
+
+    <div class="goal-list">
+      <div class="goal-card" onclick="selectGoal(this)">
+        <div class="goal-number">١</div>
+        <div class="goal-content">
+          <div class="goal-title">Read the Quran fluently</div>
+          <div class="goal-desc">Learn to read Arabic script and understand the text</div>
+        </div>
+      </div>
+      <div class="goal-card" onclick="selectGoal(this)">
+        <div class="goal-number">٢</div>
+        <div class="goal-content">
+          <div class="goal-title">Understand Classical Arabic</div>
+          <div class="goal-desc">Master grammar, vocabulary, and comprehension</div>
+        </div>
+      </div>
+      <div class="goal-card" onclick="selectGoal(this)">
+        <div class="goal-number">٣</div>
+        <div class="goal-content">
+          <div class="goal-title">Memorize the Quran (Hifz)</div>
+          <div class="goal-desc">Systematic memorization with spaced repetition</div>
+        </div>
+      </div>
+      <div class="goal-card" onclick="selectGoal(this)">
+        <div class="goal-number">٤</div>
+        <div class="goal-content">
+          <div class="goal-title">All of the above</div>
+          <div class="goal-desc">Comprehensive learning path for all goals</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-container">
+      <button class="cta-btn" disabled>Continue to assessment</button>
+    </div>
+  </div>
+
+  <script>
+    function selectGoal(el) {
+      document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      document.querySelector('.cta-btn').disabled = false;
+    }
+  </script>
+</body>
+</html>
