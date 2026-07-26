@@ -1,14 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { TajweedViewer } from '@/components/tajweed/TajweedViewer';
+import {
+  TajweedViewer,
+  type TajweedLegendEntry,
+} from '@/components/tajweed/TajweedViewer';
 import { MakharijDiagram } from '@/components/tajweed/MakharijDiagram';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
+import { Select } from '@/components/ui/Select';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
 import { Tabs } from '@/components/ui/Tabs';
+import { SURAHS, getSurah } from '@/lib/surahs';
 
 interface TajweedRule {
   id: string;
@@ -20,6 +24,21 @@ interface TajweedRule {
   masteryPercentage: number;
 }
 
+interface TajweedVerse {
+  surah: number;
+  ayah: number;
+  text_uthmani: string;
+  text_simple: string;
+  tajweed_tags: {
+    start: number;
+    end: number;
+    rule: string;
+    color: string | null;
+    category: string | null;
+    categoryName: string | null;
+  }[];
+}
+
 export default function TajweedPage() {
   const [view, setView] = useState<'viewer' | 'makharij' | 'mastery'>('viewer');
   const [rules, setRules] = useState<TajweedRule[]>([]);
@@ -28,6 +47,39 @@ export default function TajweedPage() {
   // effectively unreachable.
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [surahId, setSurahId] = useState(1);
+  const [verses, setVerses] = useState<TajweedVerse[]>([]);
+  const [legend, setLegend] = useState<TajweedLegendEntry[]>([]);
+  const [versesLoading, setVersesLoading] = useState(false);
+  const [versesError, setVersesError] = useState<string | null>(null);
+
+  const surahName = getSurah(surahId)?.name ?? `Surah ${surahId}`;
+
+  const fetchVerses = useCallback(async () => {
+    setVersesLoading(true);
+    setVersesError(null);
+    try {
+      const data = await apiFetch<{
+        surahId: number;
+        verses: TajweedVerse[];
+        legend?: TajweedLegendEntry[];
+      }>(`/api/tajweed/verses/${surahId}`);
+      setVerses(data.verses ?? []);
+      setLegend(data.legend ?? []);
+    } catch (err) {
+      console.error('Failed to fetch tajweed verses:', err);
+      setVersesError(apiErrorMessage(err));
+      setVerses([]);
+      setLegend([]);
+    } finally {
+      setVersesLoading(false);
+    }
+  }, [surahId]);
+
+  useEffect(() => {
+    if (view === 'viewer') fetchVerses();
+  }, [view, fetchVerses]);
 
   useEffect(() => {
     if (view === 'mastery') {
@@ -85,32 +137,54 @@ export default function TajweedPage() {
       />
 
       {view === 'viewer' && (
-        <div>
-          {/* Placeholder — would load surah data from API */}
-          <Card className="p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Tajweed Viewer</h2>
-            <p className="text-gray-400 mb-6">
-              Select a surah to view color-coded text with tajweed rule highlights.
-              Hover over the legend to highlight all instances of a rule.
-            </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              {rules.length > 0 ? (
-                rules.map((rule) => (
-                  <Badge key={rule.id} variant="default" className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded"
-                      style={{ backgroundColor: rule.color }}
-                    />
-                    {rule.name}
-                  </Badge>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500">
-                  Tajweed data will be loaded from the Quran API.
-                </p>
-              )}
-            </div>
+        <div className="space-y-6">
+          <Card>
+            <Select
+              label="Surah"
+              value={String(surahId)}
+              onChange={(value) => setSurahId(Number(value))}
+              options={SURAHS.map((s) => ({
+                value: String(s.id),
+                label: `${s.id}. ${s.name} — ${s.translation} (${s.ayahCount} ayah${s.ayahCount === 1 ? '' : 's'})`,
+              }))}
+            />
           </Card>
+
+          {versesLoading && (
+            <Card className="text-center py-12">
+              <p className="text-gray-400">Loading surah…</p>
+            </Card>
+          )}
+
+          {!versesLoading && versesError && (
+            <Card>
+              <h2 className="text-lg font-bold mb-2">Couldn&apos;t load this surah</h2>
+              <p className="text-gray-400 mb-4">{versesError}</p>
+              <Button variant="secondary" onClick={fetchVerses}>
+                Try again
+              </Button>
+            </Card>
+          )}
+
+          {/* An empty result is honest rather than broken: the ingest leaves
+              quran_verses empty unless the pinned text has been loaded. */}
+          {!versesLoading && !versesError && verses.length === 0 && (
+            <Card className="text-center py-12">
+              <h2 className="text-xl font-bold mb-2">No text loaded</h2>
+              <p className="text-gray-400">
+                The Quran text has not been ingested for this deployment yet.
+              </p>
+            </Card>
+          )}
+
+          {!versesLoading && !versesError && verses.length > 0 && (
+            <TajweedViewer
+              surahId={surahId}
+              surahName={surahName}
+              verses={verses}
+              legend={legend}
+            />
+          )}
         </div>
       )}
 

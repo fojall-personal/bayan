@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
+import { colourTags, type RawTag } from '../lib/tajweed-colors';
 
 export const tajweedRoutes = new Hono<AppEnv>();
 
@@ -43,15 +44,53 @@ tajweedRoutes.get('/verses/:surahId', async (c) => {
       [surahId]
     );
 
-    return c.json({
-      surahId: Number(surahId),
-      verses: verses.map((v) => ({
+    // The stored annotations carry only (rule, start, end) — the ingest has no
+    // opinion on presentation. Colour comes from tajweed_rules, keyed by the
+    // display category the rule belongs to. Read once per request: a long surah
+    // has thousands of annotations and this would otherwise be a query per tag.
+    const paletteRows = await db.query<Record<string, unknown>>(
+      `SELECT id, name, color FROM tajweed_rules`
+    );
+    const palette = new Map(
+      paletteRows.map((r) => [
+        String(r.id),
+        { color: String(r.color), name: String(r.name) },
+      ])
+    );
+
+    const legend = new Map<string, { category: string; name: string; color: string }>();
+
+    const shaped = verses.map((v) => {
+      const raw: RawTag[] = v.tajweed_tags
+        ? (JSON.parse(v.tajweed_tags as string) as RawTag[])
+        : [];
+      const tags = colourTags(raw, palette);
+
+      // Build the legend from what this surah actually contains, rather than
+      // listing every rule in the language.
+      for (const t of tags) {
+        if (t.category && t.color && !legend.has(t.category)) {
+          legend.set(t.category, {
+            category: t.category,
+            name: t.categoryName ?? t.category,
+            color: t.color,
+          });
+        }
+      }
+
+      return {
         surah: v.surah,
         ayah: v.ayah,
         text_uthmani: v.text_uthmani,
         text_simple: v.text_simple,
-        tajweed_tags: v.tajweed_tags ? JSON.parse(v.tajweed_tags as string) : [],
-      })),
+        tajweed_tags: tags,
+      };
+    });
+
+    return c.json({
+      surahId: Number(surahId),
+      verses: shaped,
+      legend: [...legend.values()],
     });
   } catch (error) {
     console.error('Tajweed verses error:', error);

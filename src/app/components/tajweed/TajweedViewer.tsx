@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { segmentVerse } from '@/lib/tajweed-render';
+import { AyahAudioButton } from '@/components/audio/AyahAudioButton';
 
 interface QuranVerse {
   surah: number;
@@ -16,6 +17,16 @@ interface TajweedTag {
   start: number;
   end: number;
   rule: string;
+  /** Null when the rule maps to no colour category — renders unstyled. */
+  color: string | null;
+  category: string | null;
+  categoryName: string | null;
+}
+
+/** One entry per colour category actually present in this surah. */
+export interface TajweedLegendEntry {
+  category: string;
+  name: string;
   color: string;
 }
 
@@ -23,31 +34,38 @@ interface TajweedViewerProps {
   surahId: number;
   surahName: string;
   verses: QuranVerse[];
+  legend?: TajweedLegendEntry[];
 }
 
-export function TajweedViewer({ surahId, surahName, verses }: TajweedViewerProps) {
-  const [highlightedRule, setHighlightedRule] = useState<string | null>(null);
+export function TajweedViewer({
+  surahId,
+  surahName,
+  verses,
+  legend = [],
+}: TajweedViewerProps) {
+  // Hover highlights a whole CATEGORY, which is what the legend lists — the
+  // underlying 18 rule names collapse into 10 taught categories.
+  const [highlightedCategory, setHighlightedCategory] = useState<string | null>(null);
   const [currentAyah, setCurrentAyah] = useState(0);
-  const [audioPlaying, setAudioPlaying] = useState(false);
 
-  // Collect all unique rules
-  const allRules = new Map<string, string>();
-  verses.forEach((v) =>
-    v.tajweed_tags?.forEach((t) => allRules.set(t.rule, t.color))
-  );
-
-  const handlePlayAudio = () => {
-    setAudioPlaying(true);
-    setTimeout(() => setAudioPlaying(false), 5000);
-  };
-
-  const handleRuleHover = (rule: string, color: string) => {
-    setHighlightedRule(rule);
-  };
-
-  const handleRuleLeave = () => {
-    setHighlightedRule(null);
-  };
+  // Fall back to deriving the legend from the tags when the caller does not pass
+  // one, so the component still works against an older API response.
+  const derivedLegend: TajweedLegendEntry[] = (() => {
+    if (legend.length > 0) return legend;
+    const seen = new Map<string, TajweedLegendEntry>();
+    for (const v of verses) {
+      for (const t of v.tajweed_tags ?? []) {
+        if (t.category && t.color && !seen.has(t.category)) {
+          seen.set(t.category, {
+            category: t.category,
+            name: t.categoryName ?? t.category,
+            color: t.color,
+          });
+        }
+      }
+    }
+    return [...seen.values()];
+  })();
 
   const currentVerse = verses[currentAyah];
 
@@ -71,13 +89,9 @@ export function TajweedViewer({ surahId, surahName, verses }: TajweedViewerProps
               </option>
             ))}
           </select>
-          <button
-            onClick={handlePlayAudio}
-            disabled={audioPlaying}
-            className="px-4 py-2 bg-leaf-500/20 text-leaf-400 rounded-lg text-sm hover:bg-leaf-500/30 disabled:opacity-50 transition-colors"
-          >
-            {audioPlaying ? '▶ Playing...' : '▶ Play'}
-          </button>
+          {currentVerse && (
+            <AyahAudioButton surah={currentVerse.surah} ayah={currentVerse.ayah} />
+          )}
         </div>
       </div>
 
@@ -90,17 +104,13 @@ export function TajweedViewer({ surahId, surahName, verses }: TajweedViewerProps
             </div>
           </div>
 
-          <div
-            className="text-3xl text-center leading-loose"
-            dir="rtl"
-            dangerouslySetInnerHTML={{
-              __html: highlightTajweed(
-                currentVerse.text_uthmani,
-                currentVerse.tajweed_tags,
-                highlightedRule || undefined
-              ),
-            }}
-          />
+          <div className="text-3xl text-center leading-loose" dir="rtl">
+            <TajweedText
+              text={currentVerse.text_uthmani}
+              tags={currentVerse.tajweed_tags}
+              highlightedCategory={highlightedCategory}
+            />
+          </div>
         </Card>
       )}
 
@@ -119,67 +129,92 @@ export function TajweedViewer({ surahId, surahName, verses }: TajweedViewerProps
             <div className="text-sm text-gray-500 mb-1">
               Ayah {verse.ayah}
             </div>
-            <div
-              className="leading-loose"
-              dir="rtl"
-              dangerouslySetInnerHTML={{
-                __html: highlightTajweed(
-                  verse.text_uthmani,
-                  verse.tajweed_tags,
-                  highlightedRule || undefined
-                ),
-              }}
-            />
+            <div className="leading-loose" dir="rtl">
+              <TajweedText
+                text={verse.text_uthmani}
+                tags={verse.tajweed_tags}
+                highlightedCategory={highlightedCategory}
+              />
+            </div>
           </button>
         ))}
       </div>
 
-      {/* Tajweed Legend */}
-      <Card>
-        <h3 className="text-lg font-bold mb-4">Tajweed Legend</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {Array.from(allRules.entries()).map(([rule, color]) => (
-            <button
-              key={rule}
-              onMouseEnter={() => handleRuleHover(rule, color)}
-              onMouseLeave={handleRuleLeave}
-              className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              <div
-                className="w-4 h-4 rounded"
-                style={{ backgroundColor: color }}
-              />
-              <span className="text-sm text-gray-300 capitalize">
-                {rule.replace(/_/g, ' ')}
-              </span>
-            </button>
-          ))}
-        </div>
-      </Card>
+      {/* Tajweed Legend — categories present in THIS surah, not every rule */}
+      {derivedLegend.length > 0 && (
+        <Card>
+          <h3 className="text-lg font-bold mb-4">Tajweed Legend</h3>
+          <p className="text-sm text-gray-400 mb-4">
+            Hover a rule to show only its marks.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {derivedLegend.map((entry) => (
+              <button
+                key={entry.category}
+                type="button"
+                onMouseEnter={() => setHighlightedCategory(entry.category)}
+                onMouseLeave={() => setHighlightedCategory(null)}
+                onFocus={() => setHighlightedCategory(entry.category)}
+                onBlur={() => setHighlightedCategory(null)}
+                aria-pressed={highlightedCategory === entry.category}
+                className={`flex items-center gap-2 p-3 rounded-lg transition-colors ${
+                  highlightedCategory === entry.category
+                    ? 'bg-gray-700'
+                    : 'hover:bg-gray-700'
+                }`}
+              >
+                <div
+                  className="w-4 h-4 rounded shrink-0"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-sm text-gray-300 text-left">{entry.name}</span>
+              </button>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
 
-function highlightTajweed(
-  text: string,
-  tags?: TajweedTag[],
-  highlightedRule?: string
-): string {
-  if (!tags || tags.length === 0) return text;
+/**
+ * Renders an ayah as coloured runs.
+ *
+ * Deliberately not dangerouslySetInnerHTML: the previous implementation built an
+ * HTML string with sequential String.replace, which put marks on the wrong
+ * letters (see src/app/lib/tajweed-render.ts for the specifics). Segmentation is
+ * pure and unit-tested in workers/test/tajweed-render.test.ts.
+ */
+function TajweedText({
+  text,
+  tags,
+  highlightedCategory,
+}: {
+  text: string;
+  tags?: TajweedTag[];
+  highlightedCategory: string | null;
+}) {
+  const segments = segmentVerse(text, tags ?? [], highlightedCategory ?? undefined);
 
-  let result = text;
-  const sortedTags = [...tags].sort((a, b) => b.start - a.start);
-
-  for (const tag of sortedTags) {
-    const word = text.substring(tag.start, tag.end + 1);
-    const shouldHighlight = !highlightedRule || highlightedRule === tag.rule;
-    const bgColor = shouldHighlight ? tag.color : 'transparent';
-
-    result = result.replace(
-      word,
-      `<span style="background-color: ${bgColor}; padding: 0 2px; border-radius: 3px;">${word}</span>`
-    );
-  }
-
-  return result;
+  return (
+    <>
+      {segments.map((seg, i) =>
+        seg.color ? (
+          <span
+            key={i}
+            style={{
+              backgroundColor: seg.color,
+              padding: '0 2px',
+              borderRadius: '3px',
+            }}
+            title={seg.rule ?? undefined}
+          >
+            {seg.text}
+          </span>
+        ) : (
+          <span key={i}>{seg.text}</span>
+        )
+      )}
+    </>
+  );
 }
