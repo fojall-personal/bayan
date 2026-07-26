@@ -13,6 +13,31 @@
  * Validates before emitting rather than letting a bad row reach the database,
  * because the failure mode here is quiet — a missing meaning renders as a blank
  * flashcard rather than an error.
+ *
+ * ── Where the data comes from ───────────────────────────────────────────────
+ *
+ * Verified 2026-07-26 against the quran.com v4 word-by-word API, fetched for all
+ * 114 surahs (77,429 word tokens, reconciling exactly with the corpus count).
+ *
+ * - Every one of the 103 words was confirmed to occur in the Quran.
+ * - `frequency_rank` is a MEASURED ordering, not a curated one. It comes from
+ *   counting normalised surface forms across the whole text.
+ * - Two roots were corrected against the morphology corpus: نَاس is أ ن س, not
+ *   ن و س; اِبْن is ب ن ي, not ب ن و.
+ * - `quran_occurrences` is provenance for humans reading this file. It is NOT
+ *   emitted to the database, which stores only frequency_rank.
+ *
+ * The count is a surface-form approximation with no morphological analysis, and
+ * it under-counts rather than over-counts. Forms carrying attached pronouns are
+ * missed (عَلَى measures 694 against a true ~1,445), and a 2-3 letter skeleton
+ * gets no suffix tolerance at all because it otherwise matches half the
+ * language — أُمّ "mother" scored 870 against a true ~35 before that was
+ * tightened. A zero therefore means "this matcher did not find it", never
+ * "absent from the Quran": صَلَاة, زَكَاة, صَوْم, لَيْل and أَب all occur, and
+ * were confirmed separately, but only inside inflected or suffixed forms.
+ *
+ * So the ranks are sound for ordering the common words and should not be quoted
+ * as occurrence statistics.
  */
 
 import { readFile } from 'node:fs/promises';
