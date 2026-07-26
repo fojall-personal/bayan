@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!--
+    Small-size variant of design/app-icon.svg, used for 16px and 32px favicons.
+
+    Same mark, simplified for the pixel budget:
+      - the engraved inner outline is gone; at 16px it is noise, not depth
+      - the background gradient is flattened to one colour
+      - the star is slightly larger and the B slightly heavier, so both survive
+        being drawn in a handful of pixels
+
+    Not a different logo — the same geometry with the detail that cannot be
+    resolved removed, which is what optical sizing means for an icon.
+  -->
+  <defs>
+    <linearGradient id="goldFaceS" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#e8d79f"/>
+      <stop offset="0.55" stop-color="#c9a227"/>
+      <stop offset="1" stop-color="#b08f1f"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" fill="#16332a"/>
+
+  <!-- Point radius 202 rather than 190: a touch more presence when the whole
+       mark is 16 pixels across. -->
+  <g fill="url(#goldFaceS)">
+    <rect x="113.2" y="113.2" width="285.6" height="285.6"/>
+    <polygon points="256,54 458,256 256,458 54,256"/>
+  </g>
+
+  <text x="256" y="262"
+        font-family="Iowan Old Style, Palatino, Georgia, Times New Roman, serif"
+        font-size="320" font-weight="700"
+        fill="#0d1f19" text-anchor="middle" dominant-baseline="central">B</text>
+</svg>

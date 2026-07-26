@@ -48,6 +48,21 @@ export const metadata: Metadata = {
   description:
     'Learn Classical Arabic, understand Quranic grammar, and memorise with meaning alongside recall',
   manifest: '/manifest.json',
+  // Generated from design/app-icon.svg by scripts/gen-icons.mjs. iOS picks the
+  // closest size and applies its own squircle mask, which is why the source is
+  // full-bleed with square corners.
+  icons: {
+    icon: [
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180' },
+      { url: '/apple-touch-icon-167.png', sizes: '167x167' },
+      { url: '/apple-touch-icon-152.png', sizes: '152x152' },
+      { url: '/apple-touch-icon-120.png', sizes: '120x120' },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',

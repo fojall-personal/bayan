@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!--
+    Bayan app icon — source of truth. Regenerate the PNGs with:
+
+        node scripts/gen-icons.mjs
+
+    Two deliberate constraints:
+
+    1. Full bleed, SQUARE corners, no transparency. iOS applies its own squircle
+       mask to apple-touch-icon; pre-rounding the corners here would show a
+       double corner, and transparency would be composited onto black.
+
+    2. Content stays inside ~74% of the half-width. The star's four axial points
+       reach 190 of 256, and its diagonal points only 134, so nothing lands where
+       the mask crops.
+
+    The mark is the khatim / eight-pointed star — two congruent squares, one
+    rotated 45 degrees. It is the same figure as the Rub el Hizb (۞) that marks
+    Quran divisions, which is why it suits this app rather than being decoration.
+
+    Colours are the app palette from src/app/tailwind.config.ts, not new ones:
+    ground 700/800/950 for the field, gold 200-600 for the star, ground-900 for
+    the letter.
+  -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1e4436"/>
+      <stop offset="0.55" stop-color="#16332a"/>
+      <stop offset="1" stop-color="#071411"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.62">
+      <stop offset="0" stop-color="#3e9b72" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#3e9b72" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="goldFace" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#f2e7c4"/>
+      <stop offset="0.32" stop-color="#dfc073"/>
+      <stop offset="0.68" stop-color="#c9a227"/>
+      <stop offset="1" stop-color="#a8861c"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" fill="url(#glow)"/>
+
+  <!-- Point radius R = 190. The axis-aligned square's half-side is R/sqrt(2) =
+       134.35, which places all eight points equidistant from centre. -->
+  <g>
+    <rect x="121.65" y="121.65" width="268.70" height="268.70" fill="url(#goldFace)"/>
+    <polygon points="256,66 446,256 256,446 66,256" fill="url(#goldFace)"/>
+  </g>
+
+  <!-- Engraved inner outline: the same star at 0.80 scale. Reads as a bevel at
+       large sizes; app-icon-small.svg drops it, because below ~64px it turns to
+       mud rather than detail. -->
+  <g transform="translate(256 256) scale(0.80) translate(-256 -256)"
+     fill="none" stroke="#7a6114" stroke-opacity="0.55" stroke-width="7">
+    <rect x="121.65" y="121.65" width="268.70" height="268.70"/>
+    <polygon points="256,66 446,256 256,446 66,256"/>
+  </g>
+
+  <!-- Serif B to echo the display face. Rasterised at build time, so the font
+       is baked into the PNGs and does not depend on the viewer having it. -->
+  <text x="256" y="258"
+        font-family="Iowan Old Style, Palatino, Georgia, Times New Roman, serif"
+        font-size="310" font-weight="600"
+        fill="#0d1f19" text-anchor="middle" dominant-baseline="central">B</text>
+</svg>

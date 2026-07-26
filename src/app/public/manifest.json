@@ -1,11 +1,29 @@
 {
-  "name": "Bayan",
+  "name": "Bayan — Classical Arabic & Quran",
   "short_name": "Bayan",
   "description": "Learn Classical Arabic, master Quran grammar, and track your memorization",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0c0a09",
-  "theme_color": "#0c0a09",
+  "background_color": "#071411",
+  "theme_color": "#071411",
   "orientation": "portrait",
-  "icons": []
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
 }
