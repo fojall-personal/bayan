@@ -18,7 +18,8 @@ const EXPECTED_LETTERS: Record<string, Set<string>> = {
   hamzat_wasl: new Set(['ٱ', 'ا']),
   lam_shamsiyyah: new Set(['ل']),
   ghunnah: new Set(['ن', 'م']),
-  iqlab: new Set(['ن', 'م']),
+  // Noon saakin OR tanween followed by ب — see the note in the ingest script.
+  iqlab: new Set(['ن', 'م', 'ً', 'ٌ', 'ٍ']),
   qalqalah: new Set(['ق', 'ط', 'ب', 'ج', 'د']),
 };
 
@@ -123,5 +124,38 @@ describe('alignment gate', () => {
   it('rejects the 82% case the substitute text produced', () => {
     const MIN = 0.995;
     expect(0.823 < MIN).toBe(true);
+  });
+
+  // Regression: the gate used to list only ن and م for iqlab, which failed the
+  // PINNED text at 99.07% and refused to emit. Iqlab triggers on noon saakin OR
+  // tanween, and tanween is a diacritic on the carrying letter — 236 of the
+  // 562 iqlab annotations legitimately start on one. 2:18 is the first such case:
+  // مُّبِينٌۢ بِ — dammatan, then the small high meem, then ب.
+  it('accepts iqlab annotated on a tanween mark, not just on noon', () => {
+    const withTanween = 'مُّبِينٌۢ بِ';
+    const idxDammatan = [...withTanween].indexOf('ٌ');
+    expect(idxDammatan).toBeGreaterThan(-1);
+
+    const r = alignment(
+      new Map([['2:18', withTanween]]),
+      [{ surah: 2, ayah: 18, annotations: [{ rule: 'iqlab', start: idxDammatan, end: idxDammatan + 1 }] }]
+    );
+    expect(r.checked).toBe(1);
+    expect(r.ratio).toBe(1);
+  });
+
+  // The counterpart guard: widening iqlab must not make it match anything. A
+  // tanween-triggered iqlab still has to land near its own mark. Three
+  // codepoints earlier is بِي — no noon, meem or tanween in the +/-1 window.
+  it('still catches a shifted iqlab offset', () => {
+    const withTanween = 'مُّبِينٌۢ بِ';
+    const idxDammatan = [...withTanween].indexOf('ٌ');
+    const shifted = idxDammatan - 3;
+    const r = alignment(
+      new Map([['2:18', withTanween]]),
+      [{ surah: 2, ayah: 18, annotations: [{ rule: 'iqlab', start: shifted, end: shifted + 1 }] }]
+    );
+    expect(r.checked).toBe(1);
+    expect(r.ratio).toBeLessThan(1);
   });
 });

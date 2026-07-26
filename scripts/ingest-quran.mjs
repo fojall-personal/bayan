@@ -20,10 +20,11 @@
  * So this script refuses to emit anything until the offsets demonstrably land on
  * the right characters. It checks the five rules whose target letter is
  * determined by definition (hamzat wasl on an alef, lam shamsiyyah on a lam,
- * ghunnah/iqlab on noon or meem, qalqalah on one of ق ط ب ج د) and requires
- * MIN_ALIGNMENT. This is not a formality: a substitute text from
- * risan/quran-json scored 82.3%, i.e. about one mark in six would have been
- * attached to the wrong letter.
+ * ghunnah on noon or meem, iqlab on noon or a tanween mark, qalqalah on one of
+ * ق ط ب ج د) and requires MIN_ALIGNMENT. This is not a formality: a substitute
+ * text from risan/quran-json scored 82.3%, i.e. about one mark in six would have
+ * been attached to the wrong letter. Measured against the pinned text the gate
+ * scores 100.00% (25,327 checks) and still rejects that substitute at 82.30%.
  */
 
 import { readFile } from 'node:fs/promises';
@@ -40,7 +41,13 @@ const EXPECTED_LETTERS = {
   hamzat_wasl: new Set(['ٱ', 'ا']), // ٱ ا
   lam_shamsiyyah: new Set(['ل']), // ل
   ghunnah: new Set(['ن', 'م']), // ن م
-  iqlab: new Set(['ن', 'م']),
+  // Iqlab triggers on noon saakin OR tanween followed by ب. Tanween is written
+  // as a diacritic on the carrying letter rather than as the letter ن, so the
+  // three tanween marks belong here: without them the gate scored the PINNED
+  // text at 99.07% and refused it, because 236 of 562 iqlab annotations
+  // legitimately start on ً ٌ ٍ. Every one of the 562 has a ب within four
+  // codepoints, which is the rule's defining condition.
+  iqlab: new Set(['ن', 'م', 'ً', 'ٌ', 'ٍ']), // ن م + fathatan/dammatan/kasratan
   qalqalah: new Set(['ق', 'ط', 'ب', 'ج', 'د']), // ق ط ب ج د
 };
 

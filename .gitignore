@@ -22,3 +22,9 @@ Thumbs.db
 data/*.txt
 data/*.json
 data/*.zip
+
+# Local worker secrets (rotated 2026-07-26; the previous value was committed)
+workers/.dev.vars
+
+# Cloudflare/CI secret bundle handed over for the local session — never commit
+languagebuilder.env
