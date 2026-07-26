@@ -90,15 +90,29 @@ export async function resolveUser(
   if (existing) return { userId: existing.id, email };
 
   const id = crypto.randomUUID();
+
+  // INSERT OR IGNORE, not ON CONFLICT(email).
+  //
+  // The unique index on this column is PARTIAL:
+  //   CREATE UNIQUE INDEX idx_users_email ON users(email) WHERE email IS NOT NULL
+  // and SQLite refuses a partial index as an ON CONFLICT target, raising
+  // "ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint".
+  //
+  // That threw on every single /api/* request the moment Access was switched on,
+  // because this function runs in the auth middleware and its exception surfaced
+  // as a bare 500. It had never fired before: Access mode had never actually
+  // been active, so no request had ever reached this line.
+  //
+  // OR IGNORE honours a partial index and gives the same semantics — skip the
+  // insert when the address is already present.
   await db.run(
-    `INSERT INTO users (id, email, goal, onboarding_completed, current_path)
-     VALUES (?, ?, 'all', 0, 'path1')
-     ON CONFLICT(email) DO NOTHING`,
+    `INSERT OR IGNORE INTO users (id, email, goal, onboarding_completed, current_path)
+     VALUES (?, ?, 'all', 0, 'path1')`,
     [id, email]
   );
 
   // Re-read rather than trusting the insert: a concurrent first request for the
-  // same address would have lost the race, and ON CONFLICT made that a no-op.
+  // same address would have lost the race, and OR IGNORE made that a no-op.
   const row = await db.get<{ id: string }>(
     `SELECT id FROM users WHERE email = ?`,
     [email]
