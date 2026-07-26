@@ -1,15 +1,33 @@
 // The 114 surahs: number, name, English gloss and ayah count.
 //
-// The app previously had no surah list at all — the memorization page rendered
-// `Surah ${id}` and the tajweed page could not offer a picker, which is part of
-// why the reader stayed a placeholder.
+// Every field is sourced, not recalled. Verified 2026-07-26 against three
+// independent sources, which disagreed in interesting ways:
 //
-// ayahCount values are NOT hand-transcribed. They were counted directly from the
-// pinned Tanzil Uthmani text (data/quran-uthmani.txt, sha256 abe6447a…d0b9a2) and
-// sum to 6,236, matching the row count in `quran_verses`. Hand-typing 114 numbers
-// is exactly the kind of silent error this codebase has been bitten by before.
+//   ayahCount   Counted from data/quran-uthmani.txt (the pinned Tanzil text,
+//               sha256 abe6447a…d0b9a2), then cross-checked against the
+//               quran.com v4 chapters API and Tanzil's own quran-data.xml.
+//               All four agree on all 114, and they sum to 6,236 — matching the
+//               row count in `quran_verses`.
 //
-// Names and translations ARE authored and worth a review.
+//   arabic      Tanzil quran-data.xml, which is the metadata for the very text
+//               this app renders. Four names here were previously the modern
+//               standard spellings (إبراهيم، سبأ، الإنسان، النبأ); Tanzil and
+//               quran.com independently agree on the Quranic forms instead.
+//
+//   name        Transliteration matching quran.com's name_simple, which agrees
+//               on 113 of 114. The exception is 61: quran.com gives "As-Saf",
+//               but the ص has a shadda, and Tanzil gives "As-Saff" — so Tanzil
+//               breaks the tie.
+//
+//   translation Kept deliberately rather than imported. quran.com's
+//               translated_name is inconsistently capitalised and contains at
+//               least one typo ("Nightcommer" for 86). Two were changed where
+//               the gloss merely repeated the name: 38 and 50 now read
+//               "The Letter Saad" / "The Letter Qaf".
+//
+// Sources:
+//   https://api.quran.com/api/v4/chapters?language=en
+//   https://tanzil.net/res/text/metadata/quran-data.xml  (CC-BY, Tanzil.info)
 
 export interface Surah {
   id: number;
@@ -17,6 +35,7 @@ export interface Surah {
   name: string;
   /** Common English rendering, e.g. "The Cow". */
   translation: string;
+  /** Arabic name as spelled in the Tanzil metadata. */
   arabic: string;
   ayahCount: number;
 }
@@ -35,7 +54,7 @@ export const SURAHS: Surah[] = [
   { id: 11, name: "Hud", translation: "Hud", arabic: "هود", ayahCount: 123 },
   { id: 12, name: "Yusuf", translation: "Joseph", arabic: "يوسف", ayahCount: 111 },
   { id: 13, name: "Ar-Ra'd", translation: "The Thunder", arabic: "الرعد", ayahCount: 43 },
-  { id: 14, name: "Ibrahim", translation: "Abraham", arabic: "إبراهيم", ayahCount: 52 },
+  { id: 14, name: "Ibrahim", translation: "Abraham", arabic: "ابراهيم", ayahCount: 52 },
   { id: 15, name: "Al-Hijr", translation: "The Rocky Tract", arabic: "الحجر", ayahCount: 99 },
   { id: 16, name: "An-Nahl", translation: "The Bee", arabic: "النحل", ayahCount: 128 },
   { id: 17, name: "Al-Isra", translation: "The Night Journey", arabic: "الإسراء", ayahCount: 111 },
@@ -55,11 +74,11 @@ export const SURAHS: Surah[] = [
   { id: 31, name: "Luqman", translation: "Luqman", arabic: "لقمان", ayahCount: 34 },
   { id: 32, name: "As-Sajdah", translation: "The Prostration", arabic: "السجدة", ayahCount: 30 },
   { id: 33, name: "Al-Ahzab", translation: "The Combined Forces", arabic: "الأحزاب", ayahCount: 73 },
-  { id: 34, name: "Saba", translation: "Sheba", arabic: "سبأ", ayahCount: 54 },
+  { id: 34, name: "Saba", translation: "Sheba", arabic: "سبإ", ayahCount: 54 },
   { id: 35, name: "Fatir", translation: "The Originator", arabic: "فاطر", ayahCount: 45 },
   { id: 36, name: "Ya-Sin", translation: "Ya Sin", arabic: "يس", ayahCount: 83 },
   { id: 37, name: "As-Saffat", translation: "Those Who Set the Ranks", arabic: "الصافات", ayahCount: 182 },
-  { id: 38, name: "Sad", translation: "Sad", arabic: "ص", ayahCount: 88 },
+  { id: 38, name: "Sad", translation: "The Letter Saad", arabic: "ص", ayahCount: 88 },
   { id: 39, name: "Az-Zumar", translation: "The Troops", arabic: "الزمر", ayahCount: 75 },
   { id: 40, name: "Ghafir", translation: "The Forgiver", arabic: "غافر", ayahCount: 85 },
   { id: 41, name: "Fussilat", translation: "Explained in Detail", arabic: "فصلت", ayahCount: 54 },
@@ -71,7 +90,7 @@ export const SURAHS: Surah[] = [
   { id: 47, name: "Muhammad", translation: "Muhammad", arabic: "محمد", ayahCount: 38 },
   { id: 48, name: "Al-Fath", translation: "The Victory", arabic: "الفتح", ayahCount: 29 },
   { id: 49, name: "Al-Hujurat", translation: "The Rooms", arabic: "الحجرات", ayahCount: 18 },
-  { id: 50, name: "Qaf", translation: "Qaf", arabic: "ق", ayahCount: 45 },
+  { id: 50, name: "Qaf", translation: "The Letter Qaf", arabic: "ق", ayahCount: 45 },
   { id: 51, name: "Adh-Dhariyat", translation: "The Winnowing Winds", arabic: "الذاريات", ayahCount: 60 },
   { id: 52, name: "At-Tur", translation: "The Mount", arabic: "الطور", ayahCount: 49 },
   { id: 53, name: "An-Najm", translation: "The Star", arabic: "النجم", ayahCount: 62 },
@@ -97,9 +116,9 @@ export const SURAHS: Surah[] = [
   { id: 73, name: "Al-Muzzammil", translation: "The Enshrouded One", arabic: "المزمل", ayahCount: 20 },
   { id: 74, name: "Al-Muddaththir", translation: "The Cloaked One", arabic: "المدثر", ayahCount: 56 },
   { id: 75, name: "Al-Qiyamah", translation: "The Resurrection", arabic: "القيامة", ayahCount: 40 },
-  { id: 76, name: "Al-Insan", translation: "Man", arabic: "الإنسان", ayahCount: 31 },
+  { id: 76, name: "Al-Insan", translation: "Man", arabic: "الانسان", ayahCount: 31 },
   { id: 77, name: "Al-Mursalat", translation: "The Emissaries", arabic: "المرسلات", ayahCount: 50 },
-  { id: 78, name: "An-Naba", translation: "The Tidings", arabic: "النبأ", ayahCount: 40 },
+  { id: 78, name: "An-Naba", translation: "The Tidings", arabic: "النبإ", ayahCount: 40 },
   { id: 79, name: "An-Nazi'at", translation: "Those Who Drag Forth", arabic: "النازعات", ayahCount: 46 },
   { id: 80, name: "'Abasa", translation: "He Frowned", arabic: "عبس", ayahCount: 42 },
   { id: 81, name: "At-Takwir", translation: "The Overthrowing", arabic: "التكوير", ayahCount: 29 },
