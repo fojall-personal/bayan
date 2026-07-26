@@ -292,8 +292,3 @@ fabrications. Occurrence counts ranged from إِيَّاكَ (8) to لَا (4,38
   irreplaceable data is 13 rows. Revisit once real review history accumulates —
   SM-2 state records when someone actually studied, which no generator can
   reconstruct.
-- **D1 Time Travel restore drill** — never run. Content is the asset hardest to
-  reproduce, and the backup remains untested.
-- `/health` and the icon paths sit behind Access. Re-exposing them needs a
-  separate path-scoped Access application — never a bypass policy on the main
-  app, which is what silently left the whole site public before.
