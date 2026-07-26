@@ -37,14 +37,24 @@
     }
   },
 
-  "requiredEnvVarNames": ["API_TOKEN"],
+  "requiredEnvVarNames": ["ACCESS_TEAM_DOMAIN", "ACCESS_AUD"],
 
   "_accessNote": [
-    "ACCESS_TEAM_DOMAIN and ACCESS_AUD are intentionally NOT in requiredEnvVarNames.",
-    "Setting both switches workers/src/index.ts from shared-token auth to per-user",
-    "Access identity. They are absent today, which is why GET /api/auth/whoami still",
-    "reports mode:\"shared-token\". Add them here once Access is live, so that a",
-    "deploy which silently drops them fails the --check instead of quietly",
-    "downgrading the whole site to a bearer token that ships in the JS bundle."
+    "Cloudflare Access went live 2026-07-26. Setting BOTH of the above switches",
+    "workers/src/index.ts from shared-token auth to per-user identity, so they are",
+    "now required: dropping either one silently downgrades the whole site to a",
+    "shared bearer token instead of failing loudly.",
+    "",
+    "Team domain: fjallouli.cloudflareaccess.com",
+    "Access app:  languagebuilder (covers the host AND *.host for previews)",
+    "",
+    "API_TOKEN is no longer required. It is still set on the project, harmlessly —",
+    "Access mode ignores the Authorization header — but it is no longer built into",
+    "the frontend bundle, which is the point. Do not re-add it to this list; that",
+    "would make a token-mode deployment pass the check.",
+    "",
+    "How this was misconfigured before, worth not repeating: the Access app had a",
+    "bypass-everyone policy attached alongside a broken email rule, so the site",
+    "returned 200 to anyone while looking configured in the dashboard."
   ]
 }

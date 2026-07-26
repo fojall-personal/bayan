@@ -38,15 +38,17 @@ export class ApiConfigError extends Error {
   }
 }
 
-function assertConfigured(path: string): void {
-  // An empty API_BASE is correct and expected — it means same-origin. Only the
-  // token is required, and only for as long as token auth is in use.
-  if (!API_TOKEN) {
-    throw new ApiConfigError(
-      `Cannot call ${path}: NEXT_PUBLIC_API_TOKEN is missing from this build. ` +
-        'Set it in the build environment and redeploy.'
-    );
-  }
+function assertConfigured(_path: string): void {
+  // Nothing to assert any more.
+  //
+  // Under Cloudflare Access there is no token to ship: Access authenticates at
+  // the edge and the Worker reads identity from the signed assertion, ignoring
+  // the Authorization header entirely (workers/src/index.ts). Requiring a token
+  // here would break every call on a correctly configured deployment.
+  //
+  // A missing token used to be worth shouting about because it meant a broken
+  // build. Now its ABSENCE is the desired state — the token previously shipped
+  // inside this bundle, readable by anyone who loaded the page.
 }
 
 /**
@@ -63,7 +65,9 @@ export async function apiFetch<T = unknown>(
   assertConfigured(path);
 
   const headers = new Headers(init.headers);
-  headers.set('Authorization', `Bearer ${API_TOKEN}`);
+  // Only when a token is actually present. Under Access this is empty and the
+  // header is omitted, rather than sending a literal "Bearer undefined".
+  if (API_TOKEN) headers.set('Authorization', `Bearer ${API_TOKEN}`);
   if (init.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }

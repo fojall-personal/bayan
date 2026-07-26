@@ -71,15 +71,28 @@ jobs:
         # requests are relative.
         env:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
-          NEXT_PUBLIC_API_TOKEN: ${{ secrets.API_TOKEN }}
+        # NEXT_PUBLIC_API_TOKEN is deliberately NOT passed. NEXT_PUBLIC_* values
+        # are inlined into the bundle, so supplying it published the shared token
+        # to anyone who loaded the page — its own comment in src/app/lib/api.ts
+        # admitted as much.
+        #
+        # Cloudflare Access replaced it: requests are authenticated at the edge
+        # and the Worker reads identity from the signed assertion, ignoring the
+        # Authorization header. The guard that used to fail the build when the
+        # token was missing is gone because missing is now correct.
+        run: npm run build
+
+      # The token must not reappear in the bundle. NEXT_PUBLIC_* inlining makes
+      # that a one-line mistake to reintroduce, and nothing else would notice.
+      - name: Assert no API token was inlined into the bundle
+        working-directory: src/app
         run: |
-          if [ -z "$NEXT_PUBLIC_API_TOKEN" ]; then
-            echo "::error::secrets.API_TOKEN is not set — the build would ship 'Bearer undefined'."
-            echo "Add it under Settings -> Secrets and variables -> Actions, matching the value"
-            echo "given to 'wrangler secret put API_TOKEN' in workers/."
+          if grep -rqE 'lb-[0-9a-f]{40}' out/ 2>/dev/null; then
+            echo "::error::A bearer token was inlined into the build output."
+            grep -rlE 'lb-[0-9a-f]{40}' out/ | head -5
             exit 1
           fi
-          npm run build
+          echo "no bearer token found in out/"
 
       # Pages advanced mode: a single _worker.js at the output root serves /api/*
       # through Hono and everything else from static assets, so the site and API

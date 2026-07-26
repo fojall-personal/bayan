@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { getCookie } from 'hono/cookie';
 import type { AppEnv } from './lib/context';
 import { SINGLE_USER_ID } from './lib/context';
 import { IdentityError, resolveUser, verifyAccessJwt } from './lib/identity';
@@ -58,8 +59,16 @@ app.use('/api/*', async (c, next) => {
   const aud = c.env.ACCESS_AUD;
 
   if (teamDomain && aud) {
-    // Cloudflare Access injects the JWT in CF_Authorization header for Pages
-    const assertion = c.req.header('cf-authorization') || c.req.header('cf-access-jwt-assertion');
+    // Access attaches the JWT to origin requests as the Cf-Access-Jwt-Assertion
+    // HEADER. It also sets CF_Authorization as a COOKIE, which is what the
+    // browser holds and what gets forwarded in the Cookie header.
+    //
+    // An earlier version read `c.req.header('cf-authorization')`, treating the
+    // cookie name as a header. That always returned undefined, so it was dead
+    // rather than broken — the `||` fell through to the correct header. Reading
+    // the cookie properly makes it a real fallback instead of a decorative one.
+    const assertion =
+      c.req.header('cf-access-jwt-assertion') ?? getCookie(c, 'CF_Authorization');
     if (!assertion) {
       // Reaching the origin without an assertion means the request did not come
       // through Access — either the application is misconfigured or something is
