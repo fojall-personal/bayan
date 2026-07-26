@@ -79,8 +79,22 @@ export function Dashboard() {
     );
   }
 
-  if (!data || !data.user.onboarding_completed) {
-    return <Onboarding onComplete={() => fetchDashboard()} />;
+  // Onboarding lives at `/` and nowhere else. Rendering it here made a second
+  // entry point that asked different questions and also set
+  // onboarding_completed = 1, so neither flow was canonical. Send un-onboarded
+  // visitors to the one that is.
+  if (!data || Number(data.user.onboarding_completed) !== 1) {
+    return (
+      <Card className="py-12 text-center">
+        <h2 className="mb-2 text-xl font-bold">Let&apos;s set you up first</h2>
+        <p className="mb-6 text-sm text-ground-300">
+          A few questions so the path fits where you actually are.
+        </p>
+        <Link href="/">
+          <Button>Get started</Button>
+        </Link>
+      </Card>
+    );
   }
 
   const pathName = data.latestAssessment?.details?.paths?.[data.user.current_path];

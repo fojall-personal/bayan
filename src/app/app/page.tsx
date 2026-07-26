@@ -1,6 +1,12 @@
 'use client';
 
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+import { Onboarding } from '@/components/onboarding/Onboarding';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { apiFetch, apiErrorMessage } from '@/lib/api';
 
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
@@ -73,7 +79,7 @@ function GoalCard({
   );
 }
 
-export default function GoalSelection() {
+function GoalSelection({ onChoose }: { onChoose: (id: string) => void }) {
   // Persisted so the answer to the first question the app asks is not discarded
   // when the CTA navigates away. useLocalStorage handles the private-mode and
   // storage-disabled cases.
@@ -91,9 +97,9 @@ export default function GoalSelection() {
             Step 1
           </span>
           <span className="relative h-px flex-1 bg-ground-800">
-            <span className="absolute inset-y-0 left-0 w-1/4 bg-gold-500" />
+            <span className="absolute inset-y-0 left-0 w-1/3 bg-gold-500" />
           </span>
-          <span className="text-xs text-ground-400">of 4</span>
+          <span className="text-xs text-ground-400">of 3</span>
         </div>
 
         {/* Opening */}
@@ -136,12 +142,12 @@ export default function GoalSelection() {
         {/* CTA */}
         <div className="mt-10">
           {goal ? (
-            <Link
-              href="/assessment"
+            <button
+              onClick={() => onChoose(goal)}
               className="block w-full rounded-md bg-gold-500 py-3.5 text-center font-semibold text-ground-950 transition-colors duration-200 hover:bg-gold-400"
             >
-              Continue to assessment
-            </Link>
+              Continue
+            </button>
           ) : (
             <span
               aria-disabled="true"
@@ -150,11 +156,98 @@ export default function GoalSelection() {
               Choose one to continue
             </span>
           )}
+          {/* This used to promise "About 15 minutes" and go straight to the
+              placement test, which was the only exit. The test is now one option
+              of two, and the next screen says so. */}
           <p className="mt-4 text-center text-xs text-ground-500">
-            About 15 minutes. Reading, vocabulary and grammar — no recording.
+            A few more questions, then you choose whether to take the placement test.
           </p>
         </div>
       </main>
     </div>
   );
+}
+
+/**
+ * Root route. Reads the profile once and routes.
+ *
+ * This screen used to be the whole of `/`: a goal picker whose only exit was a
+ * hard-coded href="/assessment". It never read the profile, so a learner with
+ * onboarding_completed = 1 and a stored current_path landed back here and the only
+ * way forward was the fifteen-minute test they had already passed. The state was
+ * being written on submit; nothing at the entry point consulted it.
+ *
+ * The goal question was also duplicated — <Onboarding/> asks it as step 1, along
+ * with reading ability, surahs memorized and biggest challenge, and it is the flow
+ * that actually shapes the path. Two flows both set onboarding_completed and
+ * neither was canonical. Now there is one: this goal screen hands its answer to
+ * <Onboarding/>, which finishes the job.
+ */
+export default function Home() {
+  const router = useRouter();
+  const [state, setState] = useState<'loading' | 'goal' | 'profile' | 'error'>('loading');
+  const [goal, setGoal] = useLocalStorage<string | null>('bayan.goal', null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch<{ data: { onboarding_completed: number | boolean } }>(
+          '/api/auth/profile'
+        );
+        if (cancelled) return;
+        // SQLite stores the flag as 0/1, so coerce rather than trusting truthiness.
+        if (Number(res.data?.onboarding_completed) === 1) router.replace('/today');
+        else setState(goal ? 'profile' : 'goal');
+      } catch (err) {
+        if (cancelled) return;
+        // Failing closed to onboarding would push someone who has already done it
+        // back through it on a network blip. Show the error and offer a way past.
+        setError(apiErrorMessage(err));
+        setState('error');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router, goal]);
+
+  if (state === 'loading') {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-ground-300">Loading…</p>
+      </div>
+    );
+  }
+
+  if (state === 'error') {
+    return (
+      <div className="mx-auto max-w-md pt-12">
+        <Card>
+          <h1 className="mb-2 text-xl font-bold">Couldn&apos;t load your profile</h1>
+          <p className="mb-4 text-sm text-ground-300">{error}</p>
+          <div className="flex gap-3">
+            <Button onClick={() => window.location.reload()}>Try again</Button>
+            <Button variant="secondary" onClick={() => router.push('/today')}>
+              Go to Today
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (state === 'goal') {
+    return (
+      <GoalSelection
+        onChoose={(id) => {
+          setGoal(id);
+          setState('profile');
+        }}
+      />
+    );
+  }
+
+  return <Onboarding initialGoal={goal ?? 'all'} onComplete={() => router.replace('/today')} />;
 }

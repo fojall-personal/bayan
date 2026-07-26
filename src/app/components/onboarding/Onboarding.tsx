@@ -5,10 +5,12 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BookOpen, Brain, BookMarked, Sparkles } from 'lucide-react';
-import { apiPost } from '@/lib/api';
+import { apiPost, apiErrorMessage } from '@/lib/api';
 
 interface OnboardingProps {
   onComplete: () => void;
+  /** Goal already chosen on the root screen, so step 1 is not repeated. */
+  initialGoal?: string;
 }
 
 const iconMap = {
@@ -18,15 +20,58 @@ const iconMap = {
   all: Sparkles,
 };
 
-export function Onboarding({ onComplete }: OnboardingProps) {
+const GOAL_LABEL: Record<string, string> = {
+  read_quran: 'Read the Quran fluently',
+  understand_arabic: 'Understand Classical Arabic',
+  memorize_quran: 'Memorize the Quran',
+  all: 'All of the above',
+};
+const READING_LABEL: Record<string, string> = {
+  no: 'not yet',
+  partial: 'slowly, with effort',
+  yes: 'comfortably',
+};
+const MEMORIZED_LABEL: Record<string, string> = {
+  '0': 'none yet', '1-5': '1–5', '6-20': '6–20', '21+': '21 or more',
+};
+const CHALLENGE_LABEL: Record<string, string> = {
+  reading: 'reading the script',
+  grammar: 'grammar and meaning',
+  memorization: 'memorizing and retaining',
+};
+
+export function Onboarding({ onComplete, initialGoal }: OnboardingProps) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [goal, setGoal] = useState<'read_quran' | 'understand_arabic' | 'memorize_quran' | 'all'>('all');
+  type Goal = 'read_quran' | 'understand_arabic' | 'memorize_quran' | 'all';
+  const preset = (['read_quran', 'understand_arabic', 'memorize_quran', 'all'] as const).includes(
+    initialGoal as Goal
+  )
+    ? (initialGoal as Goal)
+    : undefined;
+  // The root screen asks the goal question first, so skip step 1 when it already
+  // has an answer rather than asking the same thing twice.
+  const [step, setStep] = useState(preset ? 2 : 1);
+  const [goal, setGoal] = useState<Goal>(preset ?? 'all');
   const [readingAbility, setReadingAbility] = useState<'no' | 'partial' | 'yes'>('no');
   const [memorizedSurahs, setMemorizedSurahs] = useState<'0' | '1-5' | '6-20' | '21+'>('0');
   const [challenge, setChallenge] = useState<'reading' | 'grammar' | 'memorization'>('reading');
 
-  const handleStartAssessment = async () => {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Save the profile, then go where the learner chose.
+   *
+   * The assessment used to be the only exit from this screen — step 3 offered
+   * "Start Assessment" and "Back", and nothing else. Fifteen minutes and eighteen
+   * questions before any content is the classic abandonment shape, and nothing
+   * behind it needs a placement score: exercises filter by level, lessons carry
+   * their own prerequisite chain, and memorization starts wherever you point it.
+   * So placement is now an option with a real alternative.
+   */
+  const finish = async (destination: '/assessment' | '/today') => {
+    setSaving(true);
+    setError(null);
     try {
       await apiPost('/api/auth/onboarding', {
         goal,
@@ -34,9 +79,13 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         memorizedSurahs,
         challenge,
       });
-      router.push('/assessment');
-    } catch (error) {
-      console.error('Onboarding error:', error);
+      router.push(destination);
+    } catch (err) {
+      // This used to console.error and leave the button looking idle, so a failed
+      // save was indistinguishable from a slow one.
+      console.error('Onboarding error:', err);
+      setError(apiErrorMessage(err));
+      setSaving(false);
     }
   };
 
@@ -193,29 +242,52 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       {/* Step 3: Assessment Prompt */}
       {step === 3 && (
         <Card className="p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Ready to Get Started?</h2>
+          <h2 className="text-2xl font-bold mb-4">Where would you like to start?</h2>
           <p className="text-muted mb-6">
-            Take our 30-minute diagnostic assessment to personalize your learning path.
-            We&apos;ll assess your Arabic reading, comprehension, grammar, and memorization levels.
+            The placement test takes about 15 minutes and sets your starting level
+            across reading, comprehension, grammar and memorization. You can also
+            skip it and take it whenever you like — nothing is locked behind it.
           </p>
 
+          {/* Raw enum values were being shown to the learner — "Goal: all",
+              "Reading: no". These are the labels they actually picked. */}
           <div className="bg-surface-2 rounded-lg p-4 mb-6 text-left">
-            <h3 className="font-semibold mb-2">Your Profile:</h3>
-            <ul className="text-sm text-gray-300 space-y-1">
-              <li>• Goal: {goal}</li>
-              <li>• Reading: {readingAbility}</li>
-              <li>• Memorized: {memorizedSurahs} surahs</li>
-              <li>• Challenge: {challenge}</li>
+            <h3 className="font-semibold mb-2">Your profile</h3>
+            <ul className="text-sm text-ground-300 space-y-1">
+              <li>• Goal: {GOAL_LABEL[goal]}</li>
+              <li>• Reading Arabic script: {READING_LABEL[readingAbility]}</li>
+              <li>• Surahs memorized: {MEMORIZED_LABEL[memorizedSurahs]}</li>
+              <li>• Biggest challenge: {CHALLENGE_LABEL[challenge]}</li>
             </ul>
           </div>
 
-          <Button onClick={handleStartAssessment} className="w-full py-4 text-lg font-semibold">
-            Start Assessment
+          {error && (
+            <p className="mb-4 text-sm text-error" role="alert">
+              {error}
+            </p>
+          )}
+
+          <Button
+            onClick={() => finish('/assessment')}
+            disabled={saving}
+            className="w-full py-4 text-lg font-semibold"
+          >
+            {saving ? 'Saving…' : 'Take the placement test — 15 min'}
+          </Button>
+
+          <Button
+            variant="secondary"
+            onClick={() => finish('/today')}
+            disabled={saving}
+            className="mt-3 w-full"
+          >
+            Skip for now — start learning
           </Button>
 
           <Button
             variant="ghost"
             onClick={() => setStep(2)}
+            disabled={saving}
             className="w-full mt-3"
           >
             Back

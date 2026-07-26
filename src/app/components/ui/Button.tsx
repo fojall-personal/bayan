@@ -27,9 +27,14 @@ const VARIANTS: Record<string, string> = {
 };
 
 const SIZES: Record<string, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-6 py-3 text-base',
+  // min-h keeps these above the 44px tap-target floor (WCAG 2.5.5, and both
+  // platform HIGs). Measured on a phone, `md` — the DEFAULT, and what every
+  // primary action uses — rendered 37px, and `sm` 33px. Padding alone could not
+  // reach 44 without making the buttons look inflated on desktop, so the height is
+  // set directly and the label stays centred.
+  sm: 'min-h-9 px-3 py-1.5 text-sm',
+  md: 'min-h-11 px-4 py-2 text-sm',
+  lg: 'min-h-12 px-6 py-3 text-base',
 };
 
 export function Button({

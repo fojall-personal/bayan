@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SurahProgress } from '@/components/memorization/SurahProgress';
@@ -243,6 +245,19 @@ export default function MemorizationPage() {
           )}
         </div>
       )}
+      {/* /advanced holds the audio testing, cross-references and certificate
+          export. It was absent from every nav and every in-page link, so the only
+          way to reach it was to type the URL. It is memorization tooling, so it
+          belongs here rather than in a drawer called "Advanced". */}
+      <div className="mt-8 border-t border-ground-800 pt-6">
+        <Link
+          href="/advanced"
+          className="text-sm text-gold-400 underline-offset-4 hover:underline"
+        >
+          Advanced tools — audio testing, cross-references, certificate export →
+        </Link>
+      </div>
+
     </div>
   );
 }

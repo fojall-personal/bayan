@@ -652,13 +652,21 @@ year, and the app can say so honestly because it has counted.</p>
 ${[['Ayahs fully readable', '620', 'of 6,236 · 9.9%', 'gold-400'],
    ['Roots known', '100', 'of 1,642 · covers 60% of rooted words', 'leaf-400'],
    ['Words recognised', '11,300', 'of 77,429 occurrences', 'leaf-400'],
-   ['Surahs fully readable', '31', 'of 114 — mostly Juz 30', 'gold-400']]
+   ['Whole surahs', '0', 'first at ~114 roots — Al-Kafirun', 'gold-400']]
   .map(([label, big, sub, c]) => `<div style="background:${colour('ground-900')};
    border:1px solid ${colour('ground-700')};border-radius:${tokens.get('radius-lg')};padding:16px">
    <div style="font-size:.72rem;letter-spacing:.14em;color:${colour('ground-400')}">${label.toUpperCase()}</div>
    <div style="font-size:1.9rem;font-weight:700;color:${colour(c)};line-height:1.15">${big}</div>
    <div style="color:var(--muted);font-size:.78rem">${sub}</div></div>`).join('')}
 </div>
+<p class="note" style="border-color:${colour('color-error')}"><strong>Correction.</strong>
+An earlier version of this card claimed "31 surahs · mostly Juz 30". That number was
+invented and it is wrong. Measured: the first surah to become fully readable is
+Al-Kafirun at the 114 commonest roots, the second does not arrive until roughly 417,
+and 1,000 roots yields only 10. Whole surahs need every rare word in them, so the
+metric sits at 0 or 1 for a long time — demotivating, and the opposite of the intent.
+<strong>Ayahs are the metric that moves</strong>; whole surahs are kept as a
+milestone with the distance stated.</p>
 <p class="note">Every one of these is a query away from data already in D1 —
 <code>quran_word_morphology</code> has the roots, <code>quran_word_gloss</code> the
 words, and a per-user "known roots" table is the only thing missing. It is one

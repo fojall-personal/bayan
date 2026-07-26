@@ -35,17 +35,29 @@ function BayanLogo() {
   );
 }
 
+/**
+ * Six items, each with a distinct job.
+ *
+ * It was eight, with two overlaps and a grab-bag. Dashboard and Progress both
+ * answered "how am I doing". "Advanced" named a drawer rather than a subject, and
+ * was absent from every nav and every in-page link — the only way to reach it was
+ * to type the URL, so nothing in it was findable.
+ *
+ * Today replaces Dashboard as the home, because the question on opening the app is
+ * "what now" rather than "how am I doing". Read absorbs Tajweed: the coloured
+ * reader IS how you read here, so it is a view of the text rather than a separate
+ * discipline. Progress keeps the record. Advanced is reachable from Memorize, next
+ * to the practice its tools belong to.
+ *
+ * Six also fits a phone without scrolling, which keeps the mobile menu meaningful.
+ */
 const LINKS = [
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/learning', label: 'Learn' },
+  { href: '/today', label: 'Today' },
+  { href: '/tajweed', label: 'Read' },
   { href: '/memorization', label: 'Memorize' },
-  { href: '/tajweed', label: 'Tajweed' },
   { href: '/grammar', label: 'Grammar' },
   { href: '/tutor', label: 'Tutor' },
   { href: '/progress', label: 'Progress' },
-  // /advanced existed but was absent from every nav and every in-page link, so
-  // the only way to reach it was to type the URL.
-  { href: '/advanced', label: 'Advanced' },
 ];
 
 export function Nav() {
