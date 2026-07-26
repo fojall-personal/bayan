@@ -162,7 +162,7 @@ hand once.
 Reproducing production locally — one origin, no CORS:
 
 ```bash
-cd src/app && NEXT_PUBLIC_API_TOKEN=<value from workers/.dev.vars> npm run build
+cd src/app && npm run build   # no token: Access authenticates at the edge
 cd ../../workers && npm run build:pages
 npx wrangler pages dev ../src/app/out \
   --d1 DB=6216c466-c244-4c16-8569-c7281585fbc6 --persist-to .wrangler/state
@@ -247,6 +247,18 @@ One-time setup:
    - `ACCESS_AUD` = the AUD tag from step 4
 6. Pages project → Settings → General → re-enable the access policy.
 
+**Access does enforce on `.pages.dev`.** This README previously recorded it as a
+"Pages.dev limitation" after the site kept returning 200. That diagnosis was
+wrong. The application had a **bypass** policy with `include: everyone` attached
+at precedence 1, and policies apply to the whole application — so everybody
+bypassed Access for the entire site while the dashboard looked configured. The
+paired allow policy also matched nobody: it was an `email_domain` rule for
+`fojallgmail.com`, a domain with no dot in it. Had it read `gmail.com` it would
+have admitted every Gmail account on the internet.
+
+If the site answers 200 without a redirect, check the attached policies before
+concluding the platform cannot do it.
+
 Setting both variables switches the API to Access mode; the shared token stops
 working, which is the intended outcome. Confirm with:
 
@@ -276,26 +288,21 @@ pages render, the database has 6,236 Quran verses and 77K morphology rows.
 | Database (D1) | ✅ 9 migrations applied, seeded |
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 77K rows, 50K lemmas |
-| Auth (token mode) | ✅ Working (shared bearer token) |
-| Cloudflare Access | ⚠️ Configured but not enforcing (Pages.dev limitation) |
+| Cloudflare Access | ✅ Enforcing — every path 302s to the login |
+| Auth | ✅ Per-user identity via Access JWT; shared token retired |
 
 ### Known issues (from frontend audit 2026-07-26)
 
-**Critical (block users):**
-1. Flashcard meanings hardcoded for ~10 words; rest show "Meaning"
-2. Tajweed Reader tab shows placeholder instead of `TajweedViewer`
-3. No UI to add memorization entries
+**All 12 findings are closed** — see the audit for what each turned out to be.
+Three were misdiagnosed and the real causes were worse: the flashcard ternary was
+unreachable because nothing ever inserted into `vocabulary_mastery`; the tajweed
+component resolved only 2 of 18 rules to a colour and placed marks on the wrong
+letters; and audio was never blocked on Quran Foundation credentials.
 
-**Medium:**
-4. `/advanced` route has no navigation link
-5. Audio playback is fake (3-second timer)
-6. `TajweedViewer` component exists but is orphaned
-
-**Low (polish):**
-7. Dashboard quick actions use `<a>` instead of `<Link>`
-8. Progress page uses `window.location.href`
-9. Progress weekly calendar is static
-10. ReviewSession record button uses emoji
+Deliberately left, with reasons in the audit: the static weekly calendar and
+`StatCard` colours (cosmetic), self-recording (the hook was broken and cannot be
+verified headlessly), and the wrangler 3 → 4 bump (major version on the deploy
+path).
 
 See `docs/FRONTEND-AUDIT-2026-07-26.md` for full details.
 
@@ -362,7 +369,7 @@ Production serves the site and the API from a single Pages origin (see
 `workers/src/pages-entry.ts`). To reproduce that locally:
 
 ```bash
-cd src/app && NEXT_PUBLIC_API_TOKEN=<value from workers/.dev.vars> npm run build
+cd src/app && npm run build   # no token: Access authenticates at the edge
 cd ../../workers && npm run build:pages          # bundles _worker.js into out/
 npx wrangler pages dev ../src/app/out \
   --d1 DB=6216c466-c244-4c16-8569-c7281585fbc6 \
