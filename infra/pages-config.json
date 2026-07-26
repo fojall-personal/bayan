@@ -1,0 +1,50 @@
+{
+  "_comment": [
+    "Declarative record of the Cloudflare Pages project's runtime configuration.",
+    "",
+    "Why this file exists: Pages bindings are NOT covered by workers/wrangler.toml.",
+    "That file configures the standalone Worker. Production serves /api/* from a",
+    "_worker.js bundled into the Pages output (workers/src/pages-entry.ts), and that",
+    "function reads its bindings from the PAGES PROJECT, which is configured through",
+    "the dashboard or API and was therefore recorded nowhere.",
+    "",
+    "The consequence, observed in production on 2026-07-26: the project had no D1",
+    "binding at all. Auth succeeded and /health returned 200, but every data route",
+    "500'd with \"Cannot read properties of undefined (reading 'prepare')\" because",
+    "c.env.DB was undefined. Nothing in the repo could have revealed that.",
+    "",
+    "Apply with:  node scripts/sync-pages-config.mjs",
+    "Assert with: node scripts/sync-pages-config.mjs --check   (used by CI)",
+    "",
+    "Secret VALUES are deliberately absent — only the names are asserted, so this",
+    "file is safe to commit."
+  ],
+
+  "projectName": "languagebuilder-frontend",
+
+  "environments": ["production", "preview"],
+
+  "d1_databases": {
+    "DB": {
+      "database_name": "languagebuilder",
+      "id": "6216c466-c244-4c16-8569-c7281585fbc6"
+    }
+  },
+
+  "r2_buckets": {
+    "languagebuilder_assets": {
+      "name": "languagebuilder-assets"
+    }
+  },
+
+  "requiredEnvVarNames": ["API_TOKEN"],
+
+  "_accessNote": [
+    "ACCESS_TEAM_DOMAIN and ACCESS_AUD are intentionally NOT in requiredEnvVarNames.",
+    "Setting both switches workers/src/index.ts from shared-token auth to per-user",
+    "Access identity. They are absent today, which is why GET /api/auth/whoami still",
+    "reports mode:\"shared-token\". Add them here once Access is live, so that a",
+    "deploy which silently drops them fails the --check instead of quietly",
+    "downgrading the whole site to a bearer token that ships in the JS bundle."
+  ]
+}
