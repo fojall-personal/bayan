@@ -109,7 +109,7 @@ Modules are grouped into phases. Each phase must be completed before the next be
 These modules are **buildable artifacts**, not documentation. They establish the visual and structural layer that every subsequent module builds on.
 
 1. ✅ **09-design-system** — Tailwind config, CSS custom properties, color tokens, typography, spacing, shadows, radius, motion, anti-slop checklist. Applied to `tailwind.config.ts` and global CSS.
-2. ✅ **11-component-library** — 18+ React components (`Card`, `Button`, `ProgressBar`, `Badge`, `Input`, `Select`, `StatCard`, `LessonCard`, `MemorizationEntry`, `EmptyState`, `AppShell`, `PageHeader`, `Tabs`, `AyahAudioButton`). Implemented in `src/app/components/`.
+2. ✅ **11-component-library** — 18+ React components (`Card`, `Button`, `ProgressBar`, `Badge`, `Input`, `Select`, `LessonCard`, `MemorizationEntry`, `EmptyState`, `AppShell`, `PageHeader`, `Tabs`, `AyahAudioButton`). `StatCard` was removed with `/dashboard`. Implemented in `src/app/components/`.
 3. ✅ **00-project-scaffolding** — Next.js app structure, routing, auth, shared types. Built on top of the design system and components.
 
 #### Phase 1: MVP Feature Modules ✅ COMPLETE
@@ -369,7 +369,6 @@ the URL, which is how `/dashboard` went unnoticed after the nav shrank.
 /advanced
 /assessment
 /calibrate
-/dashboard     (ORPHAN — nothing links here)
 /grammar
 /learning
 /memorization
@@ -444,7 +443,7 @@ Before calling any UI/visual fix complete:
 **Known orphaned files in this repo** (not imported by any route as of
 2026-07-25 — confirm before "fixing," and consider deleting them or wiring
 them up instead of patching in place):
-`components/onboarding/Onboarding.tsx`, `components/dashboard/Dashboard.tsx`,
+`components/onboarding/Onboarding.tsx`,
 `components/layout/Sidebar.tsx`, `components/layout/MobileNav.tsx`.
 
 ---

@@ -14,16 +14,32 @@ export interface Exercise {
 }
 
 /**
- * Strip Arabic diacritics and tatweel, and normalise alef variants, so a
- * fill-in-the-blank answer is not marked wrong for a missing harakah. Requiring
- * byte-exact vowelled input would fail almost every learner typing on a plain
- * keyboard.
+ * Strip Arabic diacritics and tatweel, and fold the letter variants, so a
+ * fill-in-the-blank answer is not marked wrong for a missing harakah.
+ *
+ * One real bug fixed here: alef wasla (U+0671, ٱ) was not folded to a plain alef, so
+ * the Uthmani ٱلْحَمْدُ could never match a typed الحمد. 143 answers in the exercise
+ * bank contain it.
+ *
+ * The superscript "dagger" alef (U+0670, ٰ) is still DELETED rather than turned into
+ * an alef, and that is deliberate: modern spelling writes it out in some words and
+ * not others — ٱلْعَٰلَمِينَ is العالمين but ٱلرَّحْمَٰنِ is الرحمن — so neither
+ * choice is right for every word. Deleting keeps this comparison conservative, which
+ * is what a fill-in-the-blank needs: the article exercise in grammar-01 depends on
+ * الكتاب NOT matching كتاب.
+ *
+ * Recall grading needs the opposite trade-off and has its own, more forgiving
+ * comparison in src/app/lib/arabic-compare.ts.
  */
 export function normalizeArabic(input: string): string {
   return input
     .normalize('NFC')
     .replace(/[\u064B-\u0652\u0670\u06D6-\u06ED\u0640]/g, '')
-    .replace(/[\u0622\u0623\u0625]/g, '\u0627')
+    .replace(/[\u0622\u0623\u0625\u0671]/g, '\u0627')
+    // The other two hamza carriers. Folding أ إ آ but not ؤ ئ was arbitrary: nobody
+    // types the hamza on a plain keyboard, so يُؤْمِنُونَ never matched يومنون.
+    .replace(/\u0624/g, '\u0648')
+    .replace(/\u0626/g, '\u064A')
     .replace(/\u0649/g, '\u064A')
     .replace(/\u0629/g, '\u0647')
     .replace(/\s+/g, ' ')

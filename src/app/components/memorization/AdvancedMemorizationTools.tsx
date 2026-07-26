@@ -4,15 +4,19 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { gradeRecall, type RecallResult } from '@/lib/arabic-compare';
 import { apiFetch } from '@/lib/api';
 
 export function AdvancedMemorizationTools() {
   const [audioTesting, setAudioTesting] = useState(false);
   const [currentAyah, setCurrentAyah] = useState<any>(null);
-  // No score here on purpose: grading a recalled ayah needs the ayah text, and
-  // quran_verses is empty until the ingest runs. A count of attempts is true; a
-  // score would not be.
+  // Real grading, at last. This tracked attempts only, because grading needs the
+  // ayah text and quran_verses was empty. It now holds all 6,236 verses, and
+  // /api/memorization/review/today already joins text_uthmani onto every due row —
+  // so the text was there the whole time once the ingest ran.
   const [attempted, setAttempted] = useState(0);
+  const [correct, setCorrect] = useState(0);
+  const [lastResult, setLastResult] = useState<RecallResult | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [userAnswer, setUserAnswer] = useState('');
   const [certificate, setCertificate] = useState<any>(null);
@@ -39,18 +43,27 @@ export function AdvancedMemorizationTools() {
   const handleAnswer = async () => {
     if (!currentAyah || !userAnswer.trim()) return;
 
-    setUserAnswer('');
+    const expected: string = currentAyah.ayah_text ?? '';
+    // Refuse to mark rather than mark wrongly. A row with no joined text would
+    // otherwise score every answer as incorrect, which is worse than not scoring.
+    if (!expected) {
+      setNotice(
+        'No text stored for this ayah, so it cannot be marked. Counted as an attempt.'
+      );
+      setAttempted((prev) => prev + 1);
+      setUserAnswer('');
+      return;
+    }
 
-    // This used to award a point for any input longer than five characters,
-    // which made the score meaningless, so it counts attempts instead of
-    // pretending to mark them.
-    //
-    // NOTE: the reason for not grading has expired. This deferred because
-    // quran_verses was empty; it now holds all 6,236 verses with translations,
-    // so real grading against the ayah text is possible and this should be
-    // revisited. Left as counting rather than changed quietly, because marking
-    // someone's recall is a behaviour change, not a comment fix.
+    // Word-level, not all-or-nothing: one mistyped word out of twelve is not the
+    // same as remembering nothing, and a binary verdict on a long ayah says nothing
+    // about where the gap is. Diacritics and alef variants are folded away, because
+    // requiring vowelled input would fail anyone on a plain keyboard.
+    const result = gradeRecall(expected, userAnswer);
+    setLastResult(result);
     setAttempted((prev) => prev + 1);
+    if (result.correct) setCorrect((prev) => prev + 1);
+    setUserAnswer('');
 
     // Load next ayah
     try {
@@ -116,7 +129,9 @@ export function AdvancedMemorizationTools() {
                     Surah {currentAyah.surah_id}, Ayah {currentAyah.ayah_from}
                   </span>
                   <Badge variant="default">
-                    Attempts: {attempted}
+                    {attempted > 0
+                      ? `${correct} of ${attempted} recalled`
+                      : 'Type what you remember'}
                   </Badge>
                 </div>
                 <audio
@@ -124,6 +139,52 @@ export function AdvancedMemorizationTools() {
                   src={currentAyah.audio_url || ''}
                   className="w-full"
                 />
+
+                {/* Show the ayah with the missed words marked, rather than a bare
+                    verdict. "6 of 9 words" tells you how you did; seeing WHICH three
+                    you dropped tells you what to practise. */}
+                {lastResult && (
+                  <div
+                    className={`rounded-lg border p-3 ${
+                      lastResult.correct
+                        ? 'border-leaf-500/50 bg-leaf-500/10'
+                        : 'border-gold-500/50 bg-gold-500/10'
+                    }`}
+                    role="status"
+                  >
+                    <p
+                      className={`text-sm font-semibold ${
+                        lastResult.correct ? 'text-leaf-400' : 'text-gold-400'
+                      }`}
+                    >
+                      {lastResult.correct
+                        ? 'Recalled'
+                        : `${lastResult.matchedWords} of ${lastResult.expectedWords} words`}
+                    </p>
+                    <p
+                      className="text-arabic mt-2 text-xl leading-arabic"
+                      dir="rtl"
+                      lang="ar"
+                    >
+                      {(currentAyah.ayah_text ?? '').split(' ').map((w: string, i: number) => (
+                        <span
+                          key={i}
+                          className={
+                            lastResult.missed.includes(i)
+                              ? 'text-gold-400 underline decoration-dotted'
+                              : 'text-ground-50'
+                          }
+                        >
+                          {w}{' '}
+                        </span>
+                      ))}
+                    </p>
+                    <p className="mt-2 text-xs text-ground-400">
+                      Diacritics and alef variants are ignored, so you are not marked
+                      wrong for a missing harakah.
+                    </p>
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <input
                     type="text"

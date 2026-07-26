@@ -161,6 +161,27 @@ const pageRows = pages.map((p) => {
 });
 const orphans = pageRows.filter((r) => r.links === 0);
 
+// Endpoints nothing calls. Deleting /dashboard orphaned GET /api/progress/dashboard
+// and the page gate said nothing, because it only looked at routes. A served
+// endpoint with no caller is either dead code or a lost feature — the same argument
+// that applied to the page.
+const apiOrphans = list
+  .filter((e) => e.path.startsWith('/api/'))
+  .filter((e) => {
+    // Auth and identity are called by the middleware or by curl during setup, not
+    // from a component, so absence of a fetch() is expected for those.
+    if (e.path.startsWith('/api/auth/')) return false;
+    // Clients build parameterised URLs by interpolation —
+    // `/api/progress/roots/${encodeURIComponent(root)}/known` — so the full literal
+    // never appears. Match the static prefix up to the first parameter instead.
+    // Stripping the parameters and matching the remainder reported seventeen
+    // orphans, most of which are called: a detector that cries wolf is worse than
+    // none.
+    const prefix = e.path.split('/:')[0];
+    return !allSource.includes(prefix);
+  })
+  .map((e) => `${e.method} ${e.path}`);
+
 const pw = Math.max(...pageRows.map((r) => r.path.length));
 const pagesBlock =
   '```\n' +
@@ -214,12 +235,16 @@ if (check) {
     if (orphans.length) {
       process.stderr.write(`  orphaned pages: ${orphans.map((o) => o.path).join(', ')}\n`);
     }
+    if (apiOrphans.length) {
+      process.stderr.write(`  endpoints nothing calls: ${apiOrphans.join(', ')}\n`);
+    }
     process.stderr.write('  Run: node scripts/gen-api-docs.mjs\n');
     process.exit(1);
   }
   process.stdout.write(
     `✅ AGENTS.md documents ${list.length} endpoints and ${pages.length} pages` +
-      (orphans.length ? ` (${orphans.length} orphaned: ${orphans.map((o) => o.path).join(', ')})` : '') +
+      (orphans.length ? ` (${orphans.length} orphaned page: ${orphans.map((o) => o.path).join(', ')})` : '') +
+      (apiOrphans.length ? ` (${apiOrphans.length} uncalled: ${apiOrphans.join(', ')})` : '') +
       '\n'
   );
   process.exit(0);
@@ -230,5 +255,8 @@ process.stdout.write(
   `wrote ${list.length} endpoints and ${pages.length} pages into AGENTS.md\n`
 );
 if (orphans.length) {
-  process.stdout.write(`  orphaned: ${orphans.map((o) => o.path).join(', ')}\n`);
+  process.stdout.write(`  orphaned pages: ${orphans.map((o) => o.path).join(', ')}\n`);
+}
+if (apiOrphans.length) {
+  process.stdout.write(`  endpoints nothing calls: ${apiOrphans.join(', ')}\n`);
 }

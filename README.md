@@ -316,7 +316,8 @@ letters; and audio was never blocked on Quran Foundation credentials.
 
 Of the four deferred at the time, three were later done: the weekly calendar now
 marks real activity, `StatCard`'s positive trend had been using a token the palette
-never defined and is fixed, and wrangler is on 4. Self-recording is still out —
+never defined — that component has since been removed with `/dashboard` — and
+wrangler is on 4. Self-recording is still out —
 microphone capture cannot be verified headlessly.
 
 ### Plan items F1–F9
@@ -333,9 +334,10 @@ microphone capture cannot be verified headlessly.
 | F8 | Tutor | ✅ rewritten as corpus lookups; it refuses rather than inventing Arabic |
 | F9 | Root families | ✅ 4,950 derived exercises, all 25 (kind, level) buckets full |
 
-**Next, in rough order:** decide the fate of the orphaned `/dashboard`; scope
-vocabulary SRS to the hifz plan (F3); and have a human read the ten grammar lessons,
-which is the only remaining risk no gate can cover.
+**Next, in rough order:** scope vocabulary SRS to the hifz plan (F3); decide which of
+the 13 endpoints with no caller to retire (`gen-api-docs.mjs` lists them); and have a
+human read the ten grammar lessons, which is the only remaining risk no gate can
+cover.
 
 ### What's working today
 
