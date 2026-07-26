@@ -4,6 +4,7 @@ import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 
 import { applySM2 } from '../lib/space-repetition';
+import { parseAyahRange } from '../lib/memorization-input';
 import type { MemorizationStatus } from '../lib/space-repetition';
 
 export const memorizationRoutes = new Hono<AppEnv>();
@@ -50,9 +51,34 @@ memorizationRoutes.get('/all', async (c) => {
 memorizationRoutes.post('/add', async (c) => {
   const userId = c.get('userId');
   const db = getDb(c);
-  const { surahId, ayahFrom, ayahTo } = await c.req.json();
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'Expected a JSON body' }, 400);
+  }
+
+  const parsed = parseAyahRange(body);
+  if (!parsed.ok) return c.json({ error: parsed.error }, 400);
+  const { surahId, ayahFrom, ayahTo } = parsed.value;
 
   try {
+    // Bound the ayah against the real length of this surah. Skipped when the
+    // text has not been ingested, so a fresh deployment is still usable rather
+    // than rejecting every entry.
+    const lengthRow = await db.get<{ max_ayah: number | null }>(
+      `SELECT MAX(ayah) AS max_ayah FROM quran_verses WHERE surah = ?`,
+      [surahId]
+    );
+    const maxAyah = lengthRow?.max_ayah ?? null;
+    if (maxAyah !== null && ayahTo > maxAyah) {
+      return c.json(
+        { error: `Surah ${surahId} has ${maxAyah} ayahs; ayahTo ${ayahTo} is out of range` },
+        400
+      );
+    }
+
     // Check if entry already exists
     const existing = await db.get<Record<string, unknown>>(
       `SELECT * FROM memorization WHERE user_id = ? AND surah_id = ? AND ayah_from = ? AND ayah_to = ?`,

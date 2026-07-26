@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { AyahAudioButton } from '@/components/audio/AyahAudioButton';
 import { apiPost } from '@/lib/api';
+import { getSurah } from '@/lib/surahs';
 
 interface MemorizationEntry {
   id: string;
@@ -22,14 +24,7 @@ interface ReviewSessionProps {
 
 export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps) {
   const [step, setStep] = useState<'listen' | 'recite' | 'rate'>('listen');
-  const [audioPlaying, setAudioPlaying] = useState(false);
   const [selfRating, setSelfRating] = useState(0);
-
-  const handlePlayAudio = () => {
-    setAudioPlaying(true);
-    // Placeholder audio playback — would integrate with Quran.com API audio
-    setTimeout(() => setAudioPlaying(false), 3000);
-  };
 
   const handleRecite = async () => {
     setStep('rate');
@@ -51,7 +46,10 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
           {entry.ayah_text || `Surah ${entry.surah_id}, Ayahs ${entry.ayah_from}-${entry.ayah_to}`}
         </div>
         <p className="text-gray-400">
-          Surah {entry.surah_id}, Ayahs {entry.ayah_from}-{entry.ayah_to}
+          {getSurah(entry.surah_id)?.name ?? `Surah ${entry.surah_id}`}, ayah
+          {entry.ayah_to > entry.ayah_from
+            ? `s ${entry.ayah_from}–${entry.ayah_to}`
+            : ` ${entry.ayah_from}`}
         </p>
       </Card>
 
@@ -61,13 +59,18 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
           <h3 className="text-xl font-semibold mb-4">Step 1: Listen</h3>
           <p className="text-gray-400 mb-6">Listen to the recitation and read along</p>
 
-          <Button
-            onClick={handlePlayAudio}
-            disabled={audioPlaying}
-            className="w-full py-4 text-lg"
-          >
-            {audioPlaying ? 'Playing...' : '▶ Play Recitation'}
-          </Button>
+          {/* Plays the first ayah of the range. Was a 3-second setTimeout that
+              played nothing and flipped the label to "Playing...". */}
+          <AyahAudioButton
+            surah={entry.surah_id}
+            ayah={entry.ayah_from}
+            className="w-full py-4 text-lg inline-flex items-center justify-center rounded-md font-medium bg-leaf-500/20 text-leaf-400 hover:bg-leaf-500/30 disabled:opacity-40 transition-colors"
+          />
+          {entry.ayah_to > entry.ayah_from && (
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              Plays ayah {entry.ayah_from} of {entry.ayah_from}–{entry.ayah_to}.
+            </p>
+          )}
 
           <Button
             variant="secondary"

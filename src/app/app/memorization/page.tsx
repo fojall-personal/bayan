@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SurahProgress } from '@/components/memorization/SurahProgress';
 import { ReviewSession } from '@/components/memorization/ReviewSession';
+import { AddAyahForm } from '@/components/memorization/AddAyahForm';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
 import { Tabs } from '@/components/ui/Tabs';
+import { getSurah, ayahCountFor } from '@/lib/surahs';
 
 interface SurahSummary {
   surah_id: number;
@@ -48,8 +49,16 @@ export default function MemorizationPage() {
     }
   }, [view]);
 
-  const fetchSurahs = async () => {
-    setLoading(true);
+  /**
+   * `silent` refreshes without the full-page spinner.
+   *
+   * The page early-returns a "Loading…" screen whenever `loading` is true, which
+   * unmounts everything below it. After adding an ayah that meant the form — and
+   * its "Added …" confirmation — vanished instantly, so the one feature whose
+   * complaint was "no way to tell it worked" still gave no feedback.
+   */
+  const fetchSurahs = async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const data = await apiFetch<{ surahs: SurahSummary[] }>('/api/memorization/surahs');
       setSurahs(data.surahs || []);
@@ -58,7 +67,7 @@ export default function MemorizationPage() {
       console.error('Failed to fetch surahs:', err);
       setError(apiErrorMessage(err));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -139,6 +148,8 @@ export default function MemorizationPage() {
 
       {view === 'surahs' && (
         <div className="space-y-6">
+          <AddAyahForm onAdded={() => fetchSurahs({ silent: true })} />
+
           {/* Summary */}
           <Card>
             <div className="grid grid-cols-4 gap-4 text-center">
@@ -169,17 +180,27 @@ export default function MemorizationPage() {
             </div>
           </Card>
 
-          {/* Surah list */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {surahs.map((surah) => (
-              <SurahProgress
-                key={surah.surah_id}
-                surahId={surah.surah_id as number}
-                surahName={`Surah ${surah.surah_id}`}
-                totalAyahs={surah.mastered as number + (surah.learning as number) + (surah.reviewing as number) + (surah.new_ayahs as number)}
-              />
-            ))}
-          </div>
+          {/* Surah list. Empty until something is added — which was impossible
+              before AddAyahForm existed. */}
+          {surahs.length === 0 ? (
+            <Card className="text-center py-12">
+              <h2 className="text-xl font-bold mb-2">Nothing tracked yet</h2>
+              <p className="text-gray-400">
+                Add an ayah above to start a memorization schedule.
+              </p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {surahs.map((surah) => (
+                <SurahProgress
+                  key={surah.surah_id}
+                  surahId={surah.surah_id as number}
+                  surahName={getSurah(surah.surah_id as number)?.name ?? `Surah ${surah.surah_id}`}
+                  totalAyahs={ayahCountFor(surah.surah_id as number)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
