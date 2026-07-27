@@ -182,34 +182,29 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/sync-pages-config.mjs --check
 
-      # Lesson content is NOT seeded here. The CI token cannot reach D1 at all.
+      # Lesson content ships with the code that renders it.
       #
-      # Every route was tried and every one returns code 7403, "The given account is not
-      # valid or is not authorized to access this service": the import api that
-      # `wrangler d1 execute --file` uses, the query api via wrangler, and the query api
-      # via a direct REST call with the owning account id pinned. 7403 is authorization
-      # for the D1 SERVICE on the account, so no endpoint choice gets around it.
+      # Goes through D1's query api via scripts/seed-remote-d1.mjs rather than
+      # `wrangler d1 execute --file`: statements go directly with no staging step, and
+      # several fit in one request. The script counts INSERTs and refuses to apply a
+      # partial seed.
       #
-      # To enable this, CLOUDFLARE_API_TOKEN needs the D1:Edit permission on account
-      # 26f84481311bd42e09b8bdca6804661d, which owns database 6216c466. Cloudflare requires
-      # D1:Edit explicitly for HTTP API writes — Edit on another product plus D1:Read used
-      # to be enough and no longer is. The ACCOUNT_ID secret is already correct: the
-      # mismatch check in seed-remote-d1.mjs never fired, and the Pages-config step
-      # succeeds against that same account in the same run.
-      # Then this becomes one step:
+      # Requires D1:Edit on the token — Cloudflare requires that permission explicitly
+      # for HTTP API writes, and without it every D1 route returns code 7403 regardless
+      # of endpoint. Idempotent: every statement is INSERT OR REPLACE keyed on the lesson
+      # id. Runs before the Pages deploy so content is in place when the code that reads
+      # it goes live.
       #
-      #   - name: Seed lesson content into D1
-      #     if: github.event_name != 'pull_request'
-      #     env:
-      #       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      #       D1_DATABASE_ID: 6216c466-c244-4c16-8569-c7281585fbc6
-      #     run: node scripts/seed-remote-d1.mjs scripts/seed-lessons.sql
-      #
-      # A warning about diagnosing this, because it cost two wrong turns. I probed the
-      # token with `continue-on-error: true` steps and read their `.conclusion`, which
-      # GitHub forces to "success" for such steps — the real result is in `.outcome`. Both
-      # probes had failed with 7403 and I read them as passing, concluded the token DID
-      # have D1 access, and said so. Read .outcome, or do not use continue-on-error.
+      # Deliberately NOT continue-on-error. A step allowed to fail silently is a step
+      # nobody notices is broken — and reading `.conclusion` on such a step, which GitHub
+      # forces to "success", is what previously made me report the opposite of what the
+      # logs said.
+      - name: Seed lesson content into D1
+        if: github.event_name != 'pull_request'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          D1_DATABASE_ID: 6216c466-c244-4c16-8569-c7281585fbc6
+        run: node scripts/seed-remote-d1.mjs scripts/seed-lessons.sql
 
       - name: Deploy to Cloudflare Pages
         if: github.event_name != 'pull_request'

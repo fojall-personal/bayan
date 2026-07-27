@@ -151,29 +151,32 @@ languagebuilder/
    cd workers && npx wrangler d1 execute languagebuilder --local --file=/tmp/seed.sql
    ```
 
-## ⚠️ Changing lesson content
+## Changing lesson content
 
-Lesson content lives in the repo but is **not** deployed by CI. After editing
-`content/grammar/lessons.json` or regenerating the root lessons:
+Lesson content lives in the repo and **is deployed by CI**. After editing
+`content/grammar/lessons.json` or regenerating the root lessons, regenerate the seed —
+`gen-lessons-sql.mjs --check` fails the build if you forget:
 
 ```bash
-node scripts/gen-lessons-sql.mjs        # regenerate the seed (gated in CI)
+node scripts/gen-lessons-sql.mjs
+```
+
+The deploy job applies it through D1's query API, before the Pages deploy, so content is
+in place when the code that reads it goes live. To apply it by hand:
+
+```bash
 CLOUDFLARE_API_TOKEN=... D1_DATABASE_ID=6216c466-c244-4c16-8569-c7281585fbc6 \
   node scripts/seed-remote-d1.mjs scripts/seed-lessons.sql
 ```
 
-`seed-remote-d1.mjs` goes through D1's query API and refuses to apply a partial seed.
-`wrangler d1 execute --remote --file=...` from `workers/` works too.
+The token needs **D1:Edit** — Cloudflare requires it explicitly for HTTP API writes, and
+without it every D1 route returns code 7403 whatever endpoint you use. Every statement is
+`INSERT OR REPLACE` keyed on the lesson id, so re-running is always safe, and the script
+refuses to apply a partial seed.
 
-**Why it is manual.** The CI token cannot reach D1 on any endpoint — the import API,
-the query API via wrangler, and a direct REST call with the owning account pinned all
-return code 7403, which is service-level authorization on the account. Granting the
-token **D1: Edit** in the Cloudflare dashboard would let the deploy job do this; the
-step is written out in `.github/workflows/deploy.yml` ready to uncomment.
-
-This has already cost one silent failure: an explanation added to `grammar-02` passed
-every gate and never reached production, because only the local database was reseeded.
-Every statement is `INSERT OR REPLACE` keyed on the lesson id, so re-running is safe.
+This cost one silent failure before it was automated: an explanation added to
+`grammar-02` passed every gate and never reached production, because only the local
+database was reseeded.
 
 ## ✅ Checks
 
