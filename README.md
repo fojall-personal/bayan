@@ -364,17 +364,36 @@ microphone capture cannot be verified headlessly.
 | F1 | Reader | ✅ `/read` — one ayah, five lenses, plus the whole-surah tajweed reader |
 | F2 | Hifz tracker | ✅ add-ayah UI, 908-unit curriculum, FSRS-6 review on four grades |
 | F3 | Vocabulary SRS | ✅ scoped to the hifz plan — content words from your own ayahs, each card citing its source |
-| F4 | Comprehension checks | ✅ 1,200 items from 77,429 word glosses |
+| F4 | Comprehension checks | ✅ 3,536 items from 77,429 word glosses |
 | F5 | Diagnostic placement | ✅ and no longer a gate — skippable, with root calibration instead |
 | F6 | Tajweed track | ✅ rule reference, per-rule mastery, ten colours all ≥4.5:1 |
 | F7 | Progress | ✅ weekly activity calendar and coverage — ayahs readable from known roots. No daily streak counter: the helper that computed one had no caller and was removed |
 | F8 | Tutor | ✅ rewritten as corpus lookups; it refuses rather than inventing Arabic |
 | F9 | Root families | ✅ 17,206 derived exercises, all 35 (kind, level) buckets full, and answers now recorded — mastery per exercise kind shows on /progress |
 
-**Next:** have a human read the ten grammar lessons. That is the only remaining risk
-no gate can cover — every mechanical claim in them is checked (sun/moon membership,
-roots against the corpus, every Arabic example attested in the Quran), but whether
-they *teach well* is not a property a script can decide.
+### Research plan P1–P5
+
+Derived from a survey of the field (FSRS benchmarks, Tarteel, Kalaam, Al Quran by
+Greentech, and the lexical-coverage literature) rather than from the original plan.
+
+| | | |
+|---|---|---|
+| P1 | FSRS-6 replaces SM-2 | ✅ both schedulers, four grades, migration 0019 seeds stability from the old interval |
+| P2 | Word-synchronised recitation | ✅ 154,799 CC-BY timings for two reciters; the word being recited is highlighted |
+| P3 | The 95% reading edge | ✅ `/api/progress/reading-queue` — ayahs one root short, best-covered first, on Today |
+| P4 | Recitation checking | ❌ dropped — no microphone capture exists, and base Whisper is ~85% accurate on Quranic recitation while the good models are fine-tunes Cloudflare does not host |
+| P5 | Whole-Quran word frequency | ✅ shown beside each root in the Parse lens |
+
+Built after the plan, in response to use: a lesson result screen that says what you got
+wrong and why, lesson-to-drill mappings, the exercise bank tripled to 17,206, sixty
+generated root lessons, the review document, and content deploying itself.
+
+**Next:** have a human read the lessons — 70 of them now, 201 exercises. That is the
+only remaining risk no gate can cover: every mechanical claim is checked (sun/moon
+membership, roots against the corpus, every Arabic example attested in the Quran, every
+exercise answerable and explained, no option position favoured), but whether they *teach
+well* is not a property a script can decide. `node scripts/gen-lesson-review.mjs`
+renders all of them with the checked claims tagged so they can be skipped.
 
 Endpoint triage is finished: every endpoint the app serves now has a caller, and
 `gen-api-docs.mjs --check` fails if that stops being true.

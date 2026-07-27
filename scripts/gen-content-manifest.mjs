@@ -83,6 +83,17 @@ if (check) {
     for (const m of flat.matchAll(TOTAL_CLAIM)) {
       if (m[1] !== expected) stale.push(`${rel}: says ${m[1]}, bank holds ${expected}`);
     }
+    // The comprehension subtotal, phrased in the README as "N items from 77,429 word
+    // glosses". Checked separately because it is a different number about a different
+    // thing, and conflating the two is what let it sit wrong.
+    const comprehension = manifest.exerciseBank.comprehension?.toLocaleString('en-US');
+    if (comprehension) {
+      for (const m of flat.matchAll(/([\d,]{3,}) items from 77,429 word glosses/g)) {
+        if (m[1] !== comprehension) {
+          stale.push(`${rel}: says ${m[1]} comprehension items, there are ${comprehension}`);
+        }
+      }
+    }
   }
   if (stale.length > 0) {
     process.stderr.write(
@@ -133,6 +144,13 @@ const manifest = {
     'what actually shipped.',
   exerciseBank: {
     total,
+    // The comprehension half, called out because the README states it separately and
+    // that number went stale unnoticed: F4 still said 1,200 after the cap rose to 400
+    // per bucket and the real figure became 3,536. The total-only check could not see
+    // it, since a subtotal is not the total.
+    comprehension: byKind
+      .filter((r) => r.kind === 'word_meaning' || r.kind === 'find_word')
+      .reduce((n, r) => n + r.n, 0),
     buckets: buckets.n,
     surahsCovered: surahs.n,
     byKind: Object.fromEntries(byKind.map((r) => [r.kind, r.n])),
