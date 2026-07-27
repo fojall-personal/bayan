@@ -151,6 +151,32 @@ languagebuilder/
    cd workers && npx wrangler d1 execute languagebuilder --local --file=/tmp/seed.sql
    ```
 
+## ⚠️ Changing lesson content
+
+Lesson content lives in the repo but is **not** deployed by CI. After editing
+`content/grammar/lessons.json` or regenerating the root lessons, three steps:
+
+```bash
+node scripts/gen-lessons-sql.mjs        # regenerate the seed (gated in CI)
+cd workers && npx wrangler d1 execute languagebuilder --remote \
+  --file=../scripts/seed-lessons.sql -y
+```
+
+Run from `workers/`, where `wrangler.toml` lives — the database name cannot be
+resolved without it.
+
+**Why this is manual.** Automating it in the deploy job fails with
+`Authentication error [code: 10000]` against `/d1/database/:id/import`:
+`CLOUDFLARE_API_TOKEN` is scoped for Pages deploys and has no D1 write permission.
+Granting it **D1: Edit** in the Cloudflare dashboard would let the deploy job seed
+content automatically; the step is written and commented out in
+`.github/workflows/deploy.yml`.
+
+This has already cost one silent failure — an explanation added to `grammar-02`
+passed every gate and never reached production, because only the local database was
+reseeded. Every statement is `INSERT OR REPLACE` keyed on the lesson id, so running
+it again is always safe.
+
 ## ✅ Checks
 
 All three are enforced in CI ahead of the deploy job, and none of them existed
