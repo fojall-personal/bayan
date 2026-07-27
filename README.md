@@ -22,13 +22,16 @@ What works today, honestly:
 - **Learning** — lessons with graded exercises, sticky completion, best-of
   scoring, and a flashcard queue drawn from the ayahs you are memorising: content
   words only, commonest-in-the-Quran first, each card naming the ayah it came from.
-- **Spaced repetition** — an SM-2 scheduler for memorization, with an add-ayah UI, a
-  due-today queue and a 908-unit ordered curriculum.
+- **Spaced repetition** — an FSRS-6 scheduler for memorization and vocabulary, with
+  an add-ayah UI, a due-today queue and a 908-unit ordered curriculum. Four grades
+  rather than five, because FSRS grades on four and a scale where two answers
+  schedule identically is a lie to the learner.
 - **Tajweed** — per-rule mastery, and colour-coded verses across all 6,236 ayahs.
   Ten rule colours, each ≥4.5:1 on the canvas, applied to the script rather than
   boxed behind it so Arabic stays joined.
-- **Grammar** — sentence parsing and corpus root families, with 4,950 derived
-  exercises whose results are recorded per kind and shown on Progress.
+- **Grammar** — sentence parsing and corpus root families, with 17,206 derived
+  exercises whose results are recorded per kind and shown on Progress, plus 70
+  lessons: ten authored and sixty generated one-per-root from the corpus.
 - **Tutor** — corpus lookups, not a model. It answers a word, a root, a location or a
   named tajweed rule, and refuses rather than inventing Arabic.
 - **Coverage** — how much of the Quran you can read, computed from the roots you
@@ -69,7 +72,7 @@ languagebuilder/
 ├── workers/           # Cloudflare Workers backend
 │   ├── src/
 │   │   ├── routes/    # API route handlers
-│   │   ├── lib/       # identity (Access JWT), DB wrapper, scoring, SM-2
+│   │   ├── lib/       # identity (Access JWT), DB wrapper, scoring, FSRS
 │   │   ├── db/        # migrations/ (applied in order) + seed-user.sql
 │   │   └── pages-entry.ts  # bundled to _worker.js — routes /api/* into Hono
 │   └── test/          # vitest
@@ -159,7 +162,7 @@ cd src/app   && npx tsc --noEmit && npm run lint
 ```
 
 The tests cover grading, Arabic normalisation, assessment scoring, path
-assignment, the SM-2 scheduler and the Quran ingest alignment gate. Every case
+assignment, the FSRS scheduler and the Quran ingest alignment gate. Every case
 corresponds to a bug that shipped or a behaviour that had only been checked by
 hand once.
 
@@ -327,7 +330,7 @@ microphone capture cannot be verified headlessly.
 | | | |
 |---|---|---|
 | F1 | Reader | ✅ `/read` — one ayah, five lenses, plus the whole-surah tajweed reader |
-| F2 | Hifz tracker | ✅ add-ayah UI, 908-unit curriculum, SM-2 review |
+| F2 | Hifz tracker | ✅ add-ayah UI, 908-unit curriculum, FSRS-6 review on four grades |
 | F3 | Vocabulary SRS | ✅ scoped to the hifz plan — content words from your own ayahs, each card citing its source |
 | F4 | Comprehension checks | ✅ 1,200 items from 77,429 word glosses |
 | F5 | Diagnostic placement | ✅ and no longer a gate — skippable, with root calibration instead |
@@ -349,7 +352,7 @@ Endpoint triage is finished: every endpoint the app serves now has a caller, and
 - **Placement assessment** — 18 questions, about 15 minutes, text only, optional
 - **Adaptive paths** — Assigns curriculum from weakest domain
 - **Learning** — Lessons with graded exercises, flashcard queue
-- **Spaced repetition** — SM-2 scheduler with review UI and a due-today queue
+- **Spaced repetition** — FSRS-6 scheduler with review UI and a due-today queue
 - **Tajweed** — Per-rule mastery, and coloured script that keeps Arabic joined
 - **Grammar** — Sentence parsing, conjugation tables, root families
 - **Tutor** — Corpus lookups over word, root, location and tajweed rule. No model

@@ -72,8 +72,15 @@ if (check) {
     // "derived", "graded" or "item", which flagged the comprehension subtotal and the
     // per-bucket cap as stale totals — three of its nine findings were numbers that were
     // correct about something else.
+    //
+    // Whitespace is collapsed first, and that is not cosmetic: the README wraps its prose
+    // at 80 columns, so "4,950 derived\n  exercises" put a newline between the number and
+    // the word. The pattern required a single space, so the check PASSED on a README that
+    // still said 4,950 after the bank tripled — a gate reporting success on the exact
+    // drift it exists to catch.
+    const flat = src.replace(/\s+/g, ' ');
     const TOTAL_CLAIM = /([\d,]{3,})(?=[- ](?:derived exercises|graded exercises|item graded bank|item bank))/g;
-    for (const m of src.matchAll(TOTAL_CLAIM)) {
+    for (const m of flat.matchAll(TOTAL_CLAIM)) {
       if (m[1] !== expected) stale.push(`${rel}: says ${m[1]}, bank holds ${expected}`);
     }
   }
