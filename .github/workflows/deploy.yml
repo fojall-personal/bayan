@@ -182,6 +182,29 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/sync-pages-config.mjs --check
 
+      # Lesson content ships with the code that renders it.
+      #
+      # scripts/seed-lessons.sql is generated from the content files and committed, but
+      # applying it to D1 was a manual step — so a content fix could be in the repo, in
+      # git, green in CI, and absent from production. That happened: the explanation
+      # added to grammar-02's match exercise passed every gate and never reached the
+      # learner, because I reseeded the local database and forgot the remote one.
+      #
+      # Safe to run on every deploy: every statement is INSERT OR REPLACE keyed on the
+      # lesson id, so it is idempotent and touches nothing but the 70 lesson rows. It
+      # runs BEFORE the Pages deploy, so the content is in place by the time the code
+      # that reads it is live.
+      - name: Seed lesson content into D1
+        if: github.event_name != 'pull_request'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # From workers/, because that is where wrangler.toml lives — the database name
+          # cannot be resolved without it, and the repo root has no config.
+          workingDirectory: workers
+          command: d1 execute languagebuilder --remote --file=../scripts/seed-lessons.sql -y
+
       - name: Deploy to Cloudflare Pages
         if: github.event_name != 'pull_request'
         uses: cloudflare/wrangler-action@v3
