@@ -47,9 +47,22 @@ interface NextLesson {
 }
 
 
+/** One ayah from GET /api/progress/reading-queue. */
+interface ReadingQueueItem {
+  surah: number;
+  ayah: number;
+  text: string | null;
+  blockingRoot: string;
+  rootOccurrences: number;
+  knownWords: number;
+  totalWords: number;
+  coveragePct: number;
+}
+
 export function Today() {
   const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [due, setDue] = useState<DueItem[]>([]);
+  const [reading, setReading] = useState<ReadingQueueItem[]>([]);
   const [lesson, setLesson] = useState<NextLesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,15 +72,19 @@ export function Today() {
     setError(null);
     // Settled rather than all: a learner with no memorization rows should still
     // see their coverage and next lesson, not a single error for the whole page.
-    const [cov, dueRes, next] = await Promise.allSettled([
+    const [cov, dueRes, next, queue] = await Promise.allSettled([
       apiFetch<{ data: Coverage }>('/api/progress/coverage'),
       apiFetch<{ data: DueItem[] }>('/api/memorization/review/today'),
       apiFetch<{ data: { lesson: NextLesson | null } }>('/api/learning/next'),
+      apiFetch<{ data: { items: ReadingQueueItem[] } }>(
+        '/api/progress/reading-queue?limit=3'
+      ),
     ]);
     if (cov.status === 'fulfilled') setCoverage(cov.value.data);
     else setError(apiErrorMessage(cov.reason));
     if (dueRes.status === 'fulfilled') setDue(dueRes.value.data ?? []);
     if (next.status === 'fulfilled') setLesson(next.value.data?.lesson ?? null);
+    if (queue.status === 'fulfilled') setReading(queue.value.data?.items ?? []);
     setLoading(false);
   }, []);
 
@@ -213,6 +230,44 @@ export function Today() {
           </Link>
         </div>
       </div>
+
+      {/* ── Just past the edge ──────────────────────────────────────────── */}
+      {reading.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs uppercase tracking-label text-ground-400">
+            Just past your edge
+          </p>
+          <div className="space-y-2">
+            {reading.map((r) => (
+              <Link key={`${r.surah}:${r.ayah}`} href={`/read?s=${r.surah}&a=${r.ayah}`} className="block">
+                <Card interactive>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="font-semibold">
+                      {getSurah(r.surah)?.name ?? `Surah ${r.surah}`} {r.surah}:{r.ayah}
+                    </p>
+                    {/* The number, so the claim is checkable rather than a vibe. */}
+                    <span className="shrink-0 text-xs text-ground-400">
+                      {r.knownWords} of {r.totalWords} words · {r.coveragePct}%
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-ground-300">
+                    One root away:{' '}
+                    <span className="text-arabic text-gold-400" dir="rtl" lang="ar">
+                      {rootArabic(r.blockingRoot)}
+                    </span>
+                    {' '}— {r.rootOccurrences.toLocaleString()} occurrence
+                    {r.rootOccurrences === 1 ? '' : 's'} in the Quran
+                  </p>
+                </Card>
+              </Link>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-ground-400">
+            Reading is productive at around 95% of words known — below that it is a
+            wall, above it there is nothing new. These sit at the edge.
+          </p>
+        </div>
+      )}
 
       {/* ── Coverage, stated plainly ────────────────────────────────────── */}
       {coverage && (

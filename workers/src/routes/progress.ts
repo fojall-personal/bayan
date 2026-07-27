@@ -193,6 +193,117 @@ async function ayahsReadable(db: Database, userId: string): Promise<number> {
   return row?.n ?? 0;
 }
 
+/**
+ * GET /api/progress/reading-queue — ayahs just past the edge of what you can read.
+ *
+ * Coverage reports ayahs that are 100% readable. That is the REVIEW band. Reading
+ * research puts the productive threshold at 95% of words known for minimal
+ * comprehension and 98% for adequate (Laufer 2020; Hu & Nation 2000; Schmitt et al.
+ * 2011) — which in ayah terms is one, sometimes two, unknown roots. An ayah with
+ * nothing unknown teaches nothing new; an ayah with six is a wall.
+ *
+ * Ordered by how much the unknown root pays back elsewhere in the Quran, so learning
+ * one word opens the largest number of further ayahs. That ordering is the same
+ * frequency argument the whole coverage model runs on, applied one ayah at a time.
+ */
+progressRoutes.get('/reading-queue', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  const limit = Math.min(Number(c.req.query('limit') ?? 10) || 10, 50);
+
+  try {
+    const rows = await db.query<{
+      surah_id: number;
+      ayah_id: number;
+      unknown_rooted: number;
+      total_rooted: number;
+      blocking_root: string;
+      root_occurrences: number;
+      text_uthmani: string | null;
+    }>(
+      `WITH known AS (
+         SELECT root FROM user_known_root WHERE user_id = ?
+       ),
+       unknown_words AS (
+         SELECT surah_id, ayah_id, root
+           FROM quran_word_morphology
+          WHERE root IS NOT NULL
+            AND root NOT IN (SELECT root FROM known)
+       ),
+       ayah_state AS (
+         SELECT m.surah_id, m.ayah_id,
+                SUM(CASE WHEN m.root IS NOT NULL
+                          AND m.root NOT IN (SELECT root FROM known)
+                         THEN 1 ELSE 0 END) AS unknown_rooted,
+                SUM(CASE WHEN m.root IS NOT NULL THEN 1 ELSE 0 END) AS total_rooted
+           FROM quran_word_morphology m
+          GROUP BY m.surah_id, m.ayah_id
+       ),
+       root_freq AS (
+         SELECT root, COUNT(*) AS occurrences
+           FROM quran_word_morphology
+          WHERE root IS NOT NULL
+          GROUP BY root
+       )
+       SELECT s.surah_id, s.ayah_id, s.unknown_rooted, s.total_rooted,
+              u.root AS blocking_root,
+              f.occurrences AS root_occurrences,
+              v.text_uthmani
+         FROM ayah_state s
+         JOIN unknown_words u
+           ON u.surah_id = s.surah_id AND u.ayah_id = s.ayah_id
+         JOIN root_freq f ON f.root = u.root
+         LEFT JOIN quran_verses v ON v.surah = s.surah_id AND v.ayah = s.ayah_id
+        WHERE s.unknown_rooted = 1
+          AND s.total_rooted >= 3
+        -- Coverage first, frequency second.
+        --
+        -- Ordering by frequency alone put 7:7 at the top with 3 of 4 words known —
+        -- 75%, not 95%. "Exactly one unknown root" is a COUNT, and the research
+        -- threshold is a PROPORTION: one unknown word in a four-word ayah is a quarter
+        -- of it. So rank by how much of the ayah is already known, and use the
+        -- unknown root's payoff elsewhere in the Quran only to break ties.
+        ORDER BY CAST(s.total_rooted - s.unknown_rooted AS REAL) / s.total_rooted DESC,
+                 f.occurrences DESC, s.surah_id, s.ayah_id
+        LIMIT ?`,
+      [userId, limit]
+    );
+
+    return c.json({
+      data: {
+        items: rows.map((r) => ({
+          surah: r.surah_id,
+          ayah: r.ayah_id,
+          text: r.text_uthmani,
+          /** The single root standing between the learner and this ayah. */
+          blockingRoot: r.blocking_root,
+          rootOccurrences: r.root_occurrences,
+          knownWords: r.total_rooted - r.unknown_rooted,
+          totalWords: r.total_rooted,
+          // Stated so the 95% claim is checkable rather than asserted.
+          coveragePct:
+            r.total_rooted > 0
+              ? Math.round(((r.total_rooted - r.unknown_rooted) / r.total_rooted) * 100)
+              : 0,
+        })),
+        // The band this queue represents, so the UI can explain itself.
+        // Stated as what it actually is. The reading research puts productive
+        // comprehension at 95–98% of words known, but that is measured over running
+        // text; a single short ayah cannot hit 95% with one unknown word unless it is
+        // twenty words long. So the filter is one unknown root and the ORDER is by
+        // coverage, which puts the closest-to-readable ayahs first without pretending
+        // a four-word ayah at 75% is in the same band as a thirty-word one at 97%.
+        thresholdNote:
+          'Ayahs with exactly one unknown root, best-covered first. Coverage is shown per ayah — 95% and above is where reading is productive rather than a wall.',
+      },
+    });
+  } catch (error) {
+    console.error('Reading queue error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 progressRoutes.post('/roots/:root/known', async (c) => {
   const userId = c.get('userId');
   const root = c.req.param('root');

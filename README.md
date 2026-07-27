@@ -281,14 +281,14 @@ application, in any Cloudflare account, would be accepted.
 
 **Last updated: 2026-07-26**
 
-**Everything is deployed and working.** All 39 API endpoints resolve, all 13
+**Everything is deployed and working.** All 40 API endpoints resolve, all 13
 pages render, the database has 6,236 Quran verses and 77K morphology rows.
 
 | Component | Status |
 |-----------|--------|
 | Frontend (13 routes) | ✅ All rendering 200 OK |
 | Navigation (6 links) | ✅ All wired up |
-| API (39 endpoints) | ✅ All resolving |
+| API (40 endpoints) | ✅ All resolving |
 | Database (D1) | ✅ 19 migrations applied, seeded |
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |

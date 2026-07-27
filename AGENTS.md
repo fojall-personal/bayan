@@ -337,6 +337,7 @@ GET    /api/memorization/surahs
 GET    /api/progress/calibration      (GET twelve sampled roots, POST records answers + opt-in band)
 POST   /api/progress/calibration      (GET twelve sampled roots, POST records answers + opt-in band)
 GET    /api/progress/coverage         (ayahs readable from known roots; 400 roots is half the Quran)
+GET    /api/progress/reading-queue
 DELETE /api/progress/roots/:root/known(POST records, DELETE undoes; POST returns the delta)
 POST   /api/progress/roots/:root/known(POST records, DELETE undoes; POST returns the delta)
 GET    /api/progress/scores

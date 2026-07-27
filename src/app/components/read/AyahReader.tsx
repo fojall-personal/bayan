@@ -48,6 +48,8 @@ interface Word {
   known: boolean;
   unknownRoots: string[];
   segments: Segment[];
+  /** Whole-Quran frequency of this word's root(s), commonest first. */
+  rootOccurrences?: { root: string; occurrences: number }[];
 }
 interface TajweedTag {
   start: number;
@@ -413,7 +415,18 @@ function ParseLens({ data }: { data: Ayah }) {
               {w.segments.map((seg) => {
                 const facts = [
                   seg.partOfSpeech ? (POS[seg.partOfSpeech] ?? seg.partOfSpeech) : null,
-                  seg.root ? `root ${rootArabic(seg.root)}` : null,
+                  seg.root
+                    ? `root ${rootArabic(seg.root)}` +
+                      // The frequency is the argument for learning it: a root
+                      // occurring 854 times repays an afternoon, one occurring twice
+                      // does not. Al Quran by Greentech shows this for free and it
+                      // was the one thing this reader lacked.
+                      (() => {
+                        const n = w.rootOccurrences?.find((r) => r.root === seg.root)
+                          ?.occurrences;
+                        return n ? ` (${n.toLocaleString()}×)` : '';
+                      })()
+                    : null,
                   seg.lemma ? `lemma ${seg.lemma}` : null,
                   seg.verbForm ? `Form ${seg.verbForm}` : null,
                   seg.aspect,

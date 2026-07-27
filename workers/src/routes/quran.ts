@@ -72,7 +72,8 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
     );
     if (!verse) return c.json({ error: `No ayah ${surah}:${ayah}` }, 404);
 
-    const [glosses, segments, known, rules, neighbours] = await Promise.all([
+    const [glosses, segments, known, rules, neighbours, rootCounts] =
+      await Promise.all([
       db.query<WordRow>(
         `SELECT position, arabic, transliteration, english
            FROM quran_word_gloss WHERE surah_id = ? AND ayah_id = ? ORDER BY position`,
@@ -98,9 +99,28 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
         `SELECT COUNT(*) AS n FROM quran_verses WHERE surah = ?`,
         [surah]
       ),
+      // How often each root in THIS ayah occurs across the whole Quran.
+      //
+      // The number is the argument for learning a word: علم appearing 854 times is
+      // worth an afternoon, a root appearing twice is not. Al Quran by Greentech
+      // shows this for free and it was the one thing the reader lacked. Scoped to the
+      // roots present in this ayah rather than counting all 1,642, and it rides the
+      // same Promise.all so it costs no extra round trip.
+      db.query<{ root: string; occurrences: number }>(
+        `SELECT root, COUNT(*) AS occurrences
+           FROM quran_word_morphology
+          WHERE root IS NOT NULL
+            AND root IN (
+              SELECT DISTINCT root FROM quran_word_morphology
+               WHERE surah_id = ? AND ayah_id = ? AND root IS NOT NULL
+            )
+          GROUP BY root`,
+        [surah, ayah]
+      ),
     ]);
 
     const knownRoots = new Set(known.map((k) => k.root));
+    const occurrences = new Map(rootCounts.map((r) => [r.root, r.occurrences]));
     const palette = new Map(rules.map((r) => [r.id, { color: r.color, name: r.name }]));
 
     // Group segments under their word, so the client never re-derives word shape.
@@ -127,6 +147,12 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
         // two can never disagree about what "known" means.
         known: unknownRoots.length === 0,
         unknownRoots,
+        // Whole-Quran frequency of this word's root(s), highest first — the reason to
+        // learn it or skip it. Null-free: a word with no rooted segment has no count
+        // rather than a zero, which would read as "never occurs".
+        rootOccurrences: roots
+          .map((r) => ({ root: r, occurrences: occurrences.get(r) ?? 0 }))
+          .sort((a, b) => b.occurrences - a.occurrences),
         // `form` and `lemma` are stored in Buckwalter, and both were handed to the
         // client raw. `arabic` was never rendered so it merely lied, but the Parse
         // lens prints the lemma — so /read showed "lemma Hamod", "lemma {ll~ah",
