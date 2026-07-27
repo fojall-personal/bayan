@@ -230,6 +230,48 @@ for (const n of notes) process.stdout.write(`  note  ${n}\n`);
   }
 }
 
+// ── Lesson → practice mapping ───────────────────────────────────────────────
+//
+// src/app/lib/lesson-practice.ts decides which derived-bank kind follows each lesson.
+// It is editorial judgement, so it cannot be generated — but it CAN drift: a new lesson
+// with no entry would silently offer no practice, and a typo in a kind would link to a
+// filter that returns nothing at all. Both are checked here.
+{
+  const src = await readFile(
+    join(root, 'src/app/lib/lesson-practice.ts'),
+    'utf-8'
+  );
+  const BANK_KINDS = new Set([
+    'aspect', 'case_ending', 'verb_form', 'pos_id', 'root_id', 'word_meaning', 'find_word',
+  ]);
+
+  const mapped = new Map();
+  for (const m of src.matchAll(/'(grammar-\d+)':\s*(null|\{)/g)) {
+    mapped.set(m[1], m[2] === 'null' ? null : 'entry');
+  }
+  for (const m of src.matchAll(/kind:\s*'([a-z_]+)'/g)) {
+    if (!BANK_KINDS.has(m[1])) {
+      fail('practice', `"${m[1]}" is not one of the bank's kinds, so the link would return nothing`);
+    }
+  }
+  for (const lesson of lessons) {
+    if (!mapped.has(lesson.id)) {
+      fail(
+        'practice',
+        `${lesson.id} has no entry in lesson-practice.ts — add a mapping, or an explicit ` +
+          'null saying there is nothing honest to offer'
+      );
+    }
+  }
+  for (const id of mapped.keys()) {
+    if (!lessons.some((l) => l.id === id)) {
+      fail('practice', `lesson-practice.ts maps ${id}, which is not a lesson`);
+    }
+  }
+  const withPractice = [...mapped.values()].filter(Boolean).length;
+  notes.push(`practice mapped for ${withPractice}/${lessons.length} lessons`);
+}
+
 if (problems.length === 0) {
   process.stdout.write(
     `✅ pedagogy checks pass — all ${lessons.length} lessons reachable, ` +

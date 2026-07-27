@@ -8,6 +8,7 @@
 // disprove, which is exactly what the five hand-written grammar errors were not.
 
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -61,8 +62,14 @@ const LEVELS = [
 ];
 
 export function ExerciseRunner() {
-  const [level, setLevel] = useState('1');
-  const [kind, setKind] = useState('');
+  // ?kind= and ?level= open the runner already filtered.
+  //
+  // Lessons link here for topic practice — /grammar?kind=aspect&level=1 after the
+  // past-tense lesson — which reuses this runner rather than building a second one
+  // that would need its own grading and its own mastery recording.
+  const params = useSearchParams();
+  const [level, setLevel] = useState(params.get('level') ?? '1');
+  const [kind, setKind] = useState(params.get('kind') ?? '');
   const [items, setItems] = useState<Exercise[]>([]);
   const [attribution, setAttribution] = useState<Attribution | null>(null);
   const [index, setIndex] = useState(0);

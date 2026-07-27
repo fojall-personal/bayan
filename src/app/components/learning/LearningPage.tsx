@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { practiceHref } from '@/lib/lesson-practice';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -386,6 +388,22 @@ export function LearningPage({ userId }: LearningPageProps) {
                     ))}
                 </ul>
               )}
+
+              {/* Topic practice from the derived bank, where a defensible mapping
+                * exists. Three lessons have none — definiteness, predication and
+                * negation are not things the corpus annotates — and those simply show
+                * no link rather than a drill that looks related and is not. */}
+              {(() => {
+                const practice = practiceHref(lesson.id, lesson.level);
+                return practice ? (
+                  <p className="mb-4 text-sm text-ground-300">
+                    Practise this topic against the corpus:{' '}
+                    <Link href={practice.href} className="text-gold-400 hover:underline">
+                      {practice.label}
+                    </Link>
+                  </p>
+                ) : null;
+              })()}
 
               <div className="flex flex-wrap items-center justify-center gap-3">
                 {result.completed ? (
