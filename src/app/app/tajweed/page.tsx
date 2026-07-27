@@ -60,10 +60,9 @@ export default function TajweedPage() {
     setVersesLoading(true);
     setVersesError(null);
     try {
-      const data = await apiFetch<{
-        surahId: number;
-        verses: TajweedVerse[];
-        legend?: TajweedLegendEntry[];
+      // surahId is no longer echoed back — it is already in the request path.
+      const { data } = await apiFetch<{
+        data: { verses: TajweedVerse[]; legend?: TajweedLegendEntry[] };
       }>(`/api/tajweed/verses/${surahId}`);
       setVerses(data.verses ?? []);
       setLegend(data.legend ?? []);

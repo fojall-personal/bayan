@@ -45,7 +45,7 @@ What works today, honestly:
 | Database | Cloudflare D1, with `wrangler d1 migrations` |
 | Storage | Cloudflare R2 |
 | Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
-| Tests | Vitest (157 cases) + ESLint + `tsc`, all gated in CI |
+| Tests | Vitest (182 test blocks) + ESLint + `tsc`, all gated in CI |
 | CI/CD | GitHub Actions → Cloudflare Pages |
 | Cost | $0/month — a hard constraint, see plan §5 |
 
@@ -154,7 +154,7 @@ All three are enforced in CI ahead of the deploy job, and none of them existed
 before 2026-07-25 — the Worker alone had 69 type errors that nothing was checking.
 
 ```bash
-cd workers   && npx tsc --noEmit && npm test    # 157 vitest cases
+cd workers   && npx tsc --noEmit && npm test    # 182 vitest test blocks
 cd src/app   && npx tsc --noEmit && npm run lint
 ```
 

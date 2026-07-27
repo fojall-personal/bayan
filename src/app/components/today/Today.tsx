@@ -62,12 +62,12 @@ export function Today() {
     const [cov, dueRes, next] = await Promise.allSettled([
       apiFetch<{ data: Coverage }>('/api/progress/coverage'),
       apiFetch<{ data: DueItem[] }>('/api/memorization/review/today'),
-      apiFetch<{ lesson: NextLesson | null }>('/api/learning/next'),
+      apiFetch<{ data: { lesson: NextLesson | null } }>('/api/learning/next'),
     ]);
     if (cov.status === 'fulfilled') setCoverage(cov.value.data);
     else setError(apiErrorMessage(cov.reason));
     if (dueRes.status === 'fulfilled') setDue(dueRes.value.data ?? []);
-    if (next.status === 'fulfilled') setLesson(next.value.lesson ?? null);
+    if (next.status === 'fulfilled') setLesson(next.value.data?.lesson ?? null);
     setLoading(false);
   }, []);
 

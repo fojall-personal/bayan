@@ -45,6 +45,40 @@ app.use('/api/*', (c, next) => {
   })(c, next);
 });
 
+// Reject a malformed request body once, here, rather than in twelve handlers.
+//
+// Every POST handler wrote `const { x } = await c.req.json()` ABOVE its try block,
+// so a body that was not valid JSON threw before any error handling existed. Hono
+// turned that into a bare `Internal Server Error` — as plain text, not JSON, which
+// also defeats the client's apiErrorMessage, so the learner saw nothing useful.
+// Eleven endpoints behaved that way.
+//
+// Doing it as middleware rather than per handler matters for two reasons: a future
+// handler cannot forget it, and Hono caches the parsed body, so the handlers' own
+// `await c.req.json()` calls now resolve from that cache and can no longer throw.
+// No handler needed changing.
+//
+// An ABSENT body is left alone deliberately. POST /api/learning/vocabulary/start
+// documents "no body is fine — fall back to the default batch size", and turning
+// that into a 400 would break a working contract. Malformed is the bug; empty is a
+// choice.
+app.use('/api/*', async (c, next) => {
+  if (c.req.method === 'GET' || c.req.method === 'HEAD' || c.req.method === 'OPTIONS') {
+    return next();
+  }
+  const raw = await c.req.text();
+  if (raw.trim() === '') return next();
+  try {
+    JSON.parse(raw);
+  } catch {
+    return c.json(
+      { error: 'Request body must be valid JSON' },
+      400
+    );
+  }
+  return next();
+});
+
 // Auth. Two modes, and the choice is made by configuration rather than by a
 // request header, so a caller cannot pick the weaker one.
 //

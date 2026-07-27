@@ -1,0 +1,504 @@
+/**
+ * Every endpoint, dispatched for real.
+ *
+ * ── What this catches that unit tests cannot ────────────────────────────────
+ *
+ * The schema is applied from the real migration files, so SQLite parses every
+ * statement the handler issues. That alone catches the largest class of bug this
+ * repo has actually had: a wrong column name. SQLite raises on an unknown column
+ * even when the table is empty, so `SELECT surah_id FROM quran_verses` fails here
+ * exactly as it failed in production — where the real column is `surah`.
+ *
+ * Content tables (quran_verses, morphology, glosses, the exercise bank) are NOT
+ * seeded, because an empty database is the harsher test: the handler must return an
+ * empty result rather than throw, and every SQL statement still has to parse. Where
+ * emptiness would make an assertion vacuous, the test seeds the minimum first.
+ */
+
+import { afterEach, describe, expect, it } from 'vitest';
+import { harness, TEST_USER, type Harness } from './helpers/harness';
+
+let h: Harness | null = null;
+afterEach(() => {
+  h?.close();
+  h = null;
+});
+const H = () => (h ??= harness());
+
+/** GET endpoints that must answer on an empty-but-real database. */
+const GETS: [path: string, note: string][] = [
+  ['/health', 'public, no auth'],
+  ['/api/auth/whoami', 'identity mode'],
+  ['/api/auth/profile', 'the seeded user row'],
+  ['/api/assessment/results', 'no attempts yet'],
+  ['/api/certificate/export', 'nothing to certify yet'],
+  ['/api/grammar/exercises', 'empty bank'],
+  ['/api/grammar/exercises?level=1&kind=aspect', 'filtered, empty bank'],
+  ['/api/grammar/mastery', 'no attempts yet'],
+  ['/api/grammar/deepdive/nahw', 'a known category'],
+  ['/api/grammar/root/ktb', 'a root absent from an empty corpus'],
+  ['/api/learning/lessons', 'no lessons seeded'],
+  ['/api/learning/next', 'nothing unlocked yet'],
+  ['/api/learning/flashcards', 'empty queue'],
+  ['/api/memorization/surahs', 'nothing tracked'],
+  ['/api/memorization/curriculum', 'empty unit table'],
+  ['/api/memorization/curriculum?level=2&limit=5', 'filtered'],
+  ['/api/memorization/review/today', 'nothing due'],
+  ['/api/memorization/surah/1', 'nothing tracked for this surah'],
+  ['/api/progress/scores', 'no assessments'],
+  ['/api/progress/coverage', 'no known roots'],
+  ['/api/progress/calibration', 'samples from an empty corpus'],
+  ['/api/tajweed/mastery', 'rules exist from migration 0001'],
+  ['/api/tajweed/verses/1', 'no verses ingested'],
+  ['/api/tutor/history', 'no conversations'],
+  ['/api/tutor/suggested-exercises', 'no attempts'],
+];
+
+describe('every GET answers against the real schema', () => {
+  for (const [path, note] of GETS) {
+    it(`${path} — ${note}`, async () => {
+      const { status, body } = await H().json<Record<string, unknown>>(path);
+      // A 500 here almost always means the SQL did not parse — a wrong column or
+      // table name. That is the failure this whole file exists to catch.
+      expect(
+        status,
+        `${path} returned ${status}: ${JSON.stringify(body).slice(0, 200)}`
+      ).toBeLessThan(500);
+    });
+  }
+});
+
+describe('auth is enforced on every /api route', () => {
+  for (const [path] of GETS.filter(([p]) => p.startsWith('/api/'))) {
+    it(`${path} refuses an unauthenticated caller`, async () => {
+      const res = await H().request(path, { auth: false });
+      expect(res.status).toBe(401);
+    });
+  }
+
+  it('/health stays public', async () => {
+    const res = await H().request('/health', { auth: false });
+    expect(res.status).toBe(200);
+  });
+});
+
+/**
+ * Handlers that read a JSON body.
+ *
+ * Each must reject a malformed body with a 4xx and a JSON error, not a bare 500.
+ * All nine returned `Internal Server Error` as plain text before this suite existed,
+ * because `await c.req.json()` sat outside the try block — and a non-JSON body also
+ * defeats the client's apiErrorMessage, so the learner saw nothing useful.
+ */
+const BODY_POSTS: string[] = [
+  '/api/assessment/submit',
+  '/api/auth/onboarding',
+  '/api/grammar/parse',
+  '/api/grammar/exercise',
+  '/api/learning/lessons/grammar-01/submit',
+  '/api/learning/flashcards/review',
+  '/api/memorization/1/review',
+  '/api/memorization/1/recall',
+  '/api/memorization/add',
+  '/api/progress/calibration',
+  '/api/tutor/chat',
+  '/api/learning/vocabulary/start',
+];
+
+describe('malformed bodies are rejected, not crashed on', () => {
+  for (const path of BODY_POSTS) {
+    it(`POST ${path} rejects invalid JSON with 4xx JSON`, async () => {
+      const { status, body } = await H().json<Record<string, unknown>>(path, {
+        method: 'POST',
+        body: 'not json at all',
+      });
+      expect(
+        status,
+        `expected 4xx, got ${status} — the body parse is probably outside the try`
+      ).toBeGreaterThanOrEqual(400);
+      expect(status).toBeLessThan(500);
+      // Plain-text "Internal Server Error" is what an unhandled throw produces.
+      expect(body.__nonJson, 'response was not JSON').toBeUndefined();
+    });
+  }
+});
+
+describe('POSTs validate their inputs', () => {
+  it('memorization/add rejects a missing surah', async () => {
+    const { status } = await H().json('/api/memorization/add', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    expect(status).toBeGreaterThanOrEqual(400);
+    expect(status).toBeLessThan(500);
+  });
+
+  it('memorization/add rejects an out-of-range ayah', async () => {
+    const { status } = await H().json('/api/memorization/add', {
+      method: 'POST',
+      body: JSON.stringify({ surahId: 1, ayahFrom: 1, ayahTo: 999 }),
+    });
+    expect(status).toBeGreaterThanOrEqual(400);
+    expect(status).toBeLessThan(500);
+  });
+
+  it('grammar/exercise rejects an id that matches nothing', async () => {
+    const { status, body } = await H().json<{ error?: string }>(
+      '/api/grammar/exercise',
+      {
+        method: 'POST',
+        body: JSON.stringify({ exerciseId: 'no-such-id', answer: 'x', correct: true }),
+      }
+    );
+    expect(status).toBe(400);
+    expect(body.error).toMatch(/unknown exerciseid/i);
+  });
+
+  it('vocabulary/start rejects a non-integer count', async () => {
+    const { status } = await H().json('/api/learning/vocabulary/start', {
+      method: 'POST',
+      body: JSON.stringify({ count: 2.5 }),
+    });
+    expect(status).toBe(400);
+  });
+});
+
+describe('the ayah endpoint', () => {
+  it('404s for an ayah that is not ingested', async () => {
+    const { status } = await H().json('/api/quran/ayah/1/1');
+    expect(status).toBe(404);
+  });
+
+  it('rejects a surah outside 1–114', async () => {
+    const { status } = await H().json('/api/quran/ayah/999/1');
+    expect(status).toBeGreaterThanOrEqual(400);
+    expect(status).toBeLessThan(500);
+  });
+
+  it('returns text, words and parse for a seeded ayah', async () => {
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO quran_verses (surah, ayah, text_uthmani, text_simple, translation, tajweed_tags)
+         VALUES (1, 2, 'ٱلْحَمْدُ لِلَّهِ', 'الحمد لله', 'All praise…', '[]')`
+      )
+      .run();
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_gloss (surah_id, ayah_id, position, arabic, transliteration, english)
+         VALUES (1, 2, 1, 'ٱلْحَمْدُ', 'al-hamdu', 'All praise')`
+      )
+      .run();
+    // `form` and `lemma` are stored in Buckwalter, which is the whole point of the
+    // assertion below.
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_morphology
+           (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos)
+         VALUES (1, 2, 1, 2, 'Hamodu', 'Hamod', 'Hmd', 'N')`
+      )
+      .run();
+
+    const { status, body } = await t.json<{
+      data: {
+        textUthmani: string;
+        words: { arabic: string; segments: { arabic: string; lemma: string; root: string }[] }[];
+      };
+    }>('/api/quran/ayah/1/2');
+
+    expect(status).toBe(200);
+    expect(body.data.textUthmani).toContain('ٱلْحَمْدُ');
+    const seg = body.data.words[0].segments[0];
+    // Buckwalter must never reach the client on these two fields: /read prints the
+    // lemma, and it read "lemma Hamod" in production.
+    expect(seg.lemma).toBe('حَمْد');
+    expect(seg.arabic).toBe('حَمْدُ');
+    expect(seg.lemma).not.toMatch(/[A-Za-z{}~`]/);
+    expect(seg.arabic).not.toMatch(/[A-Za-z{}~`]/);
+  });
+});
+
+describe('grammar mastery records what the learner answered', () => {
+  it('groups by exercise kind and derives accuracy', async () => {
+    const t = H();
+    for (let i = 1; i <= 6; i += 1) {
+      t.db
+        .prepare(
+          `INSERT INTO grammar_exercise_bank
+             (id, kind, level, word_arabic, prompt, answer, options, explanation,
+              surah_id, ayah_id, word_index, segment_index)
+           VALUES (?, 'aspect', 1, 'x', 'p', 'a', '[]', 'e', 1, 1, ?, 1)`
+        )
+        // The bank is unique on (kind, surah, ayah, word_index, segment_index), so
+        // the location has to vary as well as the id.
+        .run(`aspect-${i}`, i);
+    }
+    for (let i = 1; i <= 6; i += 1) {
+      const { status } = await t.json('/api/grammar/exercise', {
+        method: 'POST',
+        body: JSON.stringify({ exerciseId: `aspect-${i}`, answer: 'a', correct: i <= 4 }),
+      });
+      expect(status).toBe(200);
+    }
+
+    const { body } = await t.json<{
+      data: { category: string; totalAttempts: number; correctAttempts: number; percentage: number; masteryLevel: number }[];
+    }>('/api/grammar/mastery');
+
+    const aspect = body.data.find((m) => m.category === 'aspect');
+    expect(aspect).toBeDefined();
+    expect(aspect!.totalAttempts).toBe(6);
+    expect(aspect!.correctAttempts).toBe(4);
+    expect(aspect!.percentage).toBe(67);
+    // Derived, not the hardcoded default of 1 the column used to keep forever.
+    expect(aspect!.masteryLevel).toBeGreaterThan(1);
+  });
+
+  it('writes nothing at all when the exercise id is unknown', async () => {
+    const t = H();
+    await t.json('/api/grammar/exercise', {
+      method: 'POST',
+      body: JSON.stringify({ exerciseId: 'nope', answer: 'a', correct: true }),
+    });
+    const attempts = t.db
+      .prepare(`SELECT COUNT(*) AS n FROM grammar_exercises WHERE user_id = ?`)
+      .get(TEST_USER) as { n: number };
+    // The attempt insert used to happen before the id was validated, leaving a row
+    // with no matching mastery update.
+    expect(attempts.n).toBe(0);
+  });
+});
+
+describe('vocabulary is scoped to the hifz plan', () => {
+  it('prefers content words from memorised ayahs over global frequency', async () => {
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO memorization (user_id, surah_id, ayah_from, ayah_to, status)
+         VALUES (?, 112, 1, 1, 'learning')`
+      )
+      .run(TEST_USER);
+    // Two words in the plan: one a content word (PN), one a particle (NEG).
+    for (const [pos, arabic, english, position] of [
+      ['PN', 'ٱللَّهُ', 'Allah', 1],
+      ['NEG', 'وَلَا', 'and not', 2],
+    ] as const) {
+      t.db
+        .prepare(
+          `INSERT INTO quran_word_gloss (surah_id, ayah_id, position, arabic, transliteration, english)
+           VALUES (112, 1, ?, ?, 't', ?)`
+        )
+        .run(position, arabic, english);
+      t.db
+        .prepare(
+          `INSERT INTO quran_word_morphology
+             (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos)
+           VALUES (112, 1, ?, 1, 'f', 'l', 'r', ?)`
+        )
+        .run(position, pos);
+    }
+
+    const { status, body } = await t.json<{
+      data: {
+        added: number;
+        fromHifzPlan: number;
+        sources: { word: string; source: string }[];
+      };
+    }>('/api/learning/vocabulary/start', {
+      method: 'POST',
+      body: JSON.stringify({ count: 5 }),
+    });
+
+    expect(status).toBe(200);
+    expect(body.data.fromHifzPlan).toBe(1);
+    expect(body.data.sources[0].word).toBe('ٱللَّهُ');
+    expect(body.data.sources[0].source).toBe('112:1');
+    // The particle must not be enrolled: a flashcard for "and not" teaches nothing.
+    expect(body.data.sources.map((s) => s.word)).not.toContain('وَلَا');
+  });
+
+  it('carries the source location onto the card, with the gloss from that ayah', async () => {
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO memorization (user_id, surah_id, ayah_from, ayah_to, status)
+         VALUES (?, 1, 1, 1, 'learning')`
+      )
+      .run(TEST_USER);
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_gloss (surah_id, ayah_id, position, arabic, transliteration, english)
+         VALUES (1, 1, 1, 'ٱللَّهِ', 'allahi', '(of) Allah')`
+      )
+      .run();
+    // The same form elsewhere with a different gloss. Aggregating by word instead of
+    // joining on location is what produced "(The) Promise of Allah".
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_gloss (surah_id, ayah_id, position, arabic, transliteration, english)
+         VALUES (9, 111, 3, 'ٱللَّهِ', 'allahi', '(The) Promise of Allah')`
+      )
+      .run();
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_morphology
+           (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos)
+         VALUES (1, 1, 1, 1, 'f', 'l', 'Alh', 'PN')`
+      )
+      .run();
+
+    await t.json('/api/learning/vocabulary/start', {
+      method: 'POST',
+      body: JSON.stringify({ count: 5 }),
+    });
+
+    const { body } = await t.json<{
+      data: { word: string; meaning: string; source: string; root: string }[];
+    }>('/api/learning/flashcards');
+
+    const card = body.data.find((c) => c.word === 'ٱللَّهِ');
+    expect(card).toBeDefined();
+    expect(card!.source).toBe('1:1');
+    expect(card!.meaning).toBe('(of) Allah');
+    expect(card!.root).toBe('Alh');
+  });
+});
+
+describe('known roots and coverage', () => {
+  it('refuses a root the corpus does not attest', async () => {
+    // Not a test-setup problem — the handler deliberately rejects roots with no
+    // corpus occurrence, because a typo would inflate the count with something that
+    // can never make an ayah readable.
+    const { status, body } = await H().json<{ error: string }>(
+      '/api/progress/roots/zzz/known',
+      { method: 'POST' }
+    );
+    expect(status).toBe(404);
+    expect(body.error).toMatch(/no root/i);
+  });
+
+  it('records a root, reports the delta, and undoes it', async () => {
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_morphology
+           (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos)
+         VALUES (2, 1, 1, 1, 'f', 'l', 'ktb', 'N')`
+      )
+      .run();
+    const post = await t.json<{ data: { ayahsUnlocked: number } }>(
+      '/api/progress/roots/ktb/known',
+      { method: 'POST' }
+    );
+    expect(post.status).toBe(200);
+    const row = t.db
+      .prepare(`SELECT COUNT(*) AS n FROM user_known_root WHERE user_id = ? AND root = 'ktb'`)
+      .get(TEST_USER) as { n: number };
+    expect(row.n).toBe(1);
+
+    const del = await t.json('/api/progress/roots/ktb/known', { method: 'DELETE' });
+    expect(del.status).toBe(200);
+    const after = t.db
+      .prepare(`SELECT COUNT(*) AS n FROM user_known_root WHERE user_id = ? AND root = 'ktb'`)
+      .get(TEST_USER) as { n: number };
+    expect(after.n).toBe(0);
+  });
+});
+
+describe('the tutor', () => {
+  it('stores each exchange and returns it as history', async () => {
+    const t = H();
+    const chat = await t.json('/api/tutor/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message: 'explain madd', conversationHistory: [] }),
+    });
+    expect(chat.status).toBe(200);
+
+    const { body } = await t.json<{ data: { userMessage: string }[] }>(
+      '/api/tutor/history'
+    );
+    expect(body.data.length).toBe(1);
+    expect(body.data[0].userMessage).toBe('explain madd');
+  });
+
+  it('ranks weak lessons by accuracy, not by attempt count', async () => {
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO lessons (id, title, module, level, content, exercises, prerequisites)
+         VALUES ('grammar-01', 'Articles and Nouns', 'grammar', 1, '{}', '[]', '[]')`
+      )
+      .run();
+    // 2 of 8 correct: genuinely weak.
+    // Two attempts, 1 of 4 each — 2 of 8 overall. Indexed ids because both rows are
+    // otherwise identical and the primary key would collide.
+    [
+      [4, 1],
+      [4, 1],
+    ].forEach(([answered, correct], i) => {
+      t.db
+        .prepare(
+          `INSERT INTO quiz_attempts
+             (id, user_id, lesson_id, module, questions_answered, questions_correct)
+           VALUES (?, ?, 'grammar-01', 'grammar', ?, ?)`
+        )
+        .run(`qa-${i}`, TEST_USER, answered, correct);
+    });
+
+    const { body } = await t.json<{
+      data: { recommendations: { title: string; reason: string; accuracy: number; priority: string }[] };
+    }>('/api/tutor/suggested-exercises');
+
+    const rec = body.data.recommendations[0];
+    expect(rec.title).toBe('Articles and Nouns');
+    expect(rec.accuracy).toBeCloseTo(0.25, 2);
+    expect(rec.priority).toBe('high');
+    // The old query said "3 errors in this area" and meant three attempts.
+    expect(rec.reason).toBe('2 of 8 correct across 2 attempts');
+  });
+});
+
+/**
+ * One envelope, everywhere.
+ *
+ * Success responses used to come back under seven different keys — `data` on 28
+ * handlers, then `success`, `surahId`, `surahs`, `due`, `added`, `lesson`,
+ * `message`. The client has to special-case each, and when it guesses wrong nothing
+ * fails loudly: it reads `undefined`, falls back to an empty default, and renders a
+ * plausible screen with no data in it.
+ *
+ * That is not hypothetical. Today.tsx asked for `{ data: DueItem[] }` from
+ * /api/memorization/review/today, which returned `{ due }`, and wrote
+ * `setDue(res.data ?? [])` — so the landing screen reported nothing due no matter
+ * how many reviews were waiting.
+ */
+describe('every success response uses the {data} envelope', () => {
+  for (const [path, note] of GETS.filter(([p]) => p.startsWith('/api/'))) {
+    it(`${path} — ${note}`, async () => {
+      const { status, body } = await H().json<Record<string, unknown>>(path);
+      if (status >= 400) return; // errors carry {error}, checked elsewhere
+      expect(
+        Object.prototype.hasOwnProperty.call(body, 'data'),
+        `${path} returned keys [${Object.keys(body).join(', ')}] instead of {data}`
+      ).toBe(true);
+    });
+  }
+
+  it('POST /api/memorization/add answers with {data}', async () => {
+    const { status, body } = await H().json<Record<string, unknown>>(
+      '/api/memorization/add',
+      { method: 'POST', body: JSON.stringify({ surahId: 112, ayahFrom: 1, ayahTo: 4 }) }
+    );
+    expect(status).toBe(200);
+    expect(Object.keys(body)).toEqual(['data']);
+  });
+
+  it('POST /api/learning/vocabulary/start answers with {data}', async () => {
+    const { status, body } = await H().json<Record<string, unknown>>(
+      '/api/learning/vocabulary/start',
+      { method: 'POST', body: JSON.stringify({ count: 3 }) }
+    );
+    expect(status).toBe(200);
+    expect(Object.keys(body)).toEqual(['data']);
+  });
+});

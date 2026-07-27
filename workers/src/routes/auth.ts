@@ -75,7 +75,7 @@ authRoutes.post('/onboarding', async (c) => {
       [goal, currentPath, userId]
     );
 
-    return c.json({ success: true, currentPath });
+    return c.json({ data: { success: true, currentPath } });
   } catch (error) {
     console.error('Onboarding error:', error);
     return c.json({ error: 'Internal server error' }, 500);

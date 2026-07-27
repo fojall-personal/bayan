@@ -73,12 +73,14 @@ export function Flashcards({ userId }: FlashcardsProps) {
     setStartError(null);
     setStartMessage(null);
     try {
-      const res = await apiPost<{
-        added: number;
-        words: string[];
-        fromHifzPlan: number;
-        fromFrequency: number;
-        message?: string;
+      const { data: res } = await apiPost<{
+        data: {
+          added: number;
+          words: string[];
+          fromHifzPlan: number;
+          fromFrequency: number;
+          message?: string;
+        };
       }>('/api/learning/vocabulary/start', { count: 10 });
       if (res.added === 0) {
         setStartMessage(res.message ?? 'No new words left to add.');

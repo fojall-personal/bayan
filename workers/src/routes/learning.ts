@@ -124,10 +124,12 @@ learningRoutes.get('/next', async (c) => {
 
     if (!nextLesson) {
       return c.json({
-        message: 'All lessons in your path are complete!',
-        lesson: null,
-        totalInPath: allLessons.length,
-        completedInPath: completedIds.length,
+        data: {
+          message: 'All lessons in your path are complete!',
+          lesson: null,
+          totalInPath: allLessons.length,
+          completedInPath: completedIds.length,
+        },
       });
     }
 
@@ -138,21 +140,23 @@ learningRoutes.get('/next', async (c) => {
     );
 
     return c.json({
-      lesson: {
-        ...nextLesson,
-        content: JSON.parse(nextLesson.content || '[]'),
-        exercises: JSON.parse(nextLesson.exercises || '[]'),
+      data: {
+        lesson: {
+          ...nextLesson,
+          content: JSON.parse(nextLesson.content || '[]'),
+          exercises: JSON.parse(nextLesson.exercises || '[]'),
+        },
+        progress: progress
+          ? {
+              completed: (progress.completed as number) === 1,
+              score: progress.score,
+              attempts: progress.attempts,
+              streak: progress.streak,
+            }
+          : null,
+        totalInPath: allLessons.length,
+        completedInPath: completedIds.length,
       },
-      progress: progress
-        ? {
-            completed: (progress.completed as number) === 1,
-            score: progress.score,
-            attempts: progress.attempts,
-            streak: progress.streak,
-          }
-        : null,
-      totalInPath: allLessons.length,
-      completedInPath: completedIds.length,
     });
   } catch (error) {
     console.error('Learning next error:', error);
@@ -537,7 +541,7 @@ learningRoutes.post('/vocabulary/start', async (c) => {
     const next = [...fromPlan, ...fromFrequency];
 
     if (next.length === 0) {
-      return c.json({ added: 0, words: [], message: 'No new words available' });
+      return c.json({ data: { added: 0, words: [], message: 'No new words available' } });
     }
 
     // Due immediately: the point of adding a word is to study it now.
@@ -554,16 +558,18 @@ learningRoutes.post('/vocabulary/start', async (c) => {
     }
 
     return c.json({
-      added: next.length,
-      words: next.map((r) => r.word),
-      // Where each word came from, so the UI can say "Al-Fatihah 1:2" rather than
-      // presenting an unexplained list.
-      sources: next.map((r) => ({
-        word: r.word,
-        source: r.surah_id ? `${r.surah_id}:${r.ayah_id}` : 'frequency',
-      })),
-      fromHifzPlan: fromPlan.length,
-      fromFrequency: fromFrequency.length,
+      data: {
+        added: next.length,
+        words: next.map((r) => r.word),
+        // Where each word came from, so the UI can say "Al-Fatihah 1:2" rather than
+        // presenting an unexplained list.
+        sources: next.map((r) => ({
+          word: r.word,
+          source: r.surah_id ? `${r.surah_id}:${r.ayah_id}` : 'frequency',
+        })),
+        fromHifzPlan: fromPlan.length,
+        fromFrequency: fromFrequency.length,
+      },
     });
   } catch (error) {
     console.error('Vocabulary start error:', error);

@@ -21,7 +21,7 @@ memorizationRoutes.get('/surah/:surahId', async (c) => {
       [userId, surahId]
     );
 
-    return c.json({ surahId, entries });
+    return c.json({ data: entries });
   } catch (error) {
     console.error('Memorization surah error:', error);
     return c.json({ error: 'Internal server error' }, 500);
@@ -77,8 +77,10 @@ memorizationRoutes.post('/add', async (c) => {
     );
 
     return c.json({
-      success: true,
-      entry: { surahId, ayahFrom, ayahTo, status: 'learning' },
+      data: {
+        success: true,
+        entry: { surahId, ayahFrom, ayahTo, status: 'learning' },
+      },
     });
   } catch (error) {
     console.error('Memorization add error:', error);
@@ -139,10 +141,12 @@ memorizationRoutes.post('/:id/review', async (c) => {
     );
 
     return c.json({
-      success: true,
-      nextReview: result.nextReview,
-      status: result.status,
-      interval: result.interval,
+      data: {
+        success: true,
+        nextReview: result.nextReview,
+        status: result.status,
+        interval: result.interval,
+      },
     });
   } catch (error) {
     console.error('Memorization review error:', error);
@@ -205,10 +209,12 @@ memorizationRoutes.post('/:id/recall', async (c) => {
     );
 
     return c.json({
-      success: true,
-      correct: isCorrect,
-      nextAyah,
-      newQuality,
+      data: {
+        success: true,
+        correct: isCorrect,
+        nextAyah,
+        newQuality,
+      },
     });
   } catch (error) {
     console.error('Memorization recall error:', error);
@@ -233,7 +239,7 @@ memorizationRoutes.get('/review/today', async (c) => {
       [userId]
     );
 
-    return c.json({ due });
+    return c.json({ data: due });
   } catch (error) {
     console.error('Memorization today error:', error);
     return c.json({ error: 'Internal server error' }, 500);
@@ -259,7 +265,7 @@ memorizationRoutes.get('/surahs', async (c) => {
       [userId]
     );
 
-    return c.json({ surahs });
+    return c.json({ data: surahs });
   } catch (error) {
     console.error('Memorization surahs error:', error);
     return c.json({ error: 'Internal server error' }, 500);

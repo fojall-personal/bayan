@@ -77,26 +77,23 @@ export function LearningPage({ userId }: LearningPageProps) {
   const fetchNextLesson = async () => {
     setLoading(true);
     try {
-      // The two endpoints do not share a response shape: /next returns
-      // { lesson, message } and /lessons/:id returns { data: <lesson> }. Reading
-      // `.lesson` off the second returns undefined and renders "No more lessons
-      // available" for a lesson that loaded fine, so unwrap each explicitly.
+      // Both endpoints now answer with {data}; they differ only in what sits
+      // inside it — /lessons/:id returns the lesson itself, /next wraps it
+      // alongside progress and a message for the all-complete case.
       const data = await apiFetch<{
-        lesson?: Lesson | null;
-        data?: Lesson;
-        message?: string;
+        data?: Lesson & { lesson?: Lesson | null; message?: string };
       }>(
         requestedLesson
           ? `/api/learning/lessons/${encodeURIComponent(requestedLesson)}`
           : '/api/learning/next'
       );
-      const loaded = requestedLesson ? data.data : data.lesson;
+      const loaded = requestedLesson ? data.data : (data.data?.lesson ?? null);
       if (loaded) {
-        setLesson(loaded);
+        setLesson(loaded as Lesson);
         setError(null);
         setResult(null);
       } else {
-        setError(data.message || 'No more lessons available');
+        setError(data.data?.message || 'No more lessons available');
       }
     } catch (err) {
       setError(apiErrorMessage(err));

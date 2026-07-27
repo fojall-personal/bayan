@@ -63,10 +63,13 @@ tajweedRoutes.get('/verses/:surahId', async (c) => {
       };
     });
 
+    // surahId is not echoed back: it is already in the request path, so it is
+    // context the caller supplied rather than payload.
     return c.json({
-      surahId: Number(surahId),
-      verses: shaped,
-      legend: [...legend.values()],
+      data: {
+        verses: shaped,
+        legend: [...legend.values()],
+      },
     });
   } catch (error) {
     console.error('Tajweed verses error:', error);

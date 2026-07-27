@@ -26,9 +26,9 @@ export function AdvancedMemorizationTools() {
   const startAudioTest = async () => {
     setLoading(true);
     try {
-      const data = await apiFetch<{ due: unknown[] }>('/api/memorization/review/today');
-      if (data.due?.length > 0) {
-        setCurrentAyah(data.due[0]);
+      const data = await apiFetch<{ data: unknown[] }>('/api/memorization/review/today');
+      if (data.data?.length > 0) {
+        setCurrentAyah(data.data[0]);
       } else {
         // Show inline error instead of alert
         setNotice('No ayahs are due for review today. Add some memorisation first.');
@@ -67,9 +67,9 @@ export function AdvancedMemorizationTools() {
 
     // Load next ayah
     try {
-      const data = await apiFetch<{ due: unknown[] }>('/api/memorization/review/today');
-      if (data.due?.length > 0) {
-        setCurrentAyah(data.due[0]);
+      const data = await apiFetch<{ data: unknown[] }>('/api/memorization/review/today');
+      if (data.data?.length > 0) {
+        setCurrentAyah(data.data[0]);
       } else {
         setCurrentAyah(null);
         setAudioTesting(false);

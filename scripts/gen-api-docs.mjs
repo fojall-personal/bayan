@@ -202,8 +202,13 @@ const migrationCount = (await readdir(join(root, 'workers/src/db/migrations'))).
   (f) => f.endsWith('.sql')
 ).length;
 // The suite count drifts for the same reason: README said "39 cases" twice while
-// vitest was reporting 157. Counting it() and test() calls agrees with vitest's own
-// total, so it is derivable rather than remembered.
+// vitest was reporting 157.
+//
+// What is counted here is it()/test() BLOCKS, not executed cases. Those were the
+// same number until the route suite started generating cases in a loop — one it()
+// inside `for (const path of GETS)` is one block and twenty-five cases. So the
+// README says "test blocks", which is what this can actually derive. Claiming
+// "cases" would be a number that is wrong the moment anyone parameterises a test.
 let testCount = 0;
 for (const f of await readdir(join(root, 'workers/test'))) {
   if (!f.endsWith('.ts')) continue;
@@ -224,10 +229,10 @@ const README_ROWS = [
     `| Database (D1) | ✅ ${migrationCount} migrations applied, seeded |`,
   ],
   [
-    /\| Tests \| Vitest \(\d+ cases\)/,
-    `| Tests | Vitest (${testCount} cases)`,
+    /\| Tests \| Vitest \(\d+ (?:cases|test blocks)\)/,
+    `| Tests | Vitest (${testCount} test blocks)`,
   ],
-  [/# \d+ vitest cases/, `# ${testCount} vitest cases`],
+  [/# \d+ vitest (?:cases|test blocks)/, `# ${testCount} vitest test blocks`],
   // The prose sentence immediately above the table repeats two of them.
   [/All \d+ API endpoints resolve, all \d+\n?pages render/, null],
 ];
@@ -281,11 +286,41 @@ if (check) {
     process.stderr.write(
       '✘ README.md status table is out of date — it should read ' +
         `${pages.length} routes, ${navCount} nav links, ${list.length} endpoints, ` +
-        `${migrationCount} migrations, ${testCount} tests.\n` +
+        `${migrationCount} migrations, ${testCount} test blocks.\n` +
         '  Run: node scripts/gen-api-docs.mjs\n'
     );
     process.exit(1);
   }
+  // One response envelope, checked statically as well as in the suite.
+  //
+  // Success bodies came back under seven different keys. The client then has to
+  // special-case each, and a wrong guess fails silently: it reads `undefined`,
+  // falls back to a default, and renders a plausible screen with nothing in it.
+  // Today.tsx did exactly that against /api/memorization/review/today for as long
+  // as that screen existed — `res.data ?? []` where the endpoint sent `{ due }` —
+  // so the landing page always claimed nothing was due.
+  //
+  // The route tests assert this per endpoint at runtime; this catches a new handler
+  // the moment it is written, without needing a test for it first.
+  const badEnvelopes = [];
+  for (const file of files) {
+    const src = await readFile(join(ROUTES_DIR, file), 'utf-8');
+    for (const m of src.matchAll(/return c\.json\(\s*\{\s*([A-Za-z_]\w*)/g)) {
+      if (m[1] === 'error' || m[1] === 'data') continue;
+      const line = src.slice(0, m.index).split('\n').length;
+      badEnvelopes.push(`${file}:${line} returns {${m[1]} …}`);
+    }
+  }
+  if (badEnvelopes.length > 0) {
+    process.stderr.write(
+      `✘ ${badEnvelopes.length} response(s) not using the {data} envelope:\n` +
+        badEnvelopes.map((b) => `    ${b}\n`).join('') +
+        '  Success bodies use {data}, errors use {error}. Anything else forces the\n' +
+        '  client to special-case it, and a wrong guess renders an empty screen.\n'
+    );
+    process.exit(1);
+  }
+
   // An endpoint with no caller is dead code or a lost feature, and this repo has now
   // had both: /api/progress/dashboard outlived the page it served, while
   // /api/tutor/history and /api/grammar/mastery were working features no screen ever
@@ -333,7 +368,7 @@ if (readme !== readmeBefore) await writeFile(README, readme, 'utf-8');
 process.stdout.write(
   `wrote ${list.length} endpoints and ${pages.length} pages into AGENTS.md\n` +
     `  README: ${pages.length} routes, ${navCount} nav links, ${list.length} endpoints, ` +
-    `${migrationCount} migrations, ${testCount} tests\n`
+    `${migrationCount} migrations, ${testCount} test blocks\n`
 );
 if (orphans.length) {
   process.stdout.write(`  orphaned pages: ${orphans.map((o) => o.path).join(', ')}\n`);

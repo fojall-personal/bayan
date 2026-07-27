@@ -35,10 +35,10 @@ export function SurahProgress({ surahId, surahName, totalAyahs }: SurahProgressP
   const fetchSurahProgress = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiFetch<{ entries: MemorizationEntry[] }>(
+      const data = await apiFetch<{ data: MemorizationEntry[] }>(
         `/api/memorization/surah/${surahId}`
       );
-      setEntries(data.entries || []);
+      setEntries(data.data || []);
     } catch (error) {
       console.error('Failed to fetch surah progress:', error);
     } finally {

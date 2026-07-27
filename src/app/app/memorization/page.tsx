@@ -67,8 +67,8 @@ export default function MemorizationPage() {
   const fetchSurahs = async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!silent) setLoading(true);
     try {
-      const data = await apiFetch<{ surahs: SurahSummary[] }>('/api/memorization/surahs');
-      setSurahs(data.surahs || []);
+      const data = await apiFetch<{ data: SurahSummary[] }>('/api/memorization/surahs');
+      setSurahs(data.data || []);
       setError(null);
     } catch (err) {
       console.error('Failed to fetch surahs:', err);
@@ -81,10 +81,10 @@ export default function MemorizationPage() {
   const fetchTodayReview = async () => {
     setLoading(true);
     try {
-      const data = await apiFetch<{ due: MemorizationEntry[] }>(
+      const data = await apiFetch<{ data: MemorizationEntry[] }>(
         '/api/memorization/review/today'
       );
-      setDueEntries(data.due || []);
+      setDueEntries(data.data || []);
       setError(null);
     } catch (err) {
       console.error('Failed to fetch today review:', err);
