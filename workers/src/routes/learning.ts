@@ -3,11 +3,12 @@ import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 import type { LessonRow } from '../types';
-import { applySM2 } from '../lib/space-repetition';
+import { schedule, isGrade, GRADE_VALUES } from '../lib/space-repetition';
 import type {
   LessonProgressRow,
   LessonsRow,
   UsersRow,
+  VocabularyMasteryRow,
 } from '../db/schema';
 
 export interface Exercise {
@@ -610,23 +611,27 @@ learningRoutes.post('/vocabulary/start', async (c) => {
 learningRoutes.post('/flashcards/review', async (c) => {
   const userId = c.get('userId');
   const db = getDb(c);
-  const { word, quality } = await c.req.json();
+  const { word, grade } = await c.req.json();
+
+  if (!isGrade(grade)) {
+    return c.json({ error: `grade must be one of ${GRADE_VALUES.join(', ')}` }, 400);
+  }
 
   try {
-    // Use the same SM-2 implementation as memorization rather than a second,
-    // untested formula. The old one was `interval = quality >= 4 ? 2^(q-1) : q >= 3
-    // ? 2 : 1`, computed from the QUALITY alone and ignoring the stored interval
-    // and ease factor entirely — so a word answered "OK" on its fiftieth review
-    // still came back in two days, and vocabulary_mastery's ease_factor and
-    // interval_days columns were never read or written. Same class of bug as the
-    // one already fixed in the memorization scheduler.
-    const current = await db.get<{
-      interval_days: number;
-      ease_factor: number;
-      reviews: number;
-    }>(
-      `SELECT interval_days, ease_factor, reviews FROM vocabulary_mastery
-       WHERE user_id = ? AND word = ?`,
+    // The same scheduler as memorization rather than a second, untested formula.
+    //
+    // The original was `interval = quality >= 4 ? 2^(q-1) : q >= 3 ? 2 : 1`, computed
+    // from the quality ALONE — so a word answered "OK" on its fiftieth review still
+    // came back in two days, and the stored interval and ease factor were never read.
+    // That got fixed by routing it through SM-2; this routes it through FSRS.
+    const current = await db.get<
+      Pick<
+        VocabularyMasteryRow,
+        'interval_days' | 'reviews' | 'stability' | 'difficulty' | 'last_review' | 'fsrs_state'
+      >
+    >(
+      `SELECT interval_days, reviews, stability, difficulty, last_review, fsrs_state
+         FROM vocabulary_mastery WHERE user_id = ? AND word = ?`,
       [userId, word]
     );
 
@@ -634,21 +639,18 @@ learningRoutes.post('/flashcards/review', async (c) => {
       return c.json({ error: 'That word is not in your review queue' }, 404);
     }
 
-    // applySM2 was written for memorization entries; a flashcard only carries the
-    // scheduling fields, so the rest are filled with values it does not read for
-    // scheduling. `status` is not persisted for vocabulary — vocabulary_mastery
-    // tracks meaning_known / reading_known instead.
-    const result = applySM2(
+    // `status` is not persisted for vocabulary — vocabulary_mastery tracks
+    // meaning_known / reading_known instead — so the derived label is discarded here.
+    const result = schedule(
       {
-        id: word,
-        quality,
+        stability: current.stability,
+        difficulty: current.difficulty,
+        last_review: current.last_review,
+        fsrs_state: current.fsrs_state,
         interval: current.interval_days,
-        ease_factor: current.ease_factor,
-        reviews_count: current.reviews,
-        status: 'learning',
-        next_review: '',
+        reviews: current.reviews,
       },
-      quality
+      grade
     );
 
     await db.run(
@@ -656,17 +658,27 @@ learningRoutes.post('/flashcards/review', async (c) => {
          last_seen = datetime('now'),
          next_review = ?,
          interval_days = ?,
-         ease_factor = ?,
          reviews = reviews + 1,
-         meaning_known = CASE WHEN ? >= 4 THEN 1 ELSE meaning_known END,
-         reading_known = CASE WHEN ? >= 3 THEN 1 ELSE reading_known END
+         stability = ?,
+         difficulty = ?,
+         fsrs_state = ?,
+         last_review = ?,
+         -- "Known" is claimed only on an unprompted pass. 'good' means recalled
+         -- correctly and 'easy' effortlessly; 'hard' means it was dragged up, which
+         -- is not the same as knowing it. (No backticks in here: this comment sits
+         -- inside a JS template literal, and one would end the string.)
+         meaning_known = CASE WHEN ? IN ('good', 'easy') THEN 1 ELSE meaning_known END,
+         reading_known = CASE WHEN ? <> 'again' THEN 1 ELSE reading_known END
        WHERE user_id = ? AND word = ?`,
       [
         result.nextReview,
         result.interval,
-        result.easeFactor,
-        quality,
-        quality,
+        result.stability,
+        result.difficulty,
+        result.fsrsState,
+        result.lastReview,
+        grade,
+        grade,
         userId,
         word,
       ]
@@ -677,7 +689,8 @@ learningRoutes.post('/flashcards/review', async (c) => {
         success: true,
         next_review: result.nextReview,
         interval: result.interval,
-        ease_factor: result.easeFactor,
+        stability: result.stability,
+        difficulty: result.difficulty,
       },
     });
   } catch (error) {

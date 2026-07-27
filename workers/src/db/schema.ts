@@ -98,6 +98,10 @@ export interface MemorizationRow {
   revision_count: number;
   interval: number;
   ease_factor: number;
+  stability: number | null;
+  difficulty: number | null;
+  last_review: string | null;
+  fsrs_state: number | null;
 }
 
 export interface MemorizationUnitsRow {
@@ -246,4 +250,8 @@ export interface VocabularyMasteryRow {
   source_surah: number | null;
   source_ayah: number | null;
   source_position: number | null;
+  stability: number | null;
+  difficulty: number | null;
+  last_review: string | null;
+  fsrs_state: number | null;
 }

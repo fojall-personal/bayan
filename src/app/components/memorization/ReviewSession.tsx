@@ -16,15 +16,32 @@ interface MemorizationEntry {
   ayah_text?: string;
 }
 
+type Grade = 'again' | 'hard' | 'good' | 'easy';
+
+/**
+ * The four grades, in the order they are offered.
+ *
+ * This asked a five-point question until FSRS replaced SM-2. FSRS grades on exactly
+ * four values, so a fifth option would have to schedule identically to one of the
+ * others — and a scale where two answers do the same thing is a lie to the learner.
+ * The wording describes the recall, not the schedule.
+ */
+const GRADES: { grade: Grade; label: string }[] = [
+  { grade: 'again', label: "I didn't remember it" },
+  { grade: 'hard', label: 'I remembered it with difficulty' },
+  { grade: 'good', label: 'I remembered it correctly' },
+  { grade: 'easy', label: 'I remembered it effortlessly' },
+];
+
 interface ReviewSessionProps {
   entry: MemorizationEntry;
-  onComplete: (quality: number) => void;
+  onComplete: (grade: Grade) => void;
   onSkip: () => void;
 }
 
 export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps) {
   const [step, setStep] = useState<'listen' | 'recite' | 'rate'>('listen');
-  const [selfRating, setSelfRating] = useState(0);
+  const [picked, setPicked] = useState<Grade | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,19 +59,19 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
    * also accepted repeat clicks in flight, scheduling the same ayah several times
    * with different qualities.
    */
-  const handleRate = async (quality: number) => {
+  const handleRate = async (grade: Grade) => {
     if (saving) return;
-    setSelfRating(quality);
+    setPicked(grade);
     setSaving(true);
     setError(null);
     try {
-      await apiPost(`/api/memorization/${entry.id}/review`, { quality });
-      onComplete(quality);
+      await apiPost(`/api/memorization/${entry.id}/review`, { grade });
+      onComplete(grade);
     } catch (err) {
       setError(apiErrorMessage(err));
       // Cleared so the learner can pick again rather than being left looking at a
-      // selected rating that was never recorded.
-      setSelfRating(0);
+      // selection that was never recorded.
+      setPicked(null);
     } finally {
       setSaving(false);
     }
@@ -141,19 +158,19 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
           )}
 
           <div className="space-y-2">
-            {[1, 2, 3, 4, 5].map((quality) => (
+            {GRADES.map(({ grade, label }) => (
               <button
-                key={quality}
-                onClick={() => handleRate(quality)}
+                key={grade}
+                onClick={() => handleRate(grade)}
                 disabled={saving}
                 className={`min-h-11 w-full rounded-lg p-3 text-left transition-colors disabled:opacity-50 ${
-                  selfRating === quality
+                  picked === grade
                     ? 'bg-leaf-500/20 border border-leaf-500'
                     : 'bg-ground-800 hover:bg-ground-700'
                 }`}
               >
-                {getQualityLabel(quality)}
-                {saving && selfRating === quality ? ' — saving…' : ''}
+                {label}
+                {saving && picked === grade ? ' — saving…' : ''}
               </button>
             ))}
           </div>
@@ -163,13 +180,3 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
   );
 }
 
-function getQualityLabel(quality: number): string {
-  const labels: Record<number, string> = {
-    1: "I didn't remember at all",
-    2: 'I struggled to recall',
-    3: 'I remembered with difficulty',
-    4: 'I remembered fairly well',
-    5: 'I remembered perfectly',
-  };
-  return labels[quality] || '';
-}

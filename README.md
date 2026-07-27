@@ -45,7 +45,7 @@ What works today, honestly:
 | Database | Cloudflare D1, with `wrangler d1 migrations` |
 | Storage | Cloudflare R2 |
 | Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
-| Tests | Vitest (182 test blocks) + ESLint + `tsc`, all gated in CI |
+| Tests | Vitest (187 test blocks) + ESLint + `tsc`, all gated in CI |
 | CI/CD | GitHub Actions → Cloudflare Pages |
 | Cost | $0/month — a hard constraint, see plan §5 |
 
@@ -154,7 +154,7 @@ All three are enforced in CI ahead of the deploy job, and none of them existed
 before 2026-07-25 — the Worker alone had 69 type errors that nothing was checking.
 
 ```bash
-cd workers   && npx tsc --noEmit && npm test    # 182 vitest test blocks
+cd workers   && npx tsc --noEmit && npm test    # 187 vitest test blocks
 cd src/app   && npx tsc --noEmit && npm run lint
 ```
 
@@ -289,7 +289,7 @@ pages render, the database has 6,236 Quran verses and 77K morphology rows.
 | Frontend (13 routes) | ✅ All rendering 200 OK |
 | Navigation (6 links) | ✅ All wired up |
 | API (39 endpoints) | ✅ All resolving |
-| Database (D1) | ✅ 18 migrations applied, seeded |
+| Database (D1) | ✅ 19 migrations applied, seeded |
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |
 | Cloudflare Access | ✅ Enforcing — every path 302s to the login |

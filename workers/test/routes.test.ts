@@ -502,3 +502,80 @@ describe('every success response uses the {data} envelope', () => {
     expect(Object.keys(body)).toEqual(['data']);
   });
 });
+
+describe('FSRS scheduling through the API', () => {
+  it('records memory state on a hifz review and rejects the old numeric scale', async () => {
+    const t = H();
+    const add = await t.json<{ data: { entry: unknown } }>('/api/memorization/add', {
+      method: 'POST',
+      body: JSON.stringify({ surahId: 112, ayahFrom: 1, ayahTo: 4 }),
+    });
+    expect(add.status).toBe(200);
+    const row = t.db
+      .prepare(`SELECT id FROM memorization WHERE user_id = ?`)
+      .get(TEST_USER) as { id: string };
+
+    // The scale that used to be accepted must now be refused, not silently coerced:
+    // treating an unknown grade as "good" would corrupt the schedule invisibly.
+    const numeric = await t.json<{ error: string }>(
+      `/api/memorization/${row.id}/review`,
+      { method: 'POST', body: JSON.stringify({ quality: 5 }) }
+    );
+    expect(numeric.status).toBe(400);
+    expect(numeric.body.error).toMatch(/grade must be one of/);
+
+    const good = await t.json<{ data: { interval: number; status: string } }>(
+      `/api/memorization/${row.id}/review`,
+      { method: 'POST', body: JSON.stringify({ grade: 'good' }) }
+    );
+    expect(good.status).toBe(200);
+    expect(good.body.data.interval).toBeGreaterThan(0);
+
+    const after = t.db
+      .prepare(`SELECT stability, difficulty, fsrs_state, last_review, interval FROM memorization WHERE id = ?`)
+      .get(row.id) as {
+        stability: number | null;
+        difficulty: number | null;
+        fsrs_state: number | null;
+        last_review: string | null;
+        interval: number;
+      };
+    // The whole point of the migration: memory state is persisted, not just a date.
+    expect(after.stability).toBeGreaterThan(0);
+    expect(after.difficulty).toBeGreaterThan(0);
+    expect(after.last_review).toBeTruthy();
+    expect(after.interval).toBe(good.body.data.interval);
+  });
+
+  it('schedules a flashcard by grade and marks meaning known only on a clean pass', async () => {
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO vocabulary_mastery (user_id, word, meaning_known, reading_known, next_review, reviews, ease_factor, interval_days)
+         VALUES (?, 'قُلْ', 0, 0, datetime('now'), 0, 2.5, 1)`
+      )
+      .run(TEST_USER);
+
+    const hard = await t.json('/api/learning/flashcards/review', {
+      method: 'POST',
+      body: JSON.stringify({ word: 'قُلْ', grade: 'hard' }),
+    });
+    expect(hard.status).toBe(200);
+    let row = t.db
+      .prepare(`SELECT meaning_known, reading_known, stability FROM vocabulary_mastery WHERE word = 'قُلْ'`)
+      .get() as { meaning_known: number; reading_known: number; stability: number | null };
+    // "Dragged it up with difficulty" is not the same as knowing the meaning.
+    expect(row.meaning_known).toBe(0);
+    expect(row.reading_known).toBe(1);
+    expect(row.stability).toBeGreaterThan(0);
+
+    await t.json('/api/learning/flashcards/review', {
+      method: 'POST',
+      body: JSON.stringify({ word: 'قُلْ', grade: 'good' }),
+    });
+    row = t.db
+      .prepare(`SELECT meaning_known FROM vocabulary_mastery WHERE word = 'قُلْ'`)
+      .get() as { meaning_known: number };
+    expect(row.meaning_known).toBe(1);
+  });
+});

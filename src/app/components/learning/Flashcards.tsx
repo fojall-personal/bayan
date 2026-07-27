@@ -103,14 +103,21 @@ export function Flashcards({ userId }: FlashcardsProps) {
     }
   };
 
-  const handleReview = async (quality: number) => {
+  /**
+   * FSRS grades on four named values, so the buttons send the name.
+   *
+   * These were 1 / 3 / 4 / 5 on a nominally five-point scale that had no 2 — the gap
+   * being the tell that the numbers were never a scale, just four labels wearing
+   * numbers. Naming them removes the translation step and the missing rung.
+   */
+  const handleReview = async (grade: 'again' | 'hard' | 'good' | 'easy') => {
     if (cards.length === 0) return;
 
     const card = cards[currentIndex];
     try {
       await apiPost('/api/learning/flashcards/review', {
         word: card.word,
-        quality,
+        grade,
       });
 
       // Move to next card
@@ -226,28 +233,28 @@ export function Flashcards({ userId }: FlashcardsProps) {
             <div className="flex justify-center gap-3">
               <Button
                 variant="danger"
-                onClick={() => handleReview(1)}
+                onClick={() => handleReview('again')}
                 className="px-6"
               >
                 Again
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => handleReview(3)}
+                onClick={() => handleReview('hard')}
                 className="px-6"
               >
                 Hard
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => handleReview(4)}
+                onClick={() => handleReview('good')}
                 className="px-6"
               >
                 Good
               </Button>
               <Button
                 variant="primary"
-                onClick={() => handleReview(5)}
+                onClick={() => handleReview('easy')}
                 className="px-6"
               >
                 Easy

@@ -3,9 +3,8 @@ import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 
-import { applySM2 } from '../lib/space-repetition';
+import { schedule, gradeFromAccuracy, isGrade, GRADE_VALUES } from '../lib/space-repetition';
 import { parseAyahRange } from '../lib/memorization-input';
-import type { MemorizationStatus } from '../lib/space-repetition';
 import type { MemorizationRow, MemorizationUnitsRow } from '../db/schema';
 
 export const memorizationRoutes = new Hono<AppEnv>();
@@ -94,7 +93,16 @@ memorizationRoutes.post('/:id/review', async (c) => {
   const { id } = c.req.param();
   const userId = c.get('userId');
   const db = getDb(c);
-  const { quality } = await c.req.json();
+  const { grade } = await c.req.json();
+
+  // Four named grades rather than a 1–5 number. FSRS grades on exactly four values,
+  // and a numeric scale with five points would have to collapse two of them onto the
+  // same schedule — a scale where two answers do the same thing is a lie to the
+  // learner. Rejected loudly rather than defaulted, because silently treating an
+  // unknown grade as "good" would corrupt the schedule invisibly.
+  if (!isGrade(grade)) {
+    return c.json({ error: `grade must be one of ${GRADE_VALUES.join(', ')}` }, 400);
+  }
 
   try {
     const entry = await db.get<MemorizationRow>(
@@ -106,36 +114,40 @@ memorizationRoutes.post('/:id/review', async (c) => {
       return c.json({ error: 'Entry not found' }, 404);
     }
 
-    // Apply SM-2 algorithm
-    const sm2Entry = {
-      id: entry.id as string,
-      quality: (entry.quality as number) || 0,
-      interval: (entry.interval as number) || 0,
-      ease_factor: (entry.ease_factor as number) || 2.5,
-      reviews_count: (entry.revision_count as number) || 0,
-      status: (entry.status as MemorizationStatus) || 'learning',
-      next_review: (entry.next_review as string) || '',
-    };
+    const result = schedule(
+      {
+        stability: entry.stability,
+        difficulty: entry.difficulty,
+        last_review: entry.last_review,
+        fsrs_state: entry.fsrs_state,
+        // Seeds stability when this row has never had an FSRS review, so an ayah
+        // already held for months does not drop back to day one.
+        interval: entry.interval,
+        reviews: entry.revision_count,
+      },
+      grade
+    );
 
-    const result = applySM2(sm2Entry, quality);
-
-    // Update entry
     await db.run(
       `UPDATE memorization SET
-         quality = ?,
          last_reviewed = datetime('now'),
          next_review = ?,
          revision_count = revision_count + 1,
          status = ?,
-         ease_factor = ?,
-         interval = ?
+         interval = ?,
+         stability = ?,
+         difficulty = ?,
+         fsrs_state = ?,
+         last_review = ?
        WHERE id = ? AND user_id = ?`,
       [
-        quality,
         result.nextReview,
         result.status,
-        result.easeFactor,
         result.interval,
+        result.stability,
+        result.difficulty,
+        result.fsrsState,
+        result.lastReview,
         id,
         userId,
       ]
@@ -178,32 +190,48 @@ memorizationRoutes.post('/:id/recall', async (c) => {
     // Check if user's recall matches
     const isCorrect = recalledAyah === nextAyah;
 
-    // Update review based on recall
-    const newQuality = isCorrect ? 5 : Math.max(1, (entry.quality as number) - 2);
-    const sm2Entry = {
-      id: entry.id as string,
-      quality: (entry.quality as number) || 0,
-      interval: (entry.interval as number) || 0,
-      ease_factor: (entry.ease_factor as number) || 2.5,
-      reviews_count: (entry.revision_count as number) || 0,
-      status: (entry.status as MemorizationStatus) || 'learning',
-      next_review: (entry.next_review as string) || '',
-    };
+    // Grade from what this attempt actually showed.
+    //
+    // This used to be `isCorrect ? 5 : Math.max(1, quality - 2)` — the new grade
+    // computed from the PREVIOUS grade, which says nothing about how this attempt
+    // went. Two learners reciting identically got different schedules because one had
+    // been doing better beforehand. It is a binary check (did you name the next
+    // ayah), so it maps to the two unambiguous grades and leaves the middle two to
+    // surfaces that can actually measure partial recall.
+    const grade = isCorrect ? 'good' : 'again';
 
-    const result = applySM2(sm2Entry, newQuality);
+    const result = schedule(
+      {
+        stability: entry.stability,
+        difficulty: entry.difficulty,
+        last_review: entry.last_review,
+        fsrs_state: entry.fsrs_state,
+        interval: entry.interval,
+        reviews: entry.revision_count,
+      },
+      grade
+    );
 
     await db.run(
       `UPDATE memorization SET
          next_review = ?,
-         quality = ?,
          last_reviewed = datetime('now'),
          revision_count = revision_count + 1,
-         status = ?
+         status = ?,
+         interval = ?,
+         stability = ?,
+         difficulty = ?,
+         fsrs_state = ?,
+         last_review = ?
        WHERE id = ? AND user_id = ?`,
       [
         result.nextReview,
-        newQuality,
         result.status,
+        result.interval,
+        result.stability,
+        result.difficulty,
+        result.fsrsState,
+        result.lastReview,
         id,
         userId,
       ]
@@ -214,7 +242,9 @@ memorizationRoutes.post('/:id/recall', async (c) => {
         success: true,
         correct: isCorrect,
         nextAyah,
-        newQuality,
+        grade,
+        nextReview: result.nextReview,
+        interval: result.interval,
       },
     });
   } catch (error) {

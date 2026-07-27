@@ -1074,6 +1074,82 @@ levels shape the lesson path. It just does not get to invent a vocabulary.</p>`,
   'Twelve sampled roots, a minute of work, and a bulk seed the learner opts into.'
 ), 'utf-8');
 
+await writeFile(join(OUT, 'preview/spec-fsrs.html'), shell(
+  'Spec — FSRS replaces SM-2, and the rating scale has to change', 'Product',
+  `<p style="max-width:66ch">Both schedulers run SM-2: a fixed heuristic hand-tuned
+in the 1980s. FSRS-6 is a memory model fitted to a public benchmark of roughly
+<strong>519 million reviews from ~10,000 users</strong>, and it predicts recall more
+accurately. Same retention for fewer reviews — which for hifz means less time spent
+re-reading what is already solid.</p>
+
+<p class="note">Two corrections to the obvious version of this argument. FSRS is
+<strong>opt-in in Anki, not the default</strong> — the official manual still calls
+SM-2 the baseline — so the case rests on the benchmark, not on Anki's endorsement.
+And the algorithm is not being reimplemented: <code>ts-fsrs</code> (MIT, FSRS-6, zero
+runtime dependencies) bundles to 58kb with no Node builtins. A fitted model with 21
+parameters transcribed by hand from a wiki is how you get a scheduler that is subtly
+wrong and schedules badly in silence.</p>
+
+<h2>The scale is the real decision</h2>
+<p style="max-width:66ch">FSRS grades on exactly four values. Today the app asks
+three different questions:</p>
+<table style="border-collapse:collapse;font-size:.85rem;max-width:640px">
+  <tr style="text-align:left;color:var(--muted)">
+    <th style="padding:6px 12px 6px 0">Surface</th><th style="padding:6px 0">Asks</th></tr>
+  <tr><td style="padding:6px 12px 6px 0"><code>ReviewSession</code></td>
+      <td style="padding:6px 0">five labels, 1–5</td></tr>
+  <tr><td style="padding:6px 12px 6px 0"><code>Flashcards</code></td>
+      <td style="padding:6px 0">four buttons mapped to 1, 3, 4, 5</td></tr>
+  <tr><td style="padding:6px 12px 6px 0"><code>POST /:id/recall</code></td>
+      <td style="padding:6px 0">derives it: <code>isCorrect ? 5 : quality - 2</code></td></tr>
+</table>
+
+<p class="note" style="border-color:${colour('color-error')}">Collapsing five labels
+onto four grades would make two of them schedule identically. A scale where two
+answers do the same thing is a lie to the learner, and it adds no information to a
+model fitted on four. So the hifz review moves to four, matching what the flashcards
+already effectively ask.</p>
+
+<div style="max-width:520px;background:${colour('ground-900')};
+ border:1px solid ${colour('ground-800')};border-radius:${tokens.get('radius-lg')};padding:20px">
+  <p style="margin:0 0 14px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;
+   color:var(--muted)">How well did you remember?</p>
+  ${[
+    ['Not at all', 'Again', 'starts over', colour('color-error')],
+    ['With difficulty', 'Hard', 'sooner than last time', colour('gold-500')],
+    ['Correctly', 'Good', 'the normal step', colour('leaf-500')],
+    ['Effortlessly', 'Easy', 'a longer jump', colour('leaf-400')],
+  ].map(([label, grade, effect, c]) => `
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+   border:1px solid ${c}55;border-radius:${tokens.get('radius-md')};padding:10px 12px;margin-bottom:8px">
+    <span style="font-size:.9rem">${label}</span>
+    <span style="font-size:.72rem;color:var(--muted)">${grade} · ${effect}</span>
+  </div>`).join('')}
+  <p style="margin:12px 0 0;font-size:.75rem;color:var(--muted)">The interval is shown
+  after answering, not before — a learner who can see "+163 days" attached to one
+  button is being invited to grade the schedule rather than their memory.</p>
+</div>
+
+<h2>Rules this follows</h2>
+<ul style="max-width:66ch">
+  <li><strong>Existing cards keep their history.</strong> Migration adds
+  <code>stability</code> and <code>difficulty</code> beside the SM-2 columns rather
+  than replacing them. A row with no FSRS state is seeded from its current interval on
+  first review, so nobody's hifz schedule resets.</li>
+  <li><strong>The derived rating stops guessing from the last one.</strong>
+  <code>isCorrect ? 5 : quality - 2</code> computes the new grade from the previous
+  grade, which is unrelated to how this attempt went. <code>gradeRecall</code> already
+  returns an accuracy ratio, so recall maps that to a grade directly.</li>
+  <li><strong>Status stays derived from the interval</strong> — learning, reviewing,
+  mastered — because that vocabulary is already in the UI and the database. FSRS
+  supplies the interval; the labels are ours.</li>
+  <li><strong>Retention target is stated, not hidden.</strong> 0.9, the FSRS default,
+  meaning roughly one lapse in ten reviews by design. Worth writing down, because a
+  learner seeing a lapse should know it is expected rather than a fault.</li>
+</ul>`,
+  'A fitted model instead of a 1980s heuristic — and four grades instead of five, because two of five would have meant the same thing.'
+), 'utf-8');
+
 await writeFile(join(OUT, 'preview/spec-grammar-mastery.html'), shell(
   'Spec — the exercise bank records nothing', 'Product',
   `<p style="max-width:66ch">The derived grammar bank is the largest thing in the
