@@ -38,7 +38,21 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const check = process.argv.includes('--check');
 const OUT = join(root, 'content/grammar/root-lessons.json');
-const HOW_MANY = Number(process.env.ROOT_LESSONS ?? 60);
+/**
+ * How many roots get a lesson.
+ *
+ * Read from the committed file when it exists, so `--check` regenerates the same thing
+ * that was generated. An env-var default cannot be the source of truth for a GATED
+ * artifact: generating 408 with ROOT_LESSONS=411 and then checking with the default 60
+ * made the gate fail on a file that was perfectly current.
+ *
+ * ROOT_LESSONS still overrides, which is how the count gets changed deliberately — the
+ * new value then lands in the file and the gate follows it.
+ */
+const committedCount = await readFile(OUT, 'utf-8')
+  .then((raw) => JSON.parse(raw).rootsRequested ?? null)
+  .catch(() => null);
+const HOW_MANY = Number(process.env.ROOT_LESSONS ?? committedCount ?? 60);
 
 const BW_TO_AR = {
   "'": 'ء', '|': 'آ', '>': 'أ', '&': 'ؤ', '<': 'إ', '}': 'ئ',
@@ -370,6 +384,9 @@ const payload = {
     'fact here is read from quran_word_morphology and quran_word_gloss, and editing it ' +
     'by hand reintroduces exactly the risk generation removes.',
   generatedFrom: 'Quranic Arabic Corpus v0.4 (GNU GPL) + quran.com word-by-word glosses',
+  // How many roots were asked for. Read back on --check so the gate regenerates like for
+  // like; skipped roots mean lessons.length can be lower than this.
+  rootsRequested: HOW_MANY,
   lessons,
 };
 const serialised = JSON.stringify(payload, null, 2) + '\n';

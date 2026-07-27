@@ -30,8 +30,8 @@ What works today, honestly:
   Ten rule colours, each ≥4.5:1 on the canvas, applied to the script rather than
   boxed behind it so Arabic stays joined.
 - **Grammar** — sentence parsing and corpus root families, with 26,694 derived
-  exercises whose results are recorded per kind and shown on Progress, plus 70
-  lessons: ten authored and sixty generated one-per-root from the corpus.
+  exercises whose results are recorded per kind and shown on Progress, plus 418
+  lessons: ten authored and 408 generated one-per-root from the corpus.
 - **Tutor** — corpus lookups, not a model. It answers a word, a root, a location or a
   named tajweed rule, and refuses rather than inventing Arabic.
 - **Coverage** — how much of the Quran you can read, computed from the roots you
@@ -406,7 +406,7 @@ Built after the plan, in response to use: a lesson result screen that says what 
 wrong and why, lesson-to-drill mappings, the exercise bank tripled to 17,206, sixty
 generated root lessons, the review document, and content deploying itself.
 
-**Next:** have a human read the lessons — 70 of them now, 201 exercises. That is the
+**Next:** have a human read the lessons — 418 of them now, 1,245 exercises. That is the
 only remaining risk no gate can cover: every mechanical claim is checked (sun/moon
 membership, roots against the corpus, every Arabic example attested in the Quran, every
 exercise answerable and explained, no option position favoured), but whether they *teach
