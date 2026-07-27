@@ -361,7 +361,7 @@ GET    /api/auth/whoami
 GET    /api/certificate/export
 GET    /api/grammar/deepdive/:category
 POST   /api/grammar/exercise
-GET    /api/grammar/exercises         (29,801-item graded bank; ?level=1-5 &kind=)
+GET    /api/grammar/exercises         (30,053-item graded bank; ?level=1-5 &kind=)
 GET    /api/grammar/mastery
 POST   /api/grammar/parse
 GET    /api/grammar/root/:root        (corpus-derived root family, Arabic script)

@@ -23,6 +23,7 @@
  */
 
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -243,6 +244,31 @@ for (const n of notes) process.stdout.write(`  note  ${n}\n`);
   }
 }
 
+// ── The review document's gate list ─────────────────────────────────────────
+//
+// docs/lesson-review.html tells a human reader which gates already settle the structural
+// claims, so they can skip those and spend their attention on the prose. That list names
+// scripts, and a name is exactly the kind of thing that rots: the page previously claimed
+// "eight automated gates" and was wrong in both directions at once. Naming them fixed the
+// count; this makes the names load-bearing.
+{
+  const src = await readFile(join(root, 'scripts/gen-lesson-review.mjs'), 'utf-8');
+  const named = [...src.matchAll(/script:\s*'([^']+)'/g)].map((m) => m[1].split(' ')[0]);
+  if (named.length === 0) {
+    fail('review', 'gen-lesson-review.mjs no longer lists the gates it tells readers to trust');
+  }
+  for (const script of named) {
+    if (!existsSync(join(root, 'scripts', script))) {
+      fail(
+        'review',
+        `gen-lesson-review.mjs credits scripts/${script}, which does not exist — the ` +
+          'review document would tell a reader to trust a gate that is not there'
+      );
+    }
+  }
+  notes.push(`review document credits ${named.length} gates, all present`);
+}
+
 // ── Lesson → practice mapping ───────────────────────────────────────────────
 //
 // src/app/lib/lesson-practice.ts decides which derived-bank kind follows each lesson.
@@ -258,6 +284,7 @@ for (const n of notes) process.stdout.write(`  note  ${n}\n`);
     'aspect', 'case_ending', 'verb_form', 'pos_id', 'root_id', 'word_meaning', 'find_word',
     'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
     'word_role', 'relative_pronoun', 'demonstrative', 'conditional',
+    'sentence_type',
   ]);
 
   const mapped = new Map();

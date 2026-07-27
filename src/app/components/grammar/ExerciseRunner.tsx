@@ -2,7 +2,7 @@
 
 // Runs the corpus-derived grammar exercise bank.
 //
-// 29,801 items across 16 kinds and 5 levels, all generated from the morphology
+// 30,053 items across 17 kinds and 5 levels, all generated from the morphology
 // corpus. Every one carries the surah:ayah it came from, which is shown after
 // answering — the citation is the point. An exercise you can trace is one you can
 // disprove, which is exactly what the five hand-written grammar errors were not.
@@ -57,6 +57,8 @@ const KINDS = [
   { value: 'relative_pronoun', label: 'Which word is the relative pronoun' },
   { value: 'demonstrative', label: 'Which word is the demonstrative' },
   { value: 'conditional', label: 'Which word makes it conditional' },
+  // Kind 17, for grammar-03 — the one lesson that had no practice at all.
+  { value: 'sentence_type', label: 'Nominal or verbal sentence' },
 ];
 
 const LEVELS = [
@@ -209,14 +211,19 @@ export function ExerciseRunner() {
               the wrong side across this app. */}
           {/* find_word puts a whole ayah here, not one word, so the size steps
               down and it is allowed to wrap. */}
-          <p
-            className={`text-center mb-6 text-naskh leading-loose ${
-              current.kind === 'find_word' ? 'text-2xl' : 'text-5xl'
-            }`}
-            dir="rtl"
-          >
-            {current.word}
-          </p>
+          {/* sentence_type has nothing to show: its four ayat ARE the options, so there is
+              no single subject above the prompt. Rendered conditionally rather than as an
+              empty element, which would leave a 5xl line-height of dead space. */}
+          {current.word !== '' && (
+            <p
+              className={`text-center mb-6 text-naskh leading-loose ${
+                current.kind === 'find_word' ? 'text-2xl' : 'text-5xl'
+              }`}
+              dir="rtl"
+            >
+              {current.word}
+            </p>
+          )}
 
           <h3 dir="auto" className="text-lg font-semibold mb-6 text-naskh">
             {current.prompt}
@@ -234,7 +241,11 @@ export function ExerciseRunner() {
                   onClick={() => choose(option)}
                   disabled={settled}
                   dir="auto"
-                  className={`text-left px-4 py-3 rounded-lg border transition-colors text-naskh ${
+                  // text-start, not text-left: with dir="auto" an Arabic option is RTL, and
+                  // text-left pushed it to the far side of the button away from where the
+                  // reading starts. Affects every kind whose options are Arabic — most of
+                  // them — and is most visible on sentence_type, whose options are ayat.
+                  className={`text-start px-4 py-3 rounded-lg border transition-colors text-naskh ${
                     settled && isAnswer
                       ? 'border-leaf-500 bg-leaf-500/15 text-leaf-400'
                       : settled && isPicked

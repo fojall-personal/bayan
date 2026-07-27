@@ -2,9 +2,22 @@
 /**
  * Generate the derived grammar exercise bank and memorization curriculum.
  *
- *   node scripts/gen-derived-content.mjs > /tmp/derived.sql
- *   cd workers && npx wrangler d1 execute languagebuilder --local  --file=/tmp/derived.sql
- *   cd workers && npx wrangler d1 execute languagebuilder --remote --file=/tmp/derived.sql
+ *   PER_BUCKET=600 node scripts/gen-derived-content.mjs > /tmp/derived.sql
+ *   node -e 'require("node:sqlite");…' # apply to the local file — see below
+ *   node scripts/seed-remote-d1.mjs /tmp/derived.sql
+ *
+ * PER_BUCKET=600 is not optional if you intend the result to match what shipped. The
+ * default of 150 is a quarter of the bank and every count in every doc would disagree.
+ *
+ * ── Applying locally: NOT `cd workers && wrangler d1 execute --local` ───────
+ *
+ * That is what this header said, and it writes to a database nothing serves. `wrangler
+ * pages dev` runs from the REPO ROOT with `--d1 DB=languagebuilder` (see
+ * .claude/launch.json), so it creates its local D1 keyed by that NAME under
+ * ./.wrangler/. Run from workers/, `wrangler d1 execute` resolves the same name through
+ * workers/wrangler.toml's database_id instead, which hashes to a different file — 26,517
+ * inserts landed in it before the row count gave the game away. Every script here reads
+ * ./.wrangler/, so apply the SQL to that file directly with node:sqlite's db.exec().
  *
  * Inputs, both already pinned by checksum elsewhere in this repo:
  *   data/quranic-corpus-morphology-0.4.txt  (128,219 annotated segments)
@@ -82,6 +95,25 @@ for (const [name, raw, want] of [
   }
 }
 log('inputs verified by checksum');
+
+/**
+ * The mushaf text, keyed "surah:ayah".
+ *
+ * Until sentence_type there was nothing here that needed a whole ayah, so this file was
+ * checksummed and never parsed — the Buckwalter renderer supplied every word the bank
+ * showed. An ayah assembled from corpus segments would render nearly right, but "nearly"
+ * is not a standard to display scripture at, and the pinned Tanzil text is already here.
+ */
+const ayahText = new Map();
+for (const line of textRaw.split('\n')) {
+  const p = line.replace(/\r$/, '').split('|');
+  if (p.length < 3) continue;
+  ayahText.set(`${+p[0]}:${+p[1]}`, p[2].trim());
+}
+if (ayahText.size !== 6236) {
+  log(`REFUSING: parsed ${ayahText.size} ayat from the text, expected 6236`);
+  process.exit(3);
+}
 
 // ── Parse the corpus ───────────────────────────────────────────────────────
 const LOCATION = /^\((\d+):(\d+):(\d+):(\d+)\)$/;
@@ -188,15 +220,25 @@ function isWholeWord(s) {
   return segmentsPerWord.get(`${s.surah}:${s.ayah}:${s.word}`) === 1;
 }
 
-function add(kind, s, { level, prompt, answer, options, explanation }) {
+function add(kind, s, { level, prompt, answer, options, explanation, display }) {
   const key = `${kind}|${s.surah}|${s.ayah}|${s.word}|${s.seg}`;
   if (seenKey.has(key)) return;
-  if (!isWholeWord(s)) return;
+  // The whole-word rule exists to protect what is DISPLAYED — a bare stem like سْمِ is
+  // unfair to show — so a caller that supplies its own display has already taken that
+  // responsibility and this must not apply. Discovered by sentence_type's balance
+  // assertion: it displays the ayah, but every opening word carrying a pronoun suffix was
+  // being dropped here, seven of them verbal, which tilted the bank to 58% nominal.
+  // `undefined`, not falsy: sentence_type passes '' to mean "show nothing above the
+  // prompt", and reading that as "no display supplied" put the rule back in force and
+  // dropped 63 of its 252 items — enough to fail the balance assertion at 39%.
+  if (display === undefined && !isWholeWord(s)) return;
   seenKey.add(key);
   exercises.push({
     id: `${kind}-${s.surah}-${s.ayah}-${s.word}-${s.seg}`,
     kind, level,
-    wordArabic: toArabic(s.form),
+    // `display` overrides what the runner shows above the prompt. Only sentence_type
+    // uses it, because that question is about a whole ayah rather than about one word.
+    wordArabic: display ?? toArabic(s.form),
     wordBuckwalter: s.form,
     prompt, answer,
     options: seededShuffle(options, key),
@@ -665,6 +707,225 @@ for (const w of classifiedWords) {
       `${w.whole} at ${w.surah}:${w.ayah} carries the article ال, which makes it ` +
       'definite. The others are marked INDEF in the corpus — no article.',
   });
+}
+
+// ── 10. Sentence type — nominal or verbal (grammar-03) ─────────────────────
+//
+// grammar-03 was the one authored lesson with NO practice, on the reasoning that
+// predication — مبتدأ and خبر — is nowhere in the annotation. That is still true, and
+// nothing below claims otherwise. But the lesson's opening sentence is not about
+// predication at all: "Arabic sentences begin with either a noun or a verb." That is a
+// claim about the FIRST WORD, and the first word's part of speech is exactly what the
+// corpus records. So the drill asks the lesson's own opening question and stops there.
+//
+// ── Four ways this could assert something the corpus does not support ───────
+//
+// Each was found by reading candidates rather than by reasoning about them, and the
+// first two were live defects in the first version of these criteria:
+//
+// 1. إِيَّاكَ نَعْبُدُ (1:5) opens with a PRON, so a naive rule called it nominal. It is
+//    verbal — إيّاك is the fronted OBJECT of نعبد. Case would normally settle this, but the
+//    corpus marks no case on pronouns or demonstratives at all (verified: 3,301 PRON and
+//    1,059 DEM segments, every one with case null). What separates them is the lemma:
+//    the إيّا family is the only ayah-initial pronoun carrying LEM, and the other six
+//    forms — هو، نحن، هم، همُ، أنتم — are subject pronouns with no lemma field. Excluded by
+//    lemma, which is exact rather than heuristic.
+// 2. لَّيْسَ ٱلْبِرَّ (2:177) opens with a verb, but whether كان and its sisters make a
+//    sentence فعلية (it begins with a verb) or اسمية (they enter UPON a nominal sentence)
+//    is a genuine disagreement between grammarians, not a fact. Excluded — 14 of 624
+//    verb-initial ayat, so the insurance is nearly free.
+// 3. A word with a prefix is ambiguous in a way the bare stem is not: the وَ of وَٱلْفَجْرِ
+//    is an oath particle and the phrase is not a مبتدأ, while the وَ of وَٱللَّهُ is a
+//    conjunction and it is. add()'s existing whole-word rule excludes every prefixed word
+//    already, so this needs no rule of its own — it needs only not to be worked around.
+// 4. Nouns are required NOMINATIVE. A genitive or accusative opening word is governed by
+//    something, so it cannot be a مبتدأ, and 2:117's بَدِيعُ — a fragment continuing the
+//    ayah before it — is still nominative and still reads as a nominal construction.
+//
+// ── Asked as "which of these", because the distinction is binary ───────────
+//
+// The obvious question — "is this ayah nominal or verbal?" — is a coin flip, and this
+// generator's own option-count rule caught it: two options where four were expected. That
+// rule is right, and three ways of widening it were tried before the fourth worked.
+//
+//   • Splitting the nominal answer by word class (noun / pronoun / demonstrative) gives
+//     four honest options, but it collapses the difficulty ramp. Level comes from how
+//     common the opening word is, and pronouns and demonstratives are ALL common — level 5
+//     has 72 verb openings, 24 noun openings and zero of either. Balanced four ways, the
+//     top two levels empty out.
+//   • "Neither — it opens with a particle" is decidably false for every included ayah,
+//     so it is NEVER the answer. A learner who notices is back to a coin flip and has
+//     learnt to ignore an option rather than read it.
+//   • Admitting preposition-initial ayat as a real "neither" class is worse than useless:
+//     لِلَّهِ ٱلْمُلْكُ is a nominal sentence with a FRONTED predicate, so the option would be
+//     wrong precisely where a learner is most likely to choose it.
+//
+// So it takes the shape definiteness and voice already use for binary annotation: four
+// short ayat, one of which opens the asked way. Both directions are generated and balanced
+// per level, so neither "find the verb" nor "find the noun" becomes the habit, and the
+// learner classifies four openings per item instead of one.
+//
+// ── Four ways this could assert something the corpus does not support ───────
+//
+// Each was found by reading candidates rather than by reasoning about them, and the
+// first two were live defects in the first version of these criteria:
+//
+// 1. إِيَّاكَ نَعْبُدُ (1:5) opens with a PRON, so a naive rule called it nominal. It is
+//    verbal — إيّاك is the fronted OBJECT of نعبد. Case would normally settle this, but the
+//    corpus marks no case on pronouns or demonstratives at all (verified: 3,301 PRON and
+//    1,059 DEM segments, every one with case null). What separates them is the lemma:
+//    the إيّا family is the only ayah-initial pronoun carrying LEM, and the other six
+//    forms — هو، نحن، هم، همُ، أنتم — are subject pronouns with no lemma field. Excluded by
+//    lemma, which is exact rather than heuristic.
+// 2. لَّيْسَ ٱلْبِرَّ (2:177) opens with a verb, but whether كان and its sisters make a
+//    sentence فعلية (it begins with a verb) or اسمية (they enter UPON a nominal sentence)
+//    is a genuine disagreement between grammarians, not a fact. Excluded — 14 of 624
+//    verb-initial ayat, so the insurance is nearly free.
+// 3. A word with a prefix is ambiguous in a way the bare stem is not: the وَ of وَٱلْفَجْرِ
+//    is an oath particle and the phrase is not a مبتدأ, while the وَ of وَٱللَّهُ is a
+//    conjunction and it is. Handled without a rule of its own: a prefix segment carries no
+//    POS at all (it reads `w:CONJ+`), so requiring a POS on segment 1 admits only stems.
+// 4. Nouns are required NOMINATIVE. A genitive or accusative opening word is governed by
+//    something, so it cannot be a مبتدأ, and 2:117's بَدِيعُ — a fragment continuing the
+//    ayah before it — is still nominative and still reads as a nominal construction.
+//
+// What is NOT claimed anywhere here: which word is the مبتدأ and which the خبر. That is
+// the syntactic treebank's territory, and the treebank is not in the distributed corpus.
+{
+  const NOUNISH = new Set(['N', 'PN', 'ADJ']);
+  const INDECLINABLE = new Set(['PRON', 'DEM']);
+  /** كان and ليس. See exclusion 2 — the only two of the family that open an ayah. */
+  const KANA_FAMILY = new Set(['kaAna', 'l~ayosa']);
+  /** إيّا — the accusative separable pronoun, always an object. See exclusion 1. */
+  const OBJECT_PRONOUN = '<iy~aA';
+
+  /**
+   * The two Arabic terms, byte-identical to the ones grammar-03 already puts on screen.
+   *
+   * Deliberately not retyped with fuller vowelling. New hand-authored Arabic is how a moon
+   * letter reached the sun-letter list, and reusing the lesson's own strings adds none.
+   */
+  const TERM = { verbal: 'جملة فعلية', nominal: 'جملة اسمية' };
+
+  /**
+   * At most ten ayat per opening word.
+   *
+   * قَالَ opens 399 of the 610 verb-initial ayat. Without a cap the kind is two thirds one
+   * word, and what a learner takes away is "قال means verbal" rather than "a verb means
+   * verbal".
+   */
+  const PER_OPENING = 10;
+  /**
+   * Four ayat share one screen as option buttons, so each must be short. Eight words keeps
+   * a button to about two lines; ten was measured too (288 items rather than 252) and left
+   * four dense paragraphs of Arabic to choose between.
+   */
+  const MAX_AYAH_WORDS = 8;
+
+  const perOpening = new Map();
+  const candidates = [];
+  for (const s of segments) {
+    if (s.word !== 1 || s.seg !== 1) continue;
+    const text = ayahText.get(`${s.surah}:${s.ayah}`);
+    if (!text || text.split(/\s+/).length > MAX_AYAH_WORDS) continue;
+
+    let cls = null;
+    let opener = null;
+    if (s.pos === 'V' && !KANA_FAMILY.has(s.lemma)) {
+      cls = 'verbal';
+      opener =
+        `POS:V — a verb${s.aspect ? `, ${ASPECT_LABEL[s.aspect].split(' —')[0].toLowerCase()}` : ''}`;
+    } else if (NOUNISH.has(s.pos) && s.kase === 'NOM') {
+      cls = 'nominal';
+      opener =
+        `POS:${s.pos} — ${POS_LABEL[s.pos]?.toLowerCase() ?? s.pos} in the nominative ` +
+        '(مرفوع), the case a مبتدأ takes';
+    } else if (INDECLINABLE.has(s.pos) && s.lemma !== OBJECT_PRONOUN) {
+      cls = 'nominal';
+      opener =
+        `POS:${s.pos} — ` +
+        (s.pos === 'DEM' ? 'a demonstrative' : 'a subject pronoun') +
+        ', which stands where a noun stands';
+    }
+    if (!cls) continue;
+
+    const n = perOpening.get(s.form) ?? 0;
+    if (n >= PER_OPENING) continue;
+    perOpening.set(s.form, n + 1);
+    candidates.push({ s, cls, opener, text, level: levelFromForm(s.form) });
+  }
+
+  const pool = {
+    verbal: candidates.filter((c) => c.cls === 'verbal'),
+    nominal: candidates.filter((c) => c.cls === 'nominal'),
+  };
+
+  /**
+   * Balance the two directions inside each level, so no level rewards one habit.
+   *
+   * Trimmed by seeded shuffle rather than by taking the head, so which items are dropped
+   * does not depend on corpus order — al-Baqarah would otherwise supply the whole of the
+   * majority direction and the minority would come from everywhere else.
+   */
+  let attempted = 0;
+  for (const level of [1, 2, 3, 4, 5]) {
+    const inLevel = (cls) =>
+      seededShuffle(candidates.filter((c) => c.level === level && c.cls === cls), `st-${cls}${level}`);
+    const nominal = inLevel('nominal');
+    const verbal = inLevel('verbal');
+    const take = Math.min(nominal.length, verbal.length);
+    for (const c of [...nominal.slice(0, take), ...verbal.slice(0, take)]) {
+      const otherClass = c.cls === 'verbal' ? 'nominal' : 'verbal';
+      // Distractors are drawn from the whole opposite pool rather than from this level:
+      // they are not what the question is about, and restricting them would narrow the
+      // variety a learner sees without making the question any harder or any fairer.
+      const seenText = new Set([c.text]);
+      const foils = [];
+      for (const o of seededShuffle(pool[otherClass], `stf${c.s.surah}:${c.s.ayah}`)) {
+        if (seenText.has(o.text)) continue;
+        seenText.add(o.text);
+        foils.push(o);
+        if (foils.length === 3) break;
+      }
+      if (foils.length < 3) continue;
+      attempted += 1;
+      add('sentence_type', c.s, {
+        level,
+        // No display: the four ayat are the options, and there is no single one to show
+        // above the prompt.
+        display: '',
+        prompt:
+          c.cls === 'verbal'
+            ? `Which of these opens with a verb, making it a ${TERM.verbal}?`
+            : `Which of these opens with a noun, making it a ${TERM.nominal}?`,
+        answer: c.text,
+        options: [c.text, ...foils.map((f) => f.text)],
+        explanation:
+          `${toArabic(c.s.form)} opens ${c.s.surah}:${c.s.ayah}, tagged ${c.opener}. ` +
+          `That makes ${c.s.surah}:${c.s.ayah} a ${TERM[c.cls]}` +
+          `${c.cls === 'verbal' ? ': فعل, then فاعل' : ': مبتدأ, then خبر'}. The other ` +
+          `three open with ${c.cls === 'verbal' ? 'nouns' : 'verbs'}.`,
+      });
+    }
+  }
+  // A balancing bug shows up as a lopsided bank rather than as an error, so it is asserted
+  // here instead of being left for someone to notice later. The first version of these
+  // criteria failed this at 58% nominal, which is how add()'s whole-word rule was found to
+  // be silently dropping every opening word that carried a pronoun suffix.
+  const mine = exercises.filter((e) => e.kind === 'sentence_type');
+  const verbalShare =
+    mine.filter((e) => e.prompt.includes('with a verb')).length / (mine.length || 1);
+  if (mine.length !== attempted || Math.abs(verbalShare - 0.5) > 0.001) {
+    log(
+      `REFUSING: sentence_type is ${Math.round(verbalShare * 100)}% find-the-verb across ` +
+        `${mine.length} of ${attempted} items — the per-level balance did not hold`
+    );
+    process.exit(3);
+  }
+  log(
+    `sentence_type: ${mine.length} items, both directions equal, ` +
+      `${perOpening.size} distinct openings`
+  );
 }
 
 const PER_BUCKET = Number(process.env.PER_BUCKET ?? 150);

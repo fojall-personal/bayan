@@ -29,7 +29,7 @@ What works today, honestly:
 - **Tajweed** — per-rule mastery, and colour-coded verses across all 6,236 ayahs.
   Ten rule colours, each ≥4.5:1 on the canvas, applied to the script rather than
   boxed behind it so Arabic stays joined.
-- **Grammar** — sentence parsing and corpus root families, with 29,801 derived
+- **Grammar** — sentence parsing and corpus root families, with 30,053 derived
   exercises whose results are recorded per kind and shown on Progress, plus 418
   lessons: ten authored and 408 generated one-per-root from the corpus.
 - **Tutor** — corpus lookups, not a model. It answers a word, a root, a location or a
@@ -48,7 +48,7 @@ What works today, honestly:
 | Database | Cloudflare D1, with `wrangler d1 migrations` |
 | Storage | Cloudflare R2 |
 | Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
-| Tests | Vitest (200 test blocks) + ESLint + `tsc`, all gated in CI |
+| Tests | Vitest (201 test blocks) + ESLint + `tsc`, all gated in CI |
 | CI/CD | GitHub Actions → Cloudflare Pages |
 | Cost | $0/month — a hard constraint, see plan §5 |
 
@@ -207,7 +207,7 @@ defect:
 | `sync-pages-config.mjs --check` | a missing Pages binding — the state that once made every data route 500 |
 
 ```bash
-cd workers   && npx tsc --noEmit && npm test    # 200 vitest test blocks
+cd workers   && npx tsc --noEmit && npm test    # 201 vitest test blocks
 cd src/app   && npx tsc --noEmit && npm run lint
 ```
 
@@ -346,7 +346,7 @@ pages render, the database has 6,236 Quran verses and 77K morphology rows.
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |
 | Cloudflare Access | ✅ Enforcing — every path 302s to the login |
-| Grammar (corpus-derived) | ✅ 29,801 graded exercises, 78 (kind, level) buckets, 114/114 surahs; results recorded per exercise kind |
+| Grammar (corpus-derived) | ✅ 30,053 graded exercises, 83 (kind, level) buckets, 114/114 surahs; results recorded per exercise kind |
 | Memorization curriculum | ✅ 908 ordered units across all 114 surahs |
 | Content correctness | ✅ Gated in CI; 14 seeded defects all caught |
 | Design system | ✅ Generated from globals.css, published to claude.ai/design, drift gated |
@@ -387,7 +387,7 @@ microphone capture cannot be verified headlessly.
 | F6 | Tajweed track | ✅ rule reference, per-rule mastery, ten colours all ≥4.5:1 |
 | F7 | Progress | ✅ weekly activity calendar and coverage — ayahs readable from known roots. No daily streak counter: the helper that computed one had no caller and was removed |
 | F8 | Tutor | ✅ rewritten as corpus lookups; it refuses rather than inventing Arabic |
-| F9 | Root families | ✅ 29,801 derived exercises across twelve kinds, and answers recorded — mastery per kind shows on /progress. Five kinds were added later from annotation the ingest had captured and the generator never read: definiteness, negation, mood, voice and subject agreement |
+| F9 | Root families | ✅ 30,053 derived exercises across seventeen kinds, and answers recorded — mastery per kind shows on /progress. Ten kinds were added after the first seven, all from annotation the ingest had captured and the generator never read: definiteness, negation, mood, voice, subject agreement, word role, relative pronoun, demonstrative, conditional, and sentence type |
 
 ### Research plan P1–P5
 

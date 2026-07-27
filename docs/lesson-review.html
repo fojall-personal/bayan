@@ -42,11 +42,16 @@
    408 generated · 1245 exercises</p>
 
 <div class="lead">
-  <p><strong>What to look at.</strong> Eight automated gates already prove the
-  structural claims — every Arabic example is attested in the Quran, every root exists
-  in the corpus, sun and moon letters are classified correctly, every lesson is
-  reachable, every exercise is answerable, and no option position is favoured. Those are
-  tagged <span class="tag ok">✓</span> and you can skip them.</p>
+  <p><strong>What to look at.</strong> These gates already prove the structural claims,
+  and run on every push:</p>
+  <ul class="meta" style="max-width:66ch">
+    <li><code>check-content.mjs</code> — every Arabic example occurs in the Quran, every claimed root is in the corpus, sun and moon letters are classified against the canonical 14+14, and Arabic question marks sit only in Arabic sentences</li>
+    <li><code>check-pedagogy.mjs</code> — every lesson is reachable from its prerequisites, carries at least two gradable exercises, and explains every one of them</li>
+    <li><code>gen-lessons-sql.mjs --check</code> — the SQL deployed to D1 still matches this content — no lesson ships stale</li>
+    <li><code>gen-root-lessons.mjs --check</code> — the generated lessons match a fresh read of the corpus, every answer index is in range, and no option position holds more than half the answers</li>
+    <li><code>gen-content-manifest.mjs --check</code> — every exercise count quoted in the docs equals what is actually in the database</li>
+  </ul>
+  <p>Anything they settle is tagged <span class="tag ok">✓</span> and you can skip it.</p>
   <p>What no script can decide is tagged <span class="tag ask">?</span>: whether the
   explanation is clear, whether the examples illuminate it, and whether the exercises
   test what the lesson actually taught. That is the reason this document exists.</p>

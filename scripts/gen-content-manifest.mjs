@@ -43,6 +43,11 @@ const CONSUMERS = [
   'scripts/gen-api-docs.mjs',
   'scripts/gen-design-system.mjs',
   'src/app/components/grammar/ExerciseRunner.tsx',
+  // Added after its header sat at 4,950 through five bank regenerations. It was never
+  // caught because the phrasing — "holds 4,950, every one traceable" — matched no pattern
+  // here, which is the argument for listing a file rather than trusting that prose about
+  // the bank only lives where you remember putting it.
+  'src/app/lib/lesson-practice.ts',
 ];
 
 async function localDbPath() {

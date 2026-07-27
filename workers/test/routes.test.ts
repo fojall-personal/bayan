@@ -646,11 +646,11 @@ describe('lesson results explain the mistakes', () => {
   });
 });
 
-describe('the exercise bank exposes all sixteen kinds', () => {
+describe('the exercise bank exposes all seventeen kinds', () => {
   const KINDS = [
     'verb_form', 'case_ending', 'root_id', 'pos_id', 'aspect', 'word_meaning',
     'find_word', 'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
-    'word_role', 'relative_pronoun', 'demonstrative', 'conditional',
+    'word_role', 'relative_pronoun', 'demonstrative', 'conditional', 'sentence_type',
   ];
 
   it('accepts every kind the generator emits', async () => {
@@ -698,5 +698,32 @@ describe('the exercise bank exposes all sixteen kinds', () => {
       .get(TEST_USER) as { category: string; correct_attempts: number };
     expect(row.category).toBe('subject_agreement');
     expect(row.correct_attempts).toBe(1);
+  });
+
+  it('serves sentence_type with an empty display word', async () => {
+    const t = H();
+    // sentence_type is the only kind with nothing to show above the prompt: its four
+    // whole ayat ARE the options. So word_arabic is '' by design, and the runner hides
+    // the element when it is empty. An empty string is exactly the sort of value that
+    // gets coerced to null on the way through a query layer, and the difference is not
+    // cosmetic — a null would render as "null" in a 5xl heading over every question.
+    t.db
+      .prepare(
+        `INSERT INTO grammar_exercise_bank
+           (id, kind, level, word_arabic, prompt, answer, options, explanation,
+            surah_id, ayah_id, word_index, segment_index)
+         VALUES ('st-1', 'sentence_type', 1, '', 'Which of these opens with a noun?',
+                 'هُوَ يُحْىِۦ وَيُمِيتُ',
+                 '["هُوَ يُحْىِۦ وَيُمِيتُ","قَالَ رَبِّ","قُلْ هُوَ ٱللَّهُ","خَتَمَ ٱللَّهُ"]',
+                 'Tagged POS:PRON.', 10, 56, 1, 1)`
+      )
+      .run();
+    const { status, body } = await t.json<{
+      data: { kind: string; word: string; options: string[] }[];
+    }>('/api/grammar/exercises?kind=sentence_type&limit=1');
+    expect(status).toBe(200);
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].word).toBe('');
+    expect(body.data[0].options).toHaveLength(4);
   });
 });

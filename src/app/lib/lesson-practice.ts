@@ -4,26 +4,32 @@
  * ── Why this is a map and not a rule ────────────────────────────────────────
  *
  * The ten authored lessons carry 21 exercises between them — 2.1 each, against a gate
- * floor of 2. The derived bank next to them holds 4,950, every one traceable to a
- * corpus row. Connecting the two multiplies the practice available without adding a
- * line of hand-authored Arabic, which matters because hand-authored Arabic is how a
- * moon letter ended up in the sun-letter list.
+ * floor of 2. The derived bank next to them is a 30,053-item graded bank, every one
+ * traceable to a corpus row. Connecting the two multiplies the practice available without
+ * adding a line of hand-authored Arabic, which matters because hand-authored Arabic is how
+ * a moon letter ended up in the sun-letter list.
  *
- * But the connection cannot be computed. The bank's seven kinds describe what the
- * MORPHOLOGY records — aspect, case, part of speech, verb form, root — and a lesson
- * teaches a topic. Some topics land exactly on a kind and some have no counterpart at
- * all, so this is editorial judgement, written down with its reasoning rather than
- * inferred from a title.
+ * But the connection cannot be computed. The bank's kinds describe what the MORPHOLOGY
+ * records — aspect, case, part of speech, verb form, root — and a lesson teaches a topic.
+ * Some topics land exactly on a kind and some have no counterpart at all, so this is
+ * editorial judgement, written down with its reasoning rather than inferred from a title.
  *
- * Three lessons deliberately have NO practice: al- and Nouns, Nominal Sentences, and
- * Negation. Nothing in the corpus annotation marks definiteness, predication or
- * negation as such, and pointing those lessons at part-of-speech drills would be
- * practice that looks related and is not. An empty entry is the honest answer, and the
- * UI simply shows no practice link — the same call as leaving Husary without word
- * timings rather than guessing at them.
+ * Every one of the ten now has practice, and three of those entries began as null on the
+ * belief that the corpus said nothing about definiteness, predication or negation. Two of
+ * those beliefs were simply wrong — DET marks the article on 8,377 segments and NEG marks
+ * 2,688 particles, and I had checked the `pos` column without ever looking at `tag`. The
+ * third was right about predication and wrong about the lesson, which opens on a claim
+ * about the first word rather than about مبتدأ and خبر.
+ *
+ * So the standard for filling one of these in is unchanged and worth restating: the drill
+ * must ask something the annotation DECIDES. Pointing a lesson at a drill that merely
+ * sounds related is practice that looks like teaching and is not, and an empty entry —
+ * which renders as no practice link at all — stays the honest answer when that is the
+ * situation. It is the same call as leaving Husary without word timings rather than
+ * guessing at them.
  */
 
-/** The seven kinds the derived bank actually contains. */
+/** The kinds the derived bank actually contains. Checked against it by check-pedagogy. */
 export type PracticeKind =
   | 'aspect'
   | 'case_ending'
@@ -40,7 +46,8 @@ export type PracticeKind =
   | 'word_role'
   | 'relative_pronoun'
   | 'demonstrative'
-  | 'conditional';
+  | 'conditional'
+  | 'sentence_type';
 
 export interface LessonPractice {
   kind: PracticeKind;
@@ -69,8 +76,20 @@ export const LESSON_PRACTICE: Record<string, LessonPractice | null> = {
       'distinction the corpus records.',
   },
 
-  // Predication — mubtada and khabar — has no corpus counterpart.
-  'grammar-03': null,
+  // Predication — which word is the مبتدأ and which the خبر — still has no corpus
+  // counterpart, and this was null for a year on that basis. The mistake was reading the
+  // lesson's TITLE and not its first sentence: "Arabic sentences begin with either a noun
+  // or a verb." That is a claim about the opening word's part of speech, which the corpus
+  // records for all 77,429 of them. The drill asks it and asks nothing further.
+  'grammar-03': {
+    kind: 'sentence_type',
+    label: 'Nominal or verbal sentence',
+    because:
+      "The lesson opens by dividing sentences by what they begin with, and POS on word 1 " +
+      'decides that exactly. It does NOT drill مبتدأ/خبر — the generator excludes every ' +
+      'case where the opening word could be an object, a prefixed particle, or a كان ' +
+      'sister, so nothing here rests on predication being annotated. It is not.',
+  },
 
   'grammar-04': {
     kind: 'mood',

@@ -6,12 +6,16 @@
  *
  * ── What this is for ────────────────────────────────────────────────────────
  *
- * Eight gates check that the lessons are STRUCTURALLY sound: every root exists in the
+ * Five gates check that the lessons are STRUCTURALLY sound: every root exists in the
  * corpus, every Arabic example is attested in the Quran, sun and moon letters are
  * classified correctly, every lesson is reachable, every exercise answerable, every
  * option position unbiased. None of them can decide whether a lesson TEACHES. That is
  * the one open question on this project that no script can close, and closing it needs
  * a person reading the prose.
+ *
+ * The gates are NAMED below rather than counted. "Eight automated gates" was written into
+ * the rendered page, went stale when the count changed, and was wrong in both directions
+ * at once — nine gates exist, but only five of them say anything about lessons.
  *
  * So this renders the prose for reading, and tags every claim beside it with which gate
  * proved it — so the reader can skip what is already established and spend their
@@ -52,6 +56,43 @@ const ar = (text, size = '1.5rem') =>
   `<span lang="ar" dir="rtl" style="font-family:'Amiri',serif;font-size:${size};line-height:2.1">${esc(
     text
   )}</span>`;
+
+/**
+ * The gates that bear on lesson content, and what each one settles.
+ *
+ * Listed rather than counted so the page cannot claim a number that has drifted. If a
+ * gate is added or removed, this list is the thing to edit — and check-pedagogy verifies
+ * that every script named here exists.
+ */
+const LESSON_GATES = [
+  {
+    script: 'check-content.mjs',
+    proves:
+      'every Arabic example occurs in the Quran, every claimed root is in the corpus, ' +
+      'sun and moon letters are classified against the canonical 14+14, and Arabic ' +
+      'question marks sit only in Arabic sentences',
+  },
+  {
+    script: 'check-pedagogy.mjs',
+    proves:
+      'every lesson is reachable from its prerequisites, carries at least two gradable ' +
+      'exercises, and explains every one of them',
+  },
+  {
+    script: 'gen-lessons-sql.mjs --check',
+    proves: 'the SQL deployed to D1 still matches this content — no lesson ships stale',
+  },
+  {
+    script: 'gen-root-lessons.mjs --check',
+    proves:
+      'the generated lessons match a fresh read of the corpus, every answer index is in ' +
+      'range, and no option position holds more than half the answers',
+  },
+  {
+    script: 'gen-content-manifest.mjs --check',
+    proves: 'every exercise count quoted in the docs equals what is actually in the database',
+  },
+];
 
 /** A claim and the gate that settles it. */
 const verified = (what) =>
@@ -199,11 +240,12 @@ const html = `<!DOCTYPE html>
    } exercises</p>
 
 <div class="lead">
-  <p><strong>What to look at.</strong> Eight automated gates already prove the
-  structural claims — every Arabic example is attested in the Quran, every root exists
-  in the corpus, sun and moon letters are classified correctly, every lesson is
-  reachable, every exercise is answerable, and no option position is favoured. Those are
-  tagged <span class="tag ok">✓</span> and you can skip them.</p>
+  <p><strong>What to look at.</strong> These gates already prove the structural claims,
+  and run on every push:</p>
+  <ul class="meta" style="max-width:66ch">
+    ${LESSON_GATES.map((g) => `<li><code>${g.script}</code> — ${g.proves}</li>`).join('\n    ')}
+  </ul>
+  <p>Anything they settle is tagged <span class="tag ok">✓</span> and you can skip it.</p>
   <p>What no script can decide is tagged <span class="tag ask">?</span>: whether the
   explanation is clear, whether the examples illuminate it, and whether the exercises
   test what the lesson actually taught. That is the reason this document exists.</p>
