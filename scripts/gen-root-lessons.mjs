@@ -59,6 +59,71 @@ async function localDbPath() {
 }
 
 const dbPath = await localDbPath();
+
+/**
+ * --check without a corpus still checks what it can.
+ *
+ * CI has neither data/ nor .wrangler/ — both are gitignored, being large and
+ * regenerable — so a check that requires the corpus cannot run there. I added this gate
+ * to CI without thinking that through and it failed on the first push for exactly that
+ * reason.
+ *
+ * The corpus comparison genuinely needs the corpus. The rest does not: the committed
+ * JSON can be checked for structure, for gradable exercises, for answer indices in
+ * range, and for the answer-position distribution — which is the check that caught a
+ * real bug, and it reads the file alone. So without a database, run those and say
+ * plainly that the comparison was skipped rather than passing silently.
+ */
+if (check && !dbPath) {
+  const payload = JSON.parse(await readFile(OUT, 'utf-8').catch(() => 'null'));
+  if (!payload?.lessons?.length) {
+    process.stderr.write('✘ content/grammar/root-lessons.json is missing or empty\n');
+    process.exit(1);
+  }
+  const problems = [];
+  const positions = new Map();
+  let mcq = 0;
+  for (const l of payload.lessons) {
+    const gradable = (l.exercises ?? []).filter((e) =>
+      ['multiple_choice', 'fill_blank', 'match'].includes(e.type)
+    );
+    if (gradable.length < 2) problems.push(`${l.id}: only ${gradable.length} gradable`);
+    if (!l.content?.explanation) problems.push(`${l.id}: no explanation`);
+    for (const e of l.exercises ?? []) {
+      if (e.type !== 'multiple_choice') continue;
+      mcq += 1;
+      if (!Array.isArray(e.options) || e.options.length < 2) {
+        problems.push(`${l.id}: a multiple choice with fewer than 2 options`);
+      } else if (!(Number(e.correct) >= 0 && Number(e.correct) < e.options.length)) {
+        problems.push(`${l.id}: correct index ${e.correct} is outside its options`);
+      }
+      positions.set(e.correct, (positions.get(e.correct) ?? 0) + 1);
+    }
+  }
+  if (mcq >= 20) {
+    const share = Math.max(...positions.values()) / mcq;
+    if (share > 0.5) {
+      problems.push(
+        `${Math.round(share * 100)}% of correct answers sit at one option position — ` +
+          'scoreable without reading the question'
+      );
+    }
+  }
+  if (problems.length > 0) {
+    process.stderr.write(
+      `✘ ${problems.length} problem(s) in the generated lessons:\n` +
+        problems.slice(0, 10).map((x) => `    ${x}\n`).join('')
+    );
+    process.exit(1);
+  }
+  process.stdout.write(
+    `✅ ${payload.lessons.length} generated lessons are structurally sound ` +
+      `(${mcq} questions, answers spread across positions). Corpus comparison skipped: ` +
+      'no local database, which is expected in CI.\n'
+  );
+  process.exit(0);
+}
+
 if (!dbPath) {
   process.stderr.write('✘ no local D1 database found — ingest the corpus first\n');
   process.exit(1);
