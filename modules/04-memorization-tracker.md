@@ -1,5 +1,19 @@
 # Module 4 — Memorization Tracker
 
+> **Pre-implementation design spec.** Written before the code, and kept for its
+> reasoning rather than as a description of the app. Where it disagrees with the app,
+> the app is right.
+>
+> Authoritative now: `README.md` for what works and what is planned, `AGENTS.md` for the
+> live API and page lists (both generated from source and gated in CI), and
+> `docs/lesson-review.html` for the lesson content.
+>
+> Known to describe things that did not ship:
+> - SM-2 scheduling — replaced by FSRS-6 on four named grades (migration 0019)
+> - audio recording of your own recitation — never built; no microphone capture exists
+> - daily streaks — no streak counter shipped; /progress shows a weekly activity calendar
+
+
 ## Overview
 Tracks Quran memorization progress with spaced repetition scheduling, audio recording for self-review, and next-ayah recall exercises. The hifz (memorization) component of the app.
 

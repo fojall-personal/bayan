@@ -1,5 +1,18 @@
 # Module 2 — Assessment Engine
 
+> **Pre-implementation design spec.** Written before the code, and kept for its
+> reasoning rather than as a description of the app. Where it disagrees with the app,
+> the app is right.
+>
+> Authoritative now: `README.md` for what works and what is planned, `AGENTS.md` for the
+> live API and page lists (both generated from source and gated in CI), and
+> `docs/lesson-review.html` for the lesson content.
+>
+> Known to describe things that did not ship:
+> - audio recording of your own recitation — never built; no microphone capture exists
+> - a model-backed tutor — the tutor answers from corpus lookups and makes no model call
+
+
 ## Overview
 The diagnostic engine that places users on the correct learning path. Runs a 30-45 minute test across 4 domains (literacy, comprehension, grammar, memorization) and generates a personalized curriculum.
 

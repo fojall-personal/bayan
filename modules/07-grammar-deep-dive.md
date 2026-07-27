@@ -1,5 +1,15 @@
 # Module 7 — Grammar Deep-Dive
 
+> **Pre-implementation design spec.** Written before the code, and kept for its
+> reasoning rather than as a description of the app. Where it disagrees with the app,
+> the app is right.
+>
+> Authoritative now: `README.md` for what works and what is planned, `AGENTS.md` for the
+> live API and page lists (both generated from source and gated in CI), and
+> `docs/lesson-review.html` for the lesson content.
+
+
+
 ## Overview
 Interactive sentence parsing, verb conjugation tables, balagha (rhetoric) examples with analysis, and real-time grammar checking. The advanced grammar component that goes beyond the basic lessons in Module 3.
 

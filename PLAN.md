@@ -8,7 +8,7 @@
 > marked eleven modules complete while six endpoints returned 500 and the
 > frontend could not reach the backend at all.
 >
-> Current documents: `AGENTS.md` and
+> Current documents: `README.md`, `AGENTS.md` and
 > `docs/CONTENT-AND-CORPUS-2026-07-26.md`. The three that used to be listed here —
 > the v2 plan, the code audit and the local-session handoff — are removed; their
 > findings are closed and recorded in those two.

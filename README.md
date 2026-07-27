@@ -61,14 +61,15 @@ languagebuilder/
 │   ├── grammar/       # Grammar curriculum
 │   ├── assessments/   # Diagnostic test questions
 │   └── tajweed/       # Tajweed rule definitions
-├── scripts/           # seed-db, gen-assessment, ingest-quran, verify-access-jwt
+├── scripts/           # 22 scripts: ingest-* pull pinned sources, gen-* derive content
+│                     # and docs, check-* are the CI gates. Most take --check.
 ├── src/
 │   ├── app/           # Next.js app
 │   │   ├── app/       # App Router pages
 │   │   ├── components/# React components (ui, layout, dashboard, learning, etc.)
 │   │   ├── hooks/     # Custom hooks
 │   │   └── tailwind.config.ts
-│   └── styles/        # Design system (DESIGN.md, globals.css, verification page)
+│   └── styles/        # DESIGN.md + globals.css — the token source of truth
 ├── workers/           # Cloudflare Workers backend
 │   ├── src/
 │   │   ├── routes/    # API route handlers
@@ -79,7 +80,9 @@ languagebuilder/
 │   └── wrangler.toml  # Workers config
 ├── .github/workflows/ # CI/CD pipeline
 │   └── deploy.yml     # Auto-deploy to Cloudflare Pages on push to main
-└── modules/           # Design documentation per module
+├── docs/              # lesson-review.html (generated), plus a dated corpus record
+└── modules/           # Pre-implementation design specs. Each carries a banner
+                       # naming what it describes that did not ship.
 ```
 
 ## 🚀 Getting Started
@@ -185,8 +188,23 @@ database was reseeded.
 
 ## ✅ Checks
 
-All three are enforced in CI ahead of the deploy job, and none of them existed
-before 2026-07-25 — the Worker alone had 69 type errors that nothing was checking.
+Enforced in CI ahead of the deploy job. None of this existed before 2026-07-25 — the
+Worker alone had 69 type errors that nothing was checking.
+
+Nine gates run alongside the tests, and every one has been proven to fail on a seeded
+defect:
+
+| Gate | Refuses |
+|---|---|
+| `check-content.mjs` | a lesson claim the corpus contradicts — sun/moon membership, unattested Arabic, a root that does not exist |
+| `check-pedagogy.mjs` | an unreachable lesson, a level hole, fewer than two gradable exercises, an exercise with no answer input or no explanation |
+| `gen-lessons-sql.mjs --check` | a content edit that was not reseeded |
+| `gen-root-lessons.mjs --check` | generated lessons out of step with the corpus, or answers clustered at one option position |
+| `gen-design-system.mjs --check` | token drift, a tajweed span that breaks Arabic shaping, a root joined with spaces, Arabic without `lang="ar"` |
+| `gen-api-docs.mjs --check` | an undocumented endpoint, an orphaned page, an endpoint with no caller, a success response not using `{data}` |
+| `gen-db-types.mjs --check` | row types out of step with the migrations |
+| `gen-content-manifest.mjs --check` | a content count in prose that disagrees with what shipped |
+| `sync-pages-config.mjs --check` | a missing Pages binding — the state that once made every data route 500 |
 
 ```bash
 cd workers   && npx tsc --noEmit && npm test    # 197 vitest test blocks

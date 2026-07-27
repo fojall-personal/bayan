@@ -1,5 +1,18 @@
 # Module 5 — Progress Dashboard & Onboarding
 
+> **Pre-implementation design spec.** Written before the code, and kept for its
+> reasoning rather than as a description of the app. Where it disagrees with the app,
+> the app is right.
+>
+> Authoritative now: `README.md` for what works and what is planned, `AGENTS.md` for the
+> live API and page lists (both generated from source and gated in CI), and
+> `docs/lesson-review.html` for the lesson content.
+>
+> Known to describe things that did not ship:
+> - a /dashboard page — deleted; Today is the entry point
+> - daily streaks — no streak counter shipped; /progress shows a weekly activity calendar
+
+
 ## Overview
 The user's home base: visual tracking of all learning metrics, weekly goals, streak counter, score history, and the onboarding flow that personalizes the experience after assessment.
 

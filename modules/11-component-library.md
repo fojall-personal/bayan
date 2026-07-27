@@ -1,5 +1,17 @@
 # Language Builder — Component Library
 
+> **Pre-implementation design spec.** Written before the code, and kept for its
+> reasoning rather than as a description of the app. Where it disagrees with the app,
+> the app is right.
+>
+> Authoritative now: `README.md` for what works and what is planned, `AGENTS.md` for the
+> live API and page lists (both generated from source and gated in CI), and
+> `docs/lesson-review.html` for the lesson content.
+>
+> Known to describe things that did not ship:
+> - a /dashboard page — deleted; Today is the entry point
+
+
 > **SUPERSEDED — historical spec.** The colours, type and tokens below describe
 > the original pre-rebrand design and are **not** what the app implements. The
 > single source of truth is `src/app/styles/globals.css`; the published reference

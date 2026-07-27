@@ -119,8 +119,11 @@ Each module is built on the completed design system and component library from P
 1. ✅ **01-database-schema-and-data-layer** — D1 schema, seed data, API layer
 2. ✅ **02-assessment-engine** — Diagnostic test, scoring algorithm, path assignment
 3. ✅ **03-learning-engine** — Lessons, exercises, flashcards, grammar drills
-4. ✅ **04-memorization-tracker** — Spaced repetition, audio review, progress tracking
-5. ✅ **05-progress-dashboard-and-onboarding** — Dashboard, streaks, weekly goals, onboarding
+4. ✅ **04-memorization-tracker** — FSRS-6 spaced repetition, progress tracking. No audio
+   review: recording was never built.
+5. ✅ **05-progress-dashboard-and-onboarding** — onboarding, coverage, and a weekly
+   activity calendar. `/dashboard` was deleted and Today is the entry point; there is no
+   streak counter.
 
 #### Phase 2: Enhancement ✅ COMPLETE
 
@@ -177,7 +180,11 @@ Each module is built on the completed design system and component library from P
 - Tajweed color-coding logic
 
 ### E2E Tests (Playwright)
-- Landing page → onboarding → dashboard
+
+None exist. The equivalent coverage lives in `workers/test/routes.test.ts`, which
+dispatches every endpoint through the real Hono app against a real SQLite database built
+from the migrations — see "Route-layer tests" below. Listed here as intent, not as fact:
+- Landing page → onboarding → Today
 - Memorization review session
 - AI tutor chat interaction
 
@@ -295,6 +302,44 @@ Translation keys stored in `src/lib/i18n/`.
 Arabic UI strings use `dir="rtl"` on the root container.
 
 ---
+
+## Gates (run these before assuming anything)
+
+Nine generated-and-gated checks, each proven to fail on a seeded defect. Anything a doc
+or a comment asserts about counts, endpoints, tokens or content is checked by one of
+them — so if a number here disagrees with the code, run the gate rather than trusting the
+prose.
+
+```bash
+node scripts/check-content.mjs              # lesson claims vs the corpus
+node scripts/check-pedagogy.mjs             # reachability, gradability, explanations
+node scripts/gen-lessons-sql.mjs --check    # content edited but not reseeded
+node scripts/gen-root-lessons.mjs --check   # generated lessons vs corpus; answer-position bias
+node scripts/gen-design-system.mjs --check  # token drift, Arabic shaping, lang="ar"
+node scripts/gen-api-docs.mjs --check       # this file's endpoint/page lists, envelopes, orphans
+node scripts/gen-db-types.mjs --check       # row types vs migrations
+node scripts/gen-content-manifest.mjs --check   # content counts quoted in prose
+node scripts/sync-pages-config.mjs --check  # Pages bindings (needs Cloudflare creds)
+```
+
+Two need a local corpus (`data/` and `.wrangler/`, both gitignored): `check-content` and
+the corpus half of `gen-root-lessons`. The latter degrades to structural checks and says
+so rather than passing silently.
+
+## Route-layer tests
+
+`workers/test/helpers/harness.ts` runs the real app through Hono's `app.request()`
+against node:sqlite, with the schema applied from the REAL migration files. Content
+tables are left empty on purpose: SQLite raises on an unknown column even with no rows,
+which catches the largest bug class this repo has had — a wrong column name.
+
+## Lesson content
+
+Lives in `content/grammar/` (ten authored lessons plus sixty generated per-root) and is
+deployed by CI, which applies `scripts/seed-lessons.sql` through D1's query API before the
+Pages deploy. Regenerate the seed after any content edit; `gen-lessons-sql.mjs --check`
+fails the build otherwise. `wrangler d1 execute --file` will NOT work for this — it uses
+the import API, which the token is not permitted for; the query API is.
 
 ## API Endpoints (Live)
 

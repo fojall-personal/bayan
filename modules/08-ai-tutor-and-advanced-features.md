@@ -1,5 +1,18 @@
 # Module 8 — AI Tutor & Advanced Features
 
+> **Pre-implementation design spec.** Written before the code, and kept for its
+> reasoning rather than as a description of the app. Where it disagrees with the app,
+> the app is right.
+>
+> Authoritative now: `README.md` for what works and what is planned, `AGENTS.md` for the
+> live API and page lists (both generated from source and gated in CI), and
+> `docs/lesson-review.html` for the lesson content.
+>
+> Known to describe things that did not ship:
+> - audio recording of your own recitation — never built; no microphone capture exists
+> - a model-backed tutor — the tutor answers from corpus lookups and makes no model call
+
+
 ## Overview
 Chat-based grammar explanations, personalized feedback on recordings, adaptive question generation, and advanced memorization tools including audio-based testing, cross-reference memorization, and certificate export.
 
