@@ -50,6 +50,8 @@ interface Word {
   segments: Segment[];
   /** Whole-Quran frequency of this word's root(s), commonest first. */
   rootOccurrences?: { root: string; occurrences: number }[];
+  /** Where this word sounds in the recitation, or null if unaligned. */
+  timing?: { startMs: number; endMs: number } | null;
 }
 interface TajweedTag {
   start: number;
@@ -94,6 +96,13 @@ export function AyahReader() {
   const ayah = Math.max(1, Number(params.get('a')) || 1);
 
   const [data, setData] = useState<Ayah | null>(null);
+  /**
+   * Where the recitation currently is, in milliseconds, or null when silent.
+   *
+   * Held here rather than inside the audio button because the highlight belongs to
+   * the words, and the words are rendered by this component.
+   */
+  const [positionMs, setPositionMs] = useState<number | null>(null);
   const [lens, setLens] = useState<Lens>('meaning');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -202,7 +211,7 @@ export function AyahReader() {
                 : `${data.wordsToLearn} word${data.wordsToLearn === 1 ? '' : 's'} to learn`}
             </p>
           </div>
-          <AyahAudioButton surah={surah} ayah={ayah} />
+          <AyahAudioButton surah={surah} ayah={ayah} onPositionChange={setPositionMs} />
         </div>
 
         {/* The ayah. Amiri, lang="ar", leading-arabic — and tajweed colours only
@@ -237,7 +246,20 @@ export function AyahReader() {
             root yet" — a finishable list rather than a percentage. */}
         <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-3" dir="rtl">
           {data.words.map((w) => (
-            <div key={w.position} className="min-w-[86px] text-center">
+            <div
+              key={w.position}
+              className={`min-w-[86px] rounded-md text-center transition-colors ${
+                // Sounding right now. Background rather than colour: colour already
+                // means "root you do not know yet" in this grid, and two meanings on
+                // one channel is how a legend stops being readable.
+                positionMs !== null &&
+                w.timing &&
+                positionMs >= w.timing.startMs &&
+                positionMs < w.timing.endMs
+                  ? 'bg-leaf-500/20'
+                  : ''
+              }`}
+            >
               <span
                 className={`text-arabic block text-xl ${
                   w.known

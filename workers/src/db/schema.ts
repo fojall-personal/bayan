@@ -166,6 +166,15 @@ export interface QuranWordMorphologyRow {
   state: string | null;
 }
 
+export interface QuranWordTimingRow {
+  reciter: string;
+  surah_id: number;
+  ayah_id: number;
+  word_index: number;
+  start_ms: number;
+  end_ms: number;
+}
+
 export interface SpacedRepetitionRow {
   id: string;
   user_id: string;

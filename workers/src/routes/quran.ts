@@ -54,6 +54,10 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
   const userId = c.get('userId');
   const surah = Number(c.req.param('surah'));
   const ayah = Number(c.req.param('ayah'));
+  // Which recording to return timings for. Defaults to the app's default reciter so
+  // the common case needs no parameter; an unknown value simply yields no timings
+  // rather than an error, because playback still works without them.
+  const reciter = c.req.query('reciter') ?? 'Alafasy_128kbps';
 
   // Reject out-of-range before querying. A 404 for "surah 200" is a better answer
   // than an empty result that looks like missing data.
@@ -72,7 +76,7 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
     );
     if (!verse) return c.json({ error: `No ayah ${surah}:${ayah}` }, 404);
 
-    const [glosses, segments, known, rules, neighbours, rootCounts] =
+    const [glosses, segments, known, rules, neighbours, timings, rootCounts] =
       await Promise.all([
       db.query<WordRow>(
         `SELECT position, arabic, transliteration, english
@@ -106,6 +110,17 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
       // shows this for free and it was the one thing the reader lacked. Scoped to the
       // roots present in this ayah rather than counting all 1,642, and it rides the
       // same Promise.all so it costs no extra round trip.
+      // Word-level recitation timings, so the reader can highlight what is sounding.
+      // Empty for a reciter with no verified alignment — Husary is offered by the
+      // player but quran-align covers a different encode of it, and highlighting the
+      // wrong word is worse than highlighting none.
+      db.query<{ word_index: number; start_ms: number; end_ms: number }>(
+        `SELECT word_index, start_ms, end_ms
+           FROM quran_word_timing
+          WHERE reciter = ? AND surah_id = ? AND ayah_id = ?
+          ORDER BY word_index`,
+        [reciter, surah, ayah]
+      ),
       db.query<{ root: string; occurrences: number }>(
         `SELECT root, COUNT(*) AS occurrences
            FROM quran_word_morphology
@@ -121,6 +136,7 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
 
     const knownRoots = new Set(known.map((k) => k.root));
     const occurrences = new Map(rootCounts.map((r) => [r.root, r.occurrences]));
+    const timingByWord = new Map(timings.map((t) => [t.word_index, t]));
     const palette = new Map(rules.map((r) => [r.id, { color: r.color, name: r.name }]));
 
     // Group segments under their word, so the client never re-derives word shape.
@@ -153,6 +169,14 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
         rootOccurrences: roots
           .map((r) => ({ root: r, occurrences: occurrences.get(r) ?? 0 }))
           .sort((a, b) => b.occurrences - a.occurrences),
+        // Milliseconds into this ayah's audio where the word is sounding. Null when
+        // the reciter has no verified alignment.
+        timing: timingByWord.get(g.position)
+          ? {
+              startMs: timingByWord.get(g.position)!.start_ms,
+              endMs: timingByWord.get(g.position)!.end_ms,
+            }
+          : null,
         // `form` and `lemma` are stored in Buckwalter, and both were handed to the
         // client raw. `arabic` was never rendered so it merely lied, but the Parse
         // lens prints the lemma — so /read showed "lemma Hamod", "lemma {ll~ah",
@@ -193,6 +217,8 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
         surah,
         ayah,
         ayahsInSurah: neighbours?.n ?? null,
+        // Echoed so the client can assert the timings match the file it is playing.
+        timingReciter: timings.length > 0 ? reciter : null,
         textUthmani: verse.text_uthmani,
         textSimple: verse.text_simple,
         // The column exists but is unpopulated for all 6,236 verses, so this is
