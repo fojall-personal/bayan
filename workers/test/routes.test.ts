@@ -579,3 +579,69 @@ describe('FSRS scheduling through the API', () => {
     expect(row.meaning_known).toBe(1);
   });
 });
+
+describe('lesson results explain the mistakes', () => {
+  it('returns the authored explanation for every exercise, including match', async () => {
+    const t = H();
+    // The real grammar-02 shape: a match plus a multiple choice, both with explanations.
+    const exercises = [
+      {
+        type: 'match',
+        question: 'Match the conjugation of كَتَبَ with the correct subject',
+        pairs: [
+          { item: 'كَتَبُوا', answer: 'they (men) wrote' },
+          { item: 'كَتَبْنَا', answer: 'we wrote' },
+        ],
+        explanation: 'Each ending marks a different subject, and the stem كَتَب never changes.',
+      },
+      {
+        type: 'multiple_choice',
+        question: 'Which form means "they (men) wrote"?',
+        options: ['كَتَبْنَ', 'كَتَبُوا'],
+        correct: 1,
+        explanation: 'The masculine plural past suffix is ـُوا.',
+      },
+    ];
+    t.db
+      .prepare(
+        `INSERT INTO lessons (id, title, module, level, content, exercises, prerequisites)
+         VALUES ('grammar-02', 'Past Tense', 'grammar', 1, '{}', ?, '[]')`
+      )
+      .run(JSON.stringify(exercises));
+
+    const { status, body } = await t.json<{
+      data: {
+        correct: number;
+        total: number;
+        review: {
+          type: string;
+          correct: boolean;
+          given: string | null;
+          expected: string | null;
+          explanation: string | null;
+        }[];
+      };
+    }>('/api/learning/lessons/grammar-02/submit', {
+      method: 'POST',
+      // Match answered wrong, multiple choice right.
+      body: JSON.stringify({ answers: [JSON.stringify(['we wrote', 'they (men) wrote']), 1] }),
+    });
+
+    expect(status).toBe(200);
+    expect(body.data.total).toBe(2);
+    expect(body.data.correct).toBe(1);
+
+    const match = body.data.review.find((r) => r.type === 'match')!;
+    expect(match.correct).toBe(false);
+    // The whole point of the review screen: a wrong answer comes with the reason.
+    // grammar-02's match shipped without one, so the learner saw a bare ✗.
+    expect(match.explanation).toContain('never changes');
+    expect(match.expected).toContain('كَتَبُوا');
+    expect(match.given).toBe('we wrote, they (men) wrote');
+
+    // Every exercise carries an explanation, not just the ones that happen to be wrong.
+    for (const item of body.data.review) {
+      expect(item.explanation, `${item.type} has no explanation`).toBeTruthy();
+    }
+  });
+});

@@ -291,6 +291,32 @@ for (const n of notes) process.stdout.write(`  note  ${n}\n`);
   notes.push(`practice mapped for ${withPractice}/${lessons.length} lessons`);
 }
 
+// ── Every exercise must explain itself ──────────────────────────────────────
+//
+// The result screen now shows, per exercise, what the learner answered, the correct
+// answer, and the authored explanation. An exercise without one renders as a bare "✗"
+// — the learner is told they were wrong and nothing about why, which is the least
+// useful moment to go quiet.
+//
+// Found by the review document rather than by a gate: grammar-02's match exercise had
+// no explanation, and it took rendering all 201 exercises for a human to read before
+// anyone noticed. Checked here now so the next one is caught before it ships.
+for (const lesson of lessons) {
+  for (const [i, ex] of (lesson.exercises ?? []).entries()) {
+    const why = (ex.explanation ?? '').trim();
+    if (why.length === 0) {
+      fail(
+        lesson.id,
+        `exercise ${i + 1} (${ex.type}) has no explanation — the review screen would ` +
+          'tell the learner they were wrong and nothing else'
+      );
+    } else if (why.length < 20) {
+      // A placeholder is worse than an absence, because it passes a presence check.
+      fail(lesson.id, `exercise ${i + 1} has a ${why.length}-character explanation`);
+    }
+  }
+}
+
 if (problems.length === 0) {
   process.stdout.write(
     `✅ pedagogy checks pass — all ${lessons.length} lessons reachable, ` +
