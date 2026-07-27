@@ -182,60 +182,26 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/sync-pages-config.mjs --check
 
-      # Lesson content is NOT seeded here, and that is a token-scope limitation rather
-      # than a decision.
+      # Lesson content ships with the code that renders it.
       #
-      # scripts/seed-lessons.sql is generated from the content files and committed, so a
-      # content fix can be complete in the repo and absent from production — which
-      # happened: an explanation added to grammar-02 passed nine gates and 278 tests and
-      # never reached the learner, because the remote database was never reseeded.
+      # Not via `wrangler d1 execute --file`: that uploads through the IMPORT api
+      # (/d1/database/:id/import), which returns "Authentication error [code: 10000]" for
+      # this token. I first read that as "the token cannot write to D1", said so, and
+      # reverted the automation — an inference from one endpoint rather than a
+      # measurement. Two probes then showed the same token reads AND writes D1 quite
+      # happily through the QUERY api. Only the import path is closed, so seeding needs
+      # the other endpoint and no permission change at all.
       #
-      # Automating it here failed on Authentication error [code: 10000] against
-      # /d1/database/:id/import. CLOUDFLARE_API_TOKEN is scoped for Pages deploys and has
-      # no D1 write permission, and granting it is an account change rather than a code
-      # change. Until the token gains "D1: Edit", content changes need this, run from
-      # workers/ where wrangler.toml lives:
-      #
-      #   npx wrangler d1 execute languagebuilder --remote --file=../scripts/seed-lessons.sql -y
-      #
-      # Every statement is INSERT OR REPLACE keyed on the lesson id, so it is idempotent.
-      # Deliberately not added with continue-on-error: a step allowed to fail without
-      # failing the build is a step nobody notices is broken, which is the failure this
-      # comment exists to prevent.
-
-      # TEMPORARY DIAGNOSTIC — remove after reading the result.
-      #
-      # Distinguishes two explanations for the earlier failure. `d1 execute --file` uses
-      # the IMPORT api (/d1/database/:id/import); `--command` uses the QUERY api. The
-      # failure was on /import specifically, so either the token has no D1 write at all,
-      # or it has query access and import needs more. If the query below succeeds, the
-      # seeding can be done without changing any token.
-      - name: DIAGNOSTIC probe D1 query access
+      # Idempotent: every statement is INSERT OR REPLACE keyed on the lesson id. Runs
+      # before the Pages deploy so content is in place when the code that reads it goes
+      # live, and the script refuses to apply a partial seed.
+      - name: Seed lesson content into D1
         if: github.event_name != 'pull_request'
-        continue-on-error: true
-        uses: cloudflare/wrangler-action@v3
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: workers
-          command: d1 execute languagebuilder --remote --command "SELECT COUNT(*) AS lessons FROM lessons;" -y
-
-      # Second probe: a WRITE via the query api rather than the import api.
-      - name: DIAGNOSTIC probe D1 write via query api
-        if: github.event_name != 'pull_request'
-        continue-on-error: true
-        uses: cloudflare/wrangler-action@v3
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: workers
-          command: d1 execute languagebuilder --remote --command "UPDATE lessons SET updated_at = updated_at WHERE id = 'grammar-01';" -y
+          D1_DATABASE_ID: 6216c466-c244-4c16-8569-c7281585fbc6
+        run: node scripts/seed-remote-d1.mjs scripts/seed-lessons.sql
 
       - name: Deploy to Cloudflare Pages
         if: github.event_name != 'pull_request'

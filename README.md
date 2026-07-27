@@ -151,31 +151,28 @@ languagebuilder/
    cd workers && npx wrangler d1 execute languagebuilder --local --file=/tmp/seed.sql
    ```
 
-## ⚠️ Changing lesson content
+## Changing lesson content
 
-Lesson content lives in the repo but is **not** deployed by CI. After editing
-`content/grammar/lessons.json` or regenerating the root lessons, three steps:
+Lesson content lives in the repo and **is deployed by CI**. After editing
+`content/grammar/lessons.json` or regenerating the root lessons, regenerate the seed —
+`gen-lessons-sql.mjs --check` fails the build if you forget:
 
 ```bash
-node scripts/gen-lessons-sql.mjs        # regenerate the seed (gated in CI)
-cd workers && npx wrangler d1 execute languagebuilder --remote \
-  --file=../scripts/seed-lessons.sql -y
+node scripts/gen-lessons-sql.mjs
 ```
 
-Run from `workers/`, where `wrangler.toml` lives — the database name cannot be
-resolved without it.
+The deploy job then applies it. To apply it by hand:
 
-**Why this is manual.** Automating it in the deploy job fails with
-`Authentication error [code: 10000]` against `/d1/database/:id/import`:
-`CLOUDFLARE_API_TOKEN` is scoped for Pages deploys and has no D1 write permission.
-Granting it **D1: Edit** in the Cloudflare dashboard would let the deploy job seed
-content automatically; the step is written and commented out in
-`.github/workflows/deploy.yml`.
+```bash
+CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... \
+D1_DATABASE_ID=6216c466-c244-4c16-8569-c7281585fbc6 \
+node scripts/seed-remote-d1.mjs scripts/seed-lessons.sql
+```
 
-This has already cost one silent failure — an explanation added to `grammar-02`
-passed every gate and never reached production, because only the local database was
-reseeded. Every statement is `INSERT OR REPLACE` keyed on the lesson id, so running
-it again is always safe.
+It goes through D1's **query** API rather than `wrangler d1 execute --file`, which uses
+the import API and is not permitted for the CI token. This cost one silent failure
+before it was automated: an explanation added to `grammar-02` passed every gate and
+never reached production, because only the local database was reseeded.
 
 ## ✅ Checks
 
