@@ -24,9 +24,22 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const check = process.argv.includes('--check');
 
-const lessons = JSON.parse(
+const authored = JSON.parse(
   await readFile(join(root, 'content/grammar/lessons.json'), 'utf-8')
 );
+/**
+ * Generated root-family lessons, appended after the authored ten.
+ *
+ * Kept in a separate file so the two stay tellable apart — 60 corpus-derived lessons
+ * would otherwise bury the 10 hand-written ones, and the pedagogy gate, the review
+ * document and anyone reading the content all need to know which is which. Seeded into
+ * the same table because a lesson is a lesson to the learner.
+ */
+const generated = JSON.parse(
+  await readFile(join(root, 'content/grammar/root-lessons.json'), 'utf-8')
+).lessons;
+
+const lessons = [...(Array.isArray(authored) ? authored : authored.lessons), ...generated];
 
 const q = (v) => `'${String(v).replace(/'/g, "''")}'`;
 // Stable key order, so an unrelated reordering in the JSON cannot produce a diff.

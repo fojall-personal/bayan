@@ -107,6 +107,12 @@ export function practiceHref(
   lessonId: string,
   level: number
 ): { href: string; label: string } | null {
+  // Generated root lessons map exactly onto root identification — that is literally
+  // what they teach — so they need no entry in the table above and adding sixty would
+  // be noise. Handled by prefix rather than enumerated.
+  if (lessonId.startsWith('root-')) {
+    return { href: `/grammar?kind=root_id&level=${level}`, label: 'Identify the root' };
+  }
   const entry = LESSON_PRACTICE[lessonId];
   if (!entry) return null;
   // The existing runner at /grammar already filters by kind and level, grades, and

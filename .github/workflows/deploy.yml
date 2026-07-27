@@ -88,6 +88,13 @@ jobs:
       - name: Assert the documented content counts match what shipped
         run: node scripts/gen-content-manifest.mjs --check
 
+      # 60 generated root lessons, every fact read from the corpus. --check refuses a
+      # hand-edit, which would reintroduce exactly the risk generation removes — and the
+      # generator itself refuses to emit if the correct answers cluster at one option
+      # position, which a broken shuffle once made 98% of them do.
+      - name: Assert the generated root lessons match the corpus
+        run: node scripts/gen-root-lessons.mjs --check
+
       # 39 tests over grading, scoring, the SM-2 scheduler and the Quran ingest
       # alignment gate. Every case corresponds to a bug that shipped or a
       # behaviour previously checked only by hand. Adding them found a live one:

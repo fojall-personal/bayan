@@ -56,9 +56,22 @@ const problems = [];
 const notes = [];
 const fail = (where, msg) => problems.push(`${where}: ${msg}`);
 
-const lessons = JSON.parse(
+const authoredLessons = JSON.parse(
   await readFile(join(root, 'content/grammar/lessons.json'), 'utf-8')
 );
+/**
+ * Generated root lessons are checked too.
+ *
+ * They arrived as 60 lessons and 180 exercises — nine times the authored content — and
+ * checking only the ten hand-written ones would leave the great majority of the path
+ * ungated. Everything structural applies equally: a generated lesson can still be
+ * unreachable, still land in a level hole, still carry too few gradable exercises.
+ */
+const generatedLessons = JSON.parse(
+  await readFile(join(root, 'content/grammar/root-lessons.json'), 'utf-8')
+).lessons;
+
+const lessons = [...authoredLessons, ...generatedLessons];
 const byId = new Map(lessons.map((l) => [l.id, l]));
 
 // ── 1. Prerequisite integrity ───────────────────────────────────────────────
@@ -254,7 +267,10 @@ for (const n of notes) process.stdout.write(`  note  ${n}\n`);
       fail('practice', `"${m[1]}" is not one of the bank's kinds, so the link would return nothing`);
     }
   }
-  for (const lesson of lessons) {
+  // Authored lessons need an explicit decision each. Generated root lessons are handled
+  // by prefix in practiceHref — they map onto root identification by construction, and
+  // enumerating sixty of them would be noise rather than a decision.
+  for (const lesson of authoredLessons) {
     if (!mapped.has(lesson.id)) {
       fail(
         'practice',
@@ -263,8 +279,11 @@ for (const n of notes) process.stdout.write(`  note  ${n}\n`);
       );
     }
   }
+  if (!/startsWith\('root-'\)/.test(src)) {
+    fail('practice', 'practiceHref no longer handles generated root- lessons by prefix');
+  }
   for (const id of mapped.keys()) {
-    if (!lessons.some((l) => l.id === id)) {
+    if (!authoredLessons.some((l) => l.id === id)) {
       fail('practice', `lesson-practice.ts maps ${id}, which is not a lesson`);
     }
   }
