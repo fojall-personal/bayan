@@ -33,12 +33,35 @@ if (!file) {
   process.exit(1);
 }
 
-const { CLOUDFLARE_API_TOKEN: token, CLOUDFLARE_ACCOUNT_ID: account, D1_DATABASE_ID: database } =
-  process.env;
+const { CLOUDFLARE_API_TOKEN: token, D1_DATABASE_ID: database } = process.env;
+
+/**
+ * The account that owns this D1 database.
+ *
+ * Not read from CLOUDFLARE_ACCOUNT_ID, and that is the fix for a 403. In CI the raw REST
+ * call returned code 7403 — "the given account is not valid or is not authorized to
+ * access this service" — while a wrangler probe against the same database succeeded,
+ * because wrangler resolves the account from the token rather than trusting the secret.
+ * So the secret and the account owning the database are not the same value.
+ *
+ * Hardcoded because an account id is an identifier, not a credential: it appears in this
+ * workflow, in the README, and in Cloudflare's own error messages. Keeping it beside the
+ * database id — which was already a literal here — means one fewer thing that can be
+ * configured wrongly and fail at deploy time.
+ */
+const OWNING_ACCOUNT = '26f84481311bd42e09b8bdca6804661d';
+const account = OWNING_ACCOUNT;
+
+if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCOUNT_ID !== OWNING_ACCOUNT) {
+  // Reported, not silently overridden, so the discrepancy is visible to whoever set it.
+  process.stderr.write(
+    '  note: CLOUDFLARE_ACCOUNT_ID differs from the account that owns this database; ' +
+      'using the owner.\n'
+  );
+}
 
 for (const [name, value] of Object.entries({
   CLOUDFLARE_API_TOKEN: token,
-  CLOUDFLARE_ACCOUNT_ID: account,
   D1_DATABASE_ID: database,
 })) {
   if (!value) {

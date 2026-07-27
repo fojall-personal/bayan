@@ -199,7 +199,9 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # No CLOUDFLARE_ACCOUNT_ID: it does not match the account owning this database,
+          # which is why the raw REST call returned 7403 while wrangler succeeded. The
+          # script pins the owner.
           D1_DATABASE_ID: 6216c466-c244-4c16-8569-c7281585fbc6
         run: node scripts/seed-remote-d1.mjs scripts/seed-lessons.sql
 
