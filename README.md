@@ -174,6 +174,11 @@ without it every D1 route returns code 7403 whatever endpoint you use. Every sta
 `INSERT OR REPLACE` keyed on the lesson id, so re-running is always safe, and the script
 refuses to apply a partial seed.
 
+CI is the source of truth for lesson content. Verified by deleting a lesson row directly
+from production and pushing an unrelated commit: the deploy restored it without anyone
+touching D1. So a divergence between the repo and production self-corrects on the next
+push, rather than persisting until someone notices.
+
 This cost one silent failure before it was automated: an explanation added to
 `grammar-02` passed every gate and never reached production, because only the local
 database was reseeded.
