@@ -6,30 +6,6 @@ import { colourTags, type RawTag } from '../lib/tajweed-colors';
 
 export const tajweedRoutes = new Hono<AppEnv>();
 
-// GET /api/tajweed/rules — Get all tajweed rules with examples
-tajweedRoutes.get('/rules', async (c) => {
-  const db = getDb(c);
-
-  try {
-    const rules = await db.query<Record<string, unknown>>(
-      `SELECT * FROM tajweed_rules ORDER BY name ASC`
-    );
-
-    return c.json({
-      data: rules.map((r) => ({
-        id: r.id,
-        name: r.name,
-        description: r.description,
-        color: r.color,
-        colorName: r.color_name,
-      })),
-    });
-  } catch (error) {
-    console.error('Tajweed rules error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});
-
 // GET /api/tajweed/verses/:surahId — Get verses with tajweed tags for a surah
 tajweedRoutes.get('/verses/:surahId', async (c) => {
   const { surahId } = c.req.param();
@@ -135,38 +111,3 @@ tajweedRoutes.get('/mastery', async (c) => {
   }
 });
 
-// POST /api/tajweed/practice/:ruleId/submit — Submit practice result
-tajweedRoutes.post('/practice/:ruleId/submit', async (c) => {
-  const { ruleId } = c.req.param();
-  const userId = c.get('userId');
-  const db = getDb(c);
-  const { wordId, correct, timeSpent } = await c.req.json();
-
-  try {
-    await db.run(
-      `INSERT OR REPLACE INTO tajweed_practice (id, user_id, rule_id, word_id, correct, time_spent, practiced_at)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
-      [crypto.randomUUID(), userId, ruleId, wordId, correct ? 1 : 0, timeSpent]
-    );
-
-    const totalAttempts = await db.get<Record<string, unknown>>(
-      `SELECT COUNT(*) as count FROM tajweed_practice WHERE user_id = ? AND rule_id = ?`,
-      [userId, ruleId]
-    );
-    const correctAttempts = await db.get<Record<string, unknown>>(
-      `SELECT COUNT(*) as count FROM tajweed_practice WHERE user_id = ? AND rule_id = ? AND correct = 1`,
-      [userId, ruleId]
-    );
-
-    const total = (totalAttempts?.count as number) || 0;
-    const correctCount = (correctAttempts?.count as number) || 0;
-    const mastery = total > 0 ? Math.round((correctCount / total) * 100) : 0;
-
-    return c.json({
-      data: { success: true, mastery, totalAttempts: total },
-    });
-  } catch (error) {
-    console.error('Tajweed practice submit error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});

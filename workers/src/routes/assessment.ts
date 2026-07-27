@@ -7,18 +7,6 @@ import { calculateCompositeScore, assignLearningPath, generateAssessmentResult }
 
 export const assessmentRoutes = new Hono<AppEnv>();
 
-// GET /api/assessment/start — Get assessment questions
-assessmentRoutes.get('/start', async (c) => {
-  // Placeholder — will be populated in Module 2
-  return c.json({
-    data: {
-      modules: ['literacy', 'comprehension', 'grammar', 'memorization'],
-      total_questions: 60,
-      estimated_minutes: 30,
-    },
-  });
-});
-
 // POST /api/assessment/submit — Submit assessment answers
 assessmentRoutes.post('/submit', async (c) => {
   const userId = c.get('userId');

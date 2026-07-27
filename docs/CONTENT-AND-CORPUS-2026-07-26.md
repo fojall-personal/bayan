@@ -132,8 +132,10 @@ Three endpoints expose it, each returning the attribution so the UI cannot forge
 it:
 
 - `GET /api/grammar/root/:root` — the family in Arabic script
-- `GET /api/grammar/word/:surah/:ayah/:word` — grounded i'rab, one entry per
-  segment, nulls where the corpus is silent
+- `GET /api/quran/ayah/:surah/:ayah` — grounded i'rab inline, one entry per
+  segment, nulls where the corpus is silent. (The standalone
+  `GET /api/grammar/word/:surah/:ayah/:word` was retired once this returned the
+  same fields; it had no caller.)
 - `GET /api/grammar/drills/forms` — pattern drills
 
 Sample of what falls out without anyone authoring it: root ن ز ل yields أَنزَلَ

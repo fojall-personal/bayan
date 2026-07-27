@@ -28,56 +28,12 @@ export interface GrammarError {
   suggestion: string;
 }
 
-// Arabic verb conjugation data (Form I, past tense — common verbs)
-export const VERB_CONJUGATIONS: Record<string, Record<string, string>> = {
-  كتب: {
-    'he wrote': 'كَتَبَ',
-    'she wrote': 'كَتَبَتْ',
-    'they (m) wrote': 'كَتَبُوا',
-    'they (f) wrote': 'كَتَبْنَ',
-    'you (m.s.) wrote': 'كَتَبْتَ',
-    'you (f.s.) wrote': 'كَتَبْتِ',
-    'I wrote': 'كَتَبْتُ',
-    'we wrote': 'كَتَبْنَا',
-  },
- قرأ: {
-    'he read': 'قَرَأَ',
-    'she read': 'قَرَأَتْ',
-    'they (m) read': 'قَرَأُوا',
-    'you (m.s.) read': 'قَرَأْتَ',
-    'I read': 'قَرَأْتُ',
-    'we read': 'قَرَأْنَا',
-  },
-  ذهب: {
-    'he went': 'ذَهَبَ',
-    'she went': 'ذَهَبَتْ',
-    'they (m) went': 'ذَهَبُوا',
-    'I went': 'ذَهَبْتُ',
-    'we went': 'ذَهَبْنَا',
-  },
-  جلس: {
-    'he sat': 'جَلَسَ',
-    'she sat': 'جَلَسَتْ',
-    'they (m) sat': 'جَلَسُوا',
-    'I sat': 'جَلَسْتُ',
-    'we sat': 'جَلَسْنَا',
-  },
-  كان: {
-    'he was': 'كَانَ',
-    'she was': 'كَانَتْ',
-    'they (m) were': 'كَانُوا',
-    'I was': 'كُنْتُ',
-    'we were': 'كُنَّا',
-  },
-  يقول: {
-    'he says': 'يَقُولُ',
-    'she says': 'تَقُولُ',
-    'they (m) say': 'يَقُولُونَ',
-    'you (m.s.) say': 'تَقُولُ',
-    'I say': 'أَقُولُ',
-    'we say': 'نَقُولُ',
-  },
-};
+// The hand-authored Form I past-tense table lived here and served
+// GET /api/grammar/conjugations. Both are gone: it covered five roots typed by
+// hand, where quran_word_morphology carries 8,977 attested verb forms with their
+// aspect, voice and person already annotated. Hand-authored Arabic is the same
+// source that put a moon letter in the sun-letter list, and the corpus does not
+// have opinions.
 
 // Particles (حروف)
 const PARTICLES = [

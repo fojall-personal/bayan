@@ -13,6 +13,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import { colourTags, type RawTag } from '../lib/tajweed-colors';
+import { buckwalterToArabic } from '../lib/buckwalter';
 
 export const quranRoutes = new Hono<AppEnv>();
 
@@ -41,6 +42,7 @@ interface SegRow {
   pos: string | null;
   verb_form: string | null;
   aspect: string | null;
+  voice: string | null;
   case_case: string | null;
   gender: string | null;
   number: string | null;
@@ -78,7 +80,7 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
       ),
       db.query<SegRow>(
         `SELECT word_index, segment_index, form, root, lemma, pos,
-                verb_form, aspect, case_case, gender, number, person
+                verb_form, aspect, voice, case_case, gender, number, person
            FROM quran_word_morphology
           WHERE surah_id = ? AND ayah_id = ?
           ORDER BY word_index, segment_index`,
@@ -125,14 +127,20 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
         // two can never disagree about what "known" means.
         known: unknownRoots.length === 0,
         unknownRoots,
+        // `form` and `lemma` are stored in Buckwalter, and both were handed to the
+        // client raw. `arabic` was never rendered so it merely lied, but the Parse
+        // lens prints the lemma — so /read showed "lemma Hamod", "lemma {ll~ah",
+        // "lemma rab~". GET /api/grammar/word converted these all along; this
+        // endpoint, written later to replace it, did not.
         segments: segs.map((s) => ({
           index: s.segment_index,
-          arabic: s.form,
+          arabic: s.form ? buckwalterToArabic(s.form) : null,
           root: s.root,
-          lemma: s.lemma,
+          lemma: s.lemma ? buckwalterToArabic(s.lemma) : null,
           partOfSpeech: s.pos,
           verbForm: s.verb_form,
           aspect: s.aspect,
+          voice: s.voice,
           case: s.case_case,
           gender: s.gender,
           number: s.number,

@@ -44,7 +44,7 @@ What works today, honestly:
 | Database | Cloudflare D1, with `wrangler d1 migrations` |
 | Storage | Cloudflare R2 |
 | Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
-| Tests | Vitest (39 cases) + ESLint + `tsc`, all gated in CI |
+| Tests | Vitest (157 cases) + ESLint + `tsc`, all gated in CI |
 | CI/CD | GitHub Actions → Cloudflare Pages |
 | Cost | $0/month — a hard constraint, see plan §5 |
 
@@ -153,7 +153,7 @@ All three are enforced in CI ahead of the deploy job, and none of them existed
 before 2026-07-25 — the Worker alone had 69 type errors that nothing was checking.
 
 ```bash
-cd workers   && npx tsc --noEmit && npm test    # 39 vitest cases
+cd workers   && npx tsc --noEmit && npm test    # 157 vitest cases
 cd src/app   && npx tsc --noEmit && npm run lint
 ```
 
@@ -280,14 +280,14 @@ application, in any Cloudflare account, would be accepted.
 
 **Last updated: 2026-07-26**
 
-**Everything is deployed and working.** All 49 API endpoints resolve, all 13
+**Everything is deployed and working.** All 41 API endpoints resolve, all 13
 pages render, the database has 6,236 Quran verses and 77K morphology rows.
 
 | Component | Status |
 |-----------|--------|
 | Frontend (13 routes) | ✅ All rendering 200 OK |
 | Navigation (6 links) | ✅ All wired up |
-| API (49 endpoints) | ✅ All resolving |
+| API (41 endpoints) | ✅ All resolving |
 | Database (D1) | ✅ 18 migrations applied, seeded |
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |
@@ -331,7 +331,7 @@ microphone capture cannot be verified headlessly.
 | F4 | Comprehension checks | ✅ 1,200 items from 77,429 word glosses |
 | F5 | Diagnostic placement | ✅ and no longer a gate — skippable, with root calibration instead |
 | F6 | Tajweed track | ✅ rule reference, per-rule mastery, ten colours all ≥4.5:1 |
-| F7 | Progress | ✅ streaks, plus coverage — ayahs readable from known roots |
+| F7 | Progress | ✅ weekly activity calendar and coverage — ayahs readable from known roots. No daily streak counter: the helper that computed one had no caller and was removed |
 | F8 | Tutor | ✅ rewritten as corpus lookups; it refuses rather than inventing Arabic |
 | F9 | Root families | ✅ 4,950 derived exercises, all 25 (kind, level) buckets full |
 

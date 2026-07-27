@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -60,18 +61,38 @@ export function LearningPage({ userId }: LearningPageProps) {
   const [answers, setAnswers] = useState<Record<number, string | number>>({});
   const [result, setResult] = useState<{ score: number; correct: number; total: number; completed: boolean } | null>(null);
 
+  // ?lesson=<id> opens that lesson instead of the next unlocked one.
+  //
+  // The tutor's "Worth practising" rows link here, and without this the parameter
+  // was silently ignored — the learner clicked "Practise" on Articles and Nouns and
+  // landed on whatever lesson was next, which is the dead-click pattern the audit
+  // already flagged once for the tutor's suggestion chips.
+  const requestedLesson = useSearchParams().get('lesson');
+
   useEffect(() => {
     fetchNextLesson();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedLesson]);
 
   const fetchNextLesson = async () => {
     setLoading(true);
     try {
-      const data = await apiFetch<{ lesson: Lesson | null; message?: string }>(
-        '/api/learning/next'
+      // The two endpoints do not share a response shape: /next returns
+      // { lesson, message } and /lessons/:id returns { data: <lesson> }. Reading
+      // `.lesson` off the second returns undefined and renders "No more lessons
+      // available" for a lesson that loaded fine, so unwrap each explicitly.
+      const data = await apiFetch<{
+        lesson?: Lesson | null;
+        data?: Lesson;
+        message?: string;
+      }>(
+        requestedLesson
+          ? `/api/learning/lessons/${encodeURIComponent(requestedLesson)}`
+          : '/api/learning/next'
       );
-      if (data.lesson) {
-        setLesson(data.lesson);
+      const loaded = requestedLesson ? data.data : data.lesson;
+      if (loaded) {
+        setLesson(loaded);
         setError(null);
         setResult(null);
       } else {

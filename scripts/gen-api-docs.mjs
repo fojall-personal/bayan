@@ -79,9 +79,9 @@ const list = endpoints
 /** Notes worth keeping beside a path. Only for things a reader cannot infer. */
 const NOTES = {
   '/api/grammar/root/:root': 'corpus-derived root family, Arabic script',
-  '/api/grammar/word/:surah/:ayah/:word': "grounded i'rab, one entry per segment",
   '/api/grammar/exercises': '4,950-item graded bank; ?level=1-5 &kind=',
-  '/api/grammar/exercises/summary': 'counts by kind and level',
+  '/api/tutor/history': 'last 50 turns; the chat restores the most recent three',
+  '/api/tutor/suggested-exercises': 'weak lessons by accuracy over answered questions',
   '/api/memorization/curriculum': '908 ordered units; ?level=1-6 &limit &offset',
   '/api/quran/ayah/:surah/:ayah': 'one ayah: text, words + gloss + parse + known flag, tajweed',
   '/api/progress/coverage': 'ayahs readable from known roots; 400 roots is half the Quran',
@@ -201,6 +201,16 @@ const README = join(root, 'README.md');
 const migrationCount = (await readdir(join(root, 'workers/src/db/migrations'))).filter(
   (f) => f.endsWith('.sql')
 ).length;
+// The suite count drifts for the same reason: README said "39 cases" twice while
+// vitest was reporting 157. Counting it() and test() calls agrees with vitest's own
+// total, so it is derivable rather than remembered.
+let testCount = 0;
+for (const f of await readdir(join(root, 'workers/test'))) {
+  if (!f.endsWith('.ts')) continue;
+  const src = await readFile(join(root, 'workers/test', f), 'utf-8');
+  testCount += [...src.matchAll(/^\s*(?:it|test)\(/gm)].length;
+}
+
 const nav = await readFile(join(root, 'src/app/components/layout/Nav.tsx'), 'utf-8');
 // The nav array only — `isActive(href: string)` and other mentions must not count.
 const navCount = [...nav.matchAll(/\{\s*href:\s*'\/[^']*',\s*label:/g)].length;
@@ -213,6 +223,11 @@ const README_ROWS = [
     /\| Database \(D1\) \| ✅ \d+ migrations applied, seeded \|/,
     `| Database (D1) | ✅ ${migrationCount} migrations applied, seeded |`,
   ],
+  [
+    /\| Tests \| Vitest \(\d+ cases\)/,
+    `| Tests | Vitest (${testCount} cases)`,
+  ],
+  [/# \d+ vitest cases/, `# ${testCount} vitest cases`],
   // The prose sentence immediately above the table repeats two of them.
   [/All \d+ API endpoints resolve, all \d+\n?pages render/, null],
 ];
@@ -266,7 +281,8 @@ if (check) {
     process.stderr.write(
       '✘ README.md status table is out of date — it should read ' +
         `${pages.length} routes, ${navCount} nav links, ${list.length} endpoints, ` +
-        `${migrationCount} migrations.\n  Run: node scripts/gen-api-docs.mjs\n`
+        `${migrationCount} migrations, ${testCount} tests.\n` +
+        '  Run: node scripts/gen-api-docs.mjs\n'
     );
     process.exit(1);
   }
@@ -303,7 +319,7 @@ if (readme !== readmeBefore) await writeFile(README, readme, 'utf-8');
 process.stdout.write(
   `wrote ${list.length} endpoints and ${pages.length} pages into AGENTS.md\n` +
     `  README: ${pages.length} routes, ${navCount} nav links, ${list.length} endpoints, ` +
-    `${migrationCount} migrations\n`
+    `${migrationCount} migrations, ${testCount} tests\n`
 );
 if (orphans.length) {
   process.stdout.write(`  orphaned pages: ${orphans.map((o) => o.path).join(', ')}\n`);

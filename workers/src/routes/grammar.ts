@@ -3,8 +3,7 @@ import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 
-import { parseArabicSentence, checkGrammarErrors, VERB_CONJUGATIONS } from '../lib/grammar-parser';
-import { buckwalterToArabic } from '../lib/buckwalter';
+import { parseArabicSentence, checkGrammarErrors } from '../lib/grammar-parser';
 import {
   buildFamily,
   drillsFromFamily,
@@ -75,16 +74,6 @@ grammarRoutes.post('/parse', async (c) => {
     console.error('Grammar parse error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
-});
-
-// GET /api/grammar/conjugations — Get verb conjugation tables
-grammarRoutes.get('/conjugations', async (c) => {
-  return c.json({
-    data: Object.entries(VERB_CONJUGATIONS).map(([root, forms]) => ({
-      root,
-      forms,
-    })),
-  });
 });
 
 // POST /api/grammar/exercise — Submit grammar exercise answer
@@ -204,50 +193,6 @@ grammarRoutes.get('/root/:root', async (c) => {
   }
 });
 
-// GET /api/grammar/word/:surah/:ayah/:word — grounded i'rab for one word (F8).
-// Returns only what the corpus states; absent features come back null so the UI
-// can say "not annotated" rather than guess.
-grammarRoutes.get('/word/:surah/:ayah/:word', async (c) => {
-  const { surah, ayah, word } = c.req.param();
-  const db = getDb(c);
-
-  try {
-    const rows = await db.query<MorphRow & { segment_index: number; form: string | null; tag: string | null }>(
-      `SELECT segment_index, form, tag, lemma, root, pos, verb_form, aspect, voice,
-              case_case, gender, number, person
-       FROM quran_word_morphology
-       WHERE surah_id = ? AND ayah_id = ? AND word_index = ?
-       ORDER BY segment_index ASC`,
-      [Number(surah), Number(ayah), Number(word)]
-    );
-
-    if (rows.length === 0) {
-      return c.json({ error: 'No such word in the corpus' }, 404);
-    }
-
-    return c.json({
-      data: {
-        surah: Number(surah),
-        ayah: Number(ayah),
-        word: Number(word),
-        // One entry per segment. A word like ٱلْقَمَرُ is (al)(qamar): the
-        // determiner carries no root, the stem carries qmr. Collapsing them is
-        // what broke this table in the first place.
-        segments: rows.map((r) => ({
-          segment: r.segment_index,
-          arabic: r.form ? buckwalterToArabic(r.form) : null,
-          tag: r.tag,
-          facts: grammarFacts(r),
-        })),
-      },
-      attribution: CORPUS_ATTRIBUTION,
-    });
-  } catch (error) {
-    console.error('Grounded i’rab error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});
-
 // GET /api/grammar/drills/forms — pattern drills (F9), derived not authored.
 // Only roots attesting 2+ forms yield a drill, so distractors are always real.
 grammarRoutes.get('/drills/forms', async (c) => {
@@ -346,18 +291,3 @@ grammarRoutes.get('/exercises', async (c) => {
   }
 });
 
-// GET /api/grammar/exercises/summary — counts by kind and level, for the UI's picker.
-grammarRoutes.get('/exercises/summary', async (c) => {
-  const db = getDb(c);
-  try {
-    const rows = await db.query<{ kind: string; level: number; n: number }>(
-      `SELECT kind, level, COUNT(*) AS n FROM grammar_exercise_bank
-       GROUP BY kind, level ORDER BY kind, level`
-    );
-    const total = rows.reduce((n, r) => n + r.n, 0);
-    return c.json({ data: { total, breakdown: rows }, attribution: CORPUS_ATTRIBUTION });
-  } catch (error) {
-    console.error('Exercise summary error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});

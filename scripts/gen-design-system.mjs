@@ -599,7 +599,7 @@ ${box('Add an ayah to memorize', 'Curriculum suggests An-Nas 3 next · 908 order
 <p class="note"><strong>Every number on this screen already has an endpoint.</strong>
 <code>GET /api/memorization/review/today</code> for what is due,
 <code>/api/learning/next</code> for the next unlocked lesson,
-<code>/api/progress/dashboard</code> for the streak, and the exercise bank filters
+the exercise bank filters
 by level and kind. The assessment supplies the level and path. The machinery for
 “here is your next thing” is complete and the entry point uses none of it —
 it shows a goal picker instead.<br><br>
@@ -910,7 +910,7 @@ pointing at the thing to do next.</p>
 <div class="grid" style="gap:10px">
 ${box('Recite', 'Tajweed colours on the script, ten rules, plus per-ayah audio. <code>GET /api/tajweed/verses/:surah</code> — already exists.')}
 ${box('Meaning', 'Word-by-word glosses. <code>quran_word_gloss</code>, 77,429 rows. Note there is NO full-translation table, so "meaning" is the gloss chain — worth saying rather than implying a translation exists.')}
-${box('Parse', 'Root, lemma, part of speech, form, case, per segment. <code>GET /api/grammar/word/:surah/:ayah/:word</code> — already exists, and returns null where the corpus is silent so the UI can say "not annotated".')}
+${box('Parse', 'Root, lemma, part of speech, form, case, voice, per segment. <code>GET /api/quran/ayah/:surah/:ayah</code> returns it inline, and returns null where the corpus is silent so the UI can say "not annotated".')}
 ${box('Memorize', 'Add this ayah to the SM-2 schedule from where you are reading. <code>POST /api/memorization/add</code> — already exists.')}
 ${box('Ask', 'The tutor, pre-scoped to this location. <code>POST /api/tutor/chat</code> — already exists and already classifies "2:255" as a location intent.')}
 </div>
@@ -1033,6 +1033,83 @@ the same DELETE the root screen uses.<br><br>
 Placement still has a job — literacy, comprehension, grammar and memorization
 levels shape the lesson path. It just does not get to invent a vocabulary.</p>`,
   'Twelve sampled roots, a minute of work, and a bulk seed the learner opts into.'
+), 'utf-8');
+
+await writeFile(join(OUT, 'preview/spec-tutor-loop.html'), shell(
+  'Spec — the tutor remembers, and suggests from your own errors', 'Product',
+  `<p style="max-width:66ch">Two endpoints have been live since the tutor shipped and
+no screen has ever called them. Both close a loop that is currently open.</p>
+
+<h2>1 · It forgets you every visit</h2>
+<p class="note" style="border-color:${colour('color-error')}"><code>tutor_conversations</code>
+is written on every exchange — the INSERT runs, the rows are there — and
+<code>GET /api/tutor/history</code> returns the last fifty. The chat mounts with
+<code>messages = []</code> regardless. Every session starts from nothing while the
+record of the last one sits in the database.</p>
+
+<h2>2 · The suggestions are the same five strings for everyone</h2>
+<p style="max-width:66ch">The chips today are hardcoded: <em>Explain madd types</em>,
+<em>Help with grammar</em>, <em>Tips for memorization</em>. Meanwhile
+<code>quiz_attempts</code> records what you actually got wrong, per lesson, on every
+exercise you finish — and <code>GET /api/tutor/suggested-exercises</code> reads it.</p>
+
+<p class="note" style="border-color:${colour('color-error')}"><strong>The endpoint is
+not usable as written.</strong> It counts <code>COUNT(*)</code> of attempts scoring
+zero and labels the result "3 errors in this area" — that is three <em>attempts</em>,
+not three errors. It treats <code>questions_correct &gt; 0</code> as
+<strong>"Strong performance in this area"</strong>, so one right out of ten is a
+strength. And it never reads <code>questions_answered</code>, so no accuracy is
+computed anywhere. Wiring it as-is would ship confident nonsense; the query is being
+rewritten to rank by accuracy over answered questions.</p>
+
+<h2>What the learner sees</h2>
+<div style="max-width:560px;background:${colour('ground-900')};
+ border:1px solid ${colour('ground-800')};border-radius:${tokens.get('radius-lg')};padding:20px">
+  <p style="margin:0 0 4px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;
+   color:var(--muted)">Continue where you left off</p>
+  <div style="border-left:2px solid ${colour('ground-800')};padding-left:12px;margin:12px 0">
+    <p style="margin:0;font-size:.8rem;color:var(--muted)">You · 3 days ago</p>
+    <p style="margin:2px 0 10px;font-size:.9rem">What is the difference between إِنَّ and أَنَّ?</p>
+    <p style="margin:0;font-size:.8rem;color:var(--muted)">Tutor</p>
+    <p style="margin:2px 0 0;font-size:.9rem">Both introduce a nominal clause and put
+    its subject in the accusative…</p>
+  </div>
+
+  <p style="margin:18px 0 8px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;
+   color:var(--muted)">Worth practising</p>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;
+     border:1px solid ${colour('color-error')}55;border-radius:${tokens.get('radius-md')};padding:10px 12px">
+      <div><p style="margin:0;font-size:.9rem">Articles and Nouns</p>
+        <p style="margin:2px 0 0;font-size:.75rem;color:var(--muted)">2 of 8 correct across 2 attempts</p></div>
+      <span style="font-size:.75rem;color:${colour('gold-400')};white-space:nowrap">Practise →</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;
+     border:1px solid ${colour('ground-800')};border-radius:${tokens.get('radius-md')};padding:10px 12px">
+      <div><p style="margin:0;font-size:.9rem">The Idafa Construction</p>
+        <p style="margin:2px 0 0;font-size:.75rem;color:var(--muted)">5 of 6 correct — nearly there</p></div>
+      <span style="font-size:.75rem;color:${colour('gold-400')};white-space:nowrap">Practise →</span>
+    </div>
+  </div>
+</div>
+
+<h2>Rules this follows</h2>
+<ul style="max-width:66ch">
+  <li><strong>Accuracy, not attempt counts.</strong> Rank by
+  <code>SUM(questions_correct) / SUM(questions_answered)</code>, and require at least
+  one finished attempt — a lesson you have never opened is not a weakness.</li>
+  <li><strong>Name the number.</strong> "2 of 8 correct across 2 attempts" is checkable
+  by the learner. "3 errors in this area" was not even true.</li>
+  <li><strong>Lesson titles, not ids.</strong> The endpoint returns
+  <code>lesson_id</code>; the card joins <code>lessons</code> so the learner reads
+  "Articles and Nouns" rather than <code>grammar-001</code>.</li>
+  <li><strong>Generic chips stay as the empty state.</strong> A learner who has
+  finished no exercises has no error history, and inventing a weakness for them would
+  be the same fabrication as the assessment inferring known roots.</li>
+  <li><strong>History is context, not a transcript.</strong> Restored turns render
+  behind a rule and above the composer, so it is obvious what is old.</li>
+</ul>`,
+  'Two live endpoints no screen has ever called, one of which needs its query fixed first.'
 ), 'utf-8');
 
 await writeFile(join(OUT, 'preview/spec-vocab-hifz.html'), shell(

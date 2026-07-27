@@ -112,73 +112,82 @@ tutorRoutes.get('/suggested-exercises', async (c) => {
   const db = getDb(c);
 
   try {
-    const errors = await db.query<Record<string, unknown>>(
-      `SELECT lesson_id, module, COUNT(*) as error_count
-       FROM quiz_attempts
-       WHERE user_id = ? AND questions_correct = 0
-       GROUP BY lesson_id, module
-       ORDER BY error_count DESC
-       LIMIT 10`,
+    // Rank by accuracy over questions actually answered.
+    //
+    // The previous version was unusable in three separate ways, and wiring it to a
+    // screen would have shipped confident nonsense:
+    //
+    //   COUNT(*) ... WHERE questions_correct = 0   → labelled "N errors in this
+    //     area", but it counts ATTEMPTS that scored zero, not errors.
+    //   WHERE questions_correct > 0                → labelled "Strong performance",
+    //     so one right out of ten qualified as a strength.
+    //   questions_answered                         → never read, so no accuracy was
+    //     computed anywhere despite the column existing.
+    //
+    // One row per lesson, aggregated across attempts, with the lesson title joined
+    // so the learner reads "Articles and Nouns" rather than grammar-001.
+    const rows = await db.query<{
+      lesson_id: string;
+      module: string;
+      title: string | null;
+      attempts: number;
+      answered: number;
+      correct: number;
+    }>(
+      `SELECT qa.lesson_id, qa.module,
+              l.title,
+              COUNT(*)                     AS attempts,
+              SUM(qa.questions_answered)   AS answered,
+              SUM(qa.questions_correct)    AS correct
+         FROM quiz_attempts qa
+         LEFT JOIN lessons l ON l.id = qa.lesson_id
+        WHERE qa.user_id = ?
+        GROUP BY qa.lesson_id, qa.module
+       HAVING answered > 0
+        ORDER BY (CAST(correct AS REAL) / answered) ASC, answered DESC`,
       [userId]
     );
 
-    const strong = await db.query<Record<string, unknown>>(
-      `SELECT lesson_id, module, COUNT(*) as correct_count
-       FROM quiz_attempts
-       WHERE user_id = ? AND questions_correct > 0
-       GROUP BY lesson_id, module
-       ORDER BY correct_count DESC
-       LIMIT 5`,
-      [userId]
-    );
+    // Below this, practice is the recommendation. Above it, the lesson is not what
+    // needs work.
+    //
+    // 0.85 rather than 0.8 so the near-miss is included: 5 of 6 is 0.833, and that
+    // is exactly the case worth one more pass. A learner at 5 of 6 on a lesson
+    // everything later builds on should see it; the old query called that "strong
+    // performance" and gave them nothing to do. 5 of 5 and 6 of 7 stay out.
+    const THRESHOLD = 0.85;
 
-    const recommendations: any[] = [];
-
-    // Focus on weak areas (70%)
-    errors.slice(0, 3).forEach((err) => {
-      recommendations.push({
-        type: 'weak_area_focus',
-        lessonId: err.lesson_id,
-        module: err.module,
-        priority: 'high',
-        reason: `${err.error_count} errors in this area`,
-      });
+    const recommendations = rows.map((r) => {
+      const accuracy = r.correct / r.answered;
+      return {
+        lessonId: r.lesson_id,
+        module: r.module,
+        // Falls back to the id when a lesson row is missing, rather than rendering
+        // an empty string.
+        title: r.title ?? r.lesson_id,
+        attempts: r.attempts,
+        answered: r.answered,
+        correct: r.correct,
+        accuracy: Number(accuracy.toFixed(3)),
+        priority: accuracy < 0.5 ? 'high' : accuracy < THRESHOLD ? 'medium' : 'low',
+        // Stated as the numbers behind it, so the learner can check the claim.
+        reason: `${r.correct} of ${r.answered} correct across ${r.attempts} attempt${
+          r.attempts === 1 ? '' : 's'
+        }`,
+      };
     });
 
-    // Reinforce strong areas (20%)
-    strong.slice(0, 2).forEach((s) => {
-      recommendations.push({
-        type: 'strong_area_reinforce',
-        lessonId: s.lesson_id,
-        module: s.module,
-        priority: 'medium',
-        reason: 'Strong performance in this area',
-      });
-    });
-
-    return c.json({ data: { recommendations } });
-  } catch (error) {
-    console.error('Suggested exercises error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});
-
-// POST /api/tutor/feedback — Generate feedback on audio recording
-tutorRoutes.post('/feedback', async (c) => {
-  const userId = c.get('userId');
-  const db = getDb(c);
-  const { audioUrl, surahId, ayahFrom, ayahTo } = await c.req.json();
-
-  try {
-    // In production, this would compare audio recordings
-    // For MVP, return a placeholder response
     return c.json({
       data: {
-        feedback: `Review completed. Compare your recitation of Surah ${surahId}, Ayahs ${ayahFrom}-${ayahTo} with the official recitation. Focus on clear pronunciation of each letter's articulation point (makharij).`,
+        recommendations: recommendations.filter((r) => r.accuracy < THRESHOLD),
+        // Kept separate rather than dropped: the UI says "nothing to practise" only
+        // when there is genuinely no history, not when everything is above the line.
+        solid: recommendations.filter((r) => r.accuracy >= THRESHOLD).length,
+        lessonsAttempted: rows.length,
       },
     });
   } catch (error) {
-    console.error('Feedback error:', error);
+    console.error('Suggested exercises error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
