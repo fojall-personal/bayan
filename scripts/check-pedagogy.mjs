@@ -32,9 +32,18 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
  * Must match workers/src/routes/learning.ts. `match` is excluded there, so a
  * lesson whose exercises are all `match` is ungradable by construction.
  */
-const GRADABLE = new Set([
-  'multiple_choice', 'fill_blank', 'translation', 'pattern_recognition', 'audio_repeat',
-]);
+/**
+ * The types the SERVER can actually grade.
+ *
+ * This list previously also claimed translation, pattern_recognition and audio_repeat.
+ * `isAnswerCorrect` in workers/src/routes/learning.ts handles none of them and returns
+ * false, so any lesson using one would have counted as gradable here while scoring
+ * zero for every learner forever. Latent only because no lesson uses those types.
+ *
+ * Asserted against the source below rather than trusted, since the comment saying
+ * "must match learning.ts" is exactly the kind of instruction that goes stale.
+ */
+const GRADABLE = new Set(['multiple_choice', 'fill_blank', 'match']);
 const PASS_MARK = 70;
 /**
  * At a 70% pass mark, one gradable exercise is all-or-nothing: a single wrong
@@ -155,6 +164,72 @@ notes.push(
 
 // ── Report ─────────────────────────────────────────────────────────────────
 for (const n of notes) process.stdout.write(`  note  ${n}\n`);
+// ── The grader and this gate must agree about what is gradable ──────────────
+{
+  const grader = await readFile(join(root, 'workers/src/routes/learning.ts'), 'utf-8');
+  const fn = grader.slice(
+    grader.indexOf('export function isAnswerCorrect'),
+    grader.indexOf('export const learningRoutes')
+  );
+  for (const type of GRADABLE) {
+    if (!fn.includes(`'${type}'`)) {
+      fail(
+        'grader',
+        `this gate treats "${type}" as gradable but isAnswerCorrect never mentions it ` +
+          '— it would score 0 for every learner'
+      );
+    }
+  }
+}
+
+// ── Every authored exercise type must be answerable in the UI ──────────────
+//
+// The check that was missing. A `match` exercise rendered each item beside its own
+// answer and recorded no response, while "Next exercise" stayed disabled until a
+// response existed — so grammar-02, which opens with one, could not be advanced past
+// its first exercise. Nothing here noticed, because the old gate only counted how many
+// exercises were gradable and this one WAS counted (as ungradeable, which was allowed).
+//
+// Two conditions, both mechanical: the page must have a branch for the type, and that
+// branch must record an answer.
+{
+  const page = await readFile(
+    join(root, 'src/app/components/learning/LearningPage.tsx'),
+    'utf-8'
+  );
+  const types = new Set();
+  for (const lesson of lessons) {
+    for (const ex of lesson.exercises ?? []) if (ex.type) types.add(ex.type);
+  }
+  for (const type of types) {
+    // The RENDER branch specifically. Matching the bare `type === 'match'` also hits
+    // the isAnswered() helper, which compares the same string and legitimately does
+    // not record an answer — the first version of this check failed on that and
+    // reported a working branch as broken.
+    const branch = `].type === '${type}'`;
+    if (!page.includes(branch)) {
+      fail(
+        'ui',
+        `exercises of type "${type}" exist in content but LearningPage has no ` +
+          `${branch} branch — the learner sees a question with no way to answer it`
+      );
+      continue;
+    }
+    // The branch has to reach handleAnswer somewhere after it, or nothing is recorded
+    // and the Next button can never enable.
+    const from = page.indexOf(branch);
+    const next = page.indexOf("type === '", from + branch.length);
+    const body = page.slice(from, next === -1 ? undefined : next);
+    if (!body.includes('handleAnswer')) {
+      fail(
+        'ui',
+        `the "${type}" branch never calls handleAnswer, so no answer is recorded and ` +
+          'the exercise cannot be advanced past'
+      );
+    }
+  }
+}
+
 if (problems.length === 0) {
   process.stdout.write(
     `✅ pedagogy checks pass — all ${lessons.length} lessons reachable, ` +

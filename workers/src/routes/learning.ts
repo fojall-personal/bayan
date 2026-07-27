@@ -53,6 +53,33 @@ export function normalizeArabic(input: string): string {
 }
 
 export function isAnswerCorrect(exercise: Exercise, given: unknown): boolean {
+  // Match is checked FIRST, because its answer key is `pairs` rather than `correct`
+  // and the guard below would reject it outright.
+  //
+  // It used to be ungradeable and, worse, unanswerable: the UI listed each item
+  // beside its own answer and never recorded a response, while "Next exercise" stayed
+  // disabled until one was recorded. grammar-02 opens with a match, so that lesson
+  // could not be advanced past its first exercise at all.
+  if (exercise.type === 'match') {
+    if (!exercise.pairs?.length) return false;
+    let chosen: unknown = given;
+    if (typeof given === 'string') {
+      try {
+        chosen = JSON.parse(given);
+      } catch {
+        return false;
+      }
+    }
+    if (!Array.isArray(chosen) || chosen.length !== exercise.pairs.length) return false;
+    // Every pair, in the order the content lists them. All-or-nothing: half a
+    // conjugation table matched is not knowing the conjugation table.
+    return exercise.pairs.every(
+      (pair, i) =>
+        normalizeArabic(String(chosen[i] ?? '')).toLowerCase() ===
+        normalizeArabic(pair.answer).toLowerCase()
+    );
+  }
+
   if (exercise.correct === undefined || exercise.correct === null) return false;
 
   if (exercise.type === 'multiple_choice') {
@@ -289,11 +316,11 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
       const given = responses[i];
       if (!exercise || given === undefined || given === null || given === '') continue;
 
-      // `match` has no grading implementation, so it is excluded from the
-      // denominator rather than silently counted correct — which is what the
-      // old `isCorrect = true` did, inflating every score containing one.
-      if (exercise.type === 'match') continue;
-
+      // `match` used to be skipped here, because it had no grading implementation —
+      // excluded from the denominator rather than silently counted correct, which is
+      // what an even older version did, inflating every score containing one. It is
+      // graded now (against `pairs`, all-or-nothing), so the skip is gone and a
+      // three-exercise lesson is scored out of three.
       gradedCount++;
       if (isAnswerCorrect(exercise, given)) correctCount++;
     }

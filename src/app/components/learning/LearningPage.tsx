@@ -106,7 +106,38 @@ export function LearningPage({ userId }: LearningPageProps) {
     setAnswers((prev) => ({ ...prev, [exerciseIndex]: answer }));
   };
 
-  const gradable = (lesson?.exercises ?? []).filter((e) => e.type !== 'match');
+  /**
+   * Whether the current exercise has actually been answered.
+   *
+   * `answers[i] !== undefined` was enough while every type had a single response. A
+   * match has one per pair, and a partly filled one is not a wrong answer — it is an
+   * unanswered question — so advancing from it would score a zero the learner never
+   * chose. Empty strings also count as unanswered, which covers a fill-in-the-blank
+   * left blank after being typed into and cleared.
+   */
+  const isAnswered = (exerciseIndex: number): boolean => {
+    const raw = answers[exerciseIndex];
+    if (raw === undefined) return false;
+    const exercise = lesson?.exercises?.[exerciseIndex];
+    if (exercise?.type === 'match') {
+      const expected = exercise.pairs?.length ?? 0;
+      try {
+        const chosen = typeof raw === 'string' ? JSON.parse(raw) : [];
+        return (
+          Array.isArray(chosen) &&
+          chosen.length === expected &&
+          chosen.every((v: unknown) => typeof v === 'string' && v.length > 0)
+        );
+      } catch {
+        return false;
+      }
+    }
+    return String(raw).trim().length > 0;
+  };
+
+  // Every authored type is now gradable: multiple_choice and fill_blank always were,
+  // and match became so once it started asking instead of telling.
+  const gradable = lesson?.exercises ?? [];
   const isLastExercise =
     !!lesson && currentExerciseIndex >= lesson.exercises.length - 1;
 
@@ -323,26 +354,72 @@ export function LearningPage({ userId }: LearningPageProps) {
                 />
               )}
 
-              {/* Match */}
+              {/* Match
+                *
+                * This used to print each item beside its own answer and record
+                * nothing — a reference table labelled as a question. Since "Next
+                * exercise" is disabled until an answer exists, and grammar-02 opens
+                * with a match, that lesson could not be advanced past exercise one.
+                *
+                * Now it asks. Each item gets a picker over the same set of answers,
+                * sorted alphabetically rather than shuffled: a stable order means the
+                * options do not jump around as you choose, and for three English
+                * glosses alphabetical order gives nothing away. */}
               {lesson.exercises[currentExerciseIndex].type === 'match' &&
                 lesson.exercises[currentExerciseIndex].pairs && (
                   <div className="space-y-3">
-                    {lesson.exercises[currentExerciseIndex].pairs.map(
-                      (pair, i) => (
+                    {lesson.exercises[currentExerciseIndex].pairs!.map((pair, i) => {
+                      const pairs = lesson.exercises[currentExerciseIndex].pairs!;
+                      const choices = [...pairs.map((p) => p.answer)].sort();
+                      // Selections travel as a JSON array in pair order, which is what
+                      // the server grades against.
+                      let current: string[] = [];
+                      try {
+                        const raw = answers[currentExerciseIndex];
+                        current = typeof raw === 'string' && raw ? JSON.parse(raw) : [];
+                      } catch {
+                        current = [];
+                      }
+                      return (
                         <div
                           key={i}
-                          className="flex items-center justify-between p-3 bg-gray-800 rounded-lg"
+                          className="flex flex-wrap items-center gap-3 rounded-lg border border-ground-700 p-3"
                         >
-                          <span className="text-arabic text-lg" dir="rtl" lang="ar">
+                          <span
+                            className="text-arabic min-w-24 text-lg"
+                            dir="rtl"
+                            lang="ar"
+                          >
                             {pair.item}
                           </span>
-                          <span className="text-gray-400">→</span>
-                          <span className="text-gray-300">
-                            {pair.answer}
+                          <span className="text-ground-400" aria-hidden="true">
+                            →
                           </span>
+                          <select
+                            aria-label={`Meaning of ${pair.item}`}
+                            value={current[i] ?? ''}
+                            onChange={(e) => {
+                              const next = [...current];
+                              next[i] = e.target.value;
+                              // Padded to full length so a partially answered match
+                              // still serialises as an array the server can compare.
+                              for (let k = 0; k < pairs.length; k += 1) {
+                                next[k] = next[k] ?? '';
+                              }
+                              handleAnswer(currentExerciseIndex, JSON.stringify(next));
+                            }}
+                            className="min-h-11 flex-1 rounded-md border border-ground-700 bg-ground-900 px-3 text-sm"
+                          >
+                            <option value="">Choose…</option>
+                            {choices.map((choice) => (
+                              <option key={choice} value={choice}>
+                                {choice}
+                              </option>
+                            ))}
+                          </select>
                         </div>
-                      )
-                    )}
+                      );
+                    })}
                   </div>
                 )}
 
@@ -353,14 +430,14 @@ export function LearningPage({ userId }: LearningPageProps) {
                 {isLastExercise ? (
                   <Button
                     onClick={handleSubmit}
-                    disabled={answers[currentExerciseIndex] === undefined}
+                    disabled={!isAnswered(currentExerciseIndex)}
                   >
                     Finish lesson
                   </Button>
                 ) : (
                   <Button
                     onClick={() => setCurrentExerciseIndex((i) => i + 1)}
-                    disabled={answers[currentExerciseIndex] === undefined}
+                    disabled={!isAnswered(currentExerciseIndex)}
                   >
                     Next exercise
                   </Button>

@@ -12,6 +12,7 @@ import {
   calculateCompositeScore,
   generateAssessmentResult,
 } from '../src/lib/scoring';
+import { isAnswerCorrect } from '../src/routes/learning';
 import {
   schedule,
   gradeFromAccuracy,
@@ -211,5 +212,50 @@ describe('FSRS scheduler', () => {
     for (const bad of [5, '5', 'perfect', '', null, undefined, 'GOOD']) {
       expect(isGrade(bad)).toBe(false);
     }
+  });
+});
+
+describe('match exercises', () => {
+  const ex = {
+    type: 'match',
+    question: 'Match the conjugation',
+    pairs: [
+      { item: 'كَتَبُوا', answer: 'they (men) wrote' },
+      { item: 'كَتَبْنَ', answer: 'they (women) wrote' },
+      { item: 'كَتَبْنَا', answer: 'we wrote' },
+    ],
+  };
+
+  it('grades a fully correct set', () => {
+    expect(
+      isAnswerCorrect(ex, JSON.stringify(ex.pairs.map((p) => p.answer)))
+    ).toBe(true);
+  });
+
+  it('rejects a swapped pair', () => {
+    expect(
+      isAnswerCorrect(
+        ex,
+        JSON.stringify(['they (women) wrote', 'they (men) wrote', 'we wrote'])
+      )
+    ).toBe(false);
+  });
+
+  it('rejects a partial answer rather than crediting what is there', () => {
+    expect(isAnswerCorrect(ex, JSON.stringify(['we wrote', '', '']))).toBe(false);
+    expect(isAnswerCorrect(ex, JSON.stringify(['they (men) wrote']))).toBe(false);
+  });
+
+  it('does not throw on junk', () => {
+    for (const junk of ['not json', '{}', '[]', null, undefined, 42]) {
+      expect(isAnswerCorrect(ex, junk)).toBe(false);
+    }
+  });
+
+  it('is graded despite having no `correct` field', () => {
+    // The key is `pairs`. The guard for a missing `correct` used to reject match
+    // outright, which is why it could never be scored.
+    expect('correct' in ex).toBe(false);
+    expect(isAnswerCorrect(ex, JSON.stringify(ex.pairs.map((p) => p.answer)))).toBe(true);
   });
 });
