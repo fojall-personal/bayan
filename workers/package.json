@@ -8,7 +8,9 @@
     "deploy": "wrangler deploy",
     "build:pages": "esbuild src/pages-entry.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=../src/app/out/_worker.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:db-types": "node ../scripts/gen-db-types.mjs --check",
+    "gen:db-types": "node ../scripts/gen-db-types.mjs"
   },
   "dependencies": {
     "hono": "^4.5.0",

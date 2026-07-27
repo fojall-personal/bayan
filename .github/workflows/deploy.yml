@@ -73,6 +73,15 @@ jobs:
       - name: Assert AGENTS.md documents the live API and pages
         run: node scripts/gen-api-docs.mjs --check
 
+      # Row types are generated from the migrations by applying them to an in-memory
+      # SQLite database and reading pragma_table_info back. Twenty-four handlers used
+      # to type their rows `Record<string, unknown>`, which is why four column names
+      # in quran.ts were wrong with nothing objecting. With this committed and gated,
+      # a migration that renames a column turns every handler still selecting the old
+      # name into a compile error.
+      - name: Assert the generated DB row types match the migrations
+        run: node scripts/gen-db-types.mjs --check
+
       # 39 tests over grading, scoring, the SM-2 scheduler and the Quran ingest
       # alignment gate. Every case corresponds to a bug that shipped or a
       # behaviour previously checked only by hand. Adding them found a live one:

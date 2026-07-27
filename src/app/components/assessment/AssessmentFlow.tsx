@@ -18,6 +18,11 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
   const [isComplete, setIsComplete] = useState(false);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // The scores are computed locally and valid immediately, but they are not SAVED
+  // until the POST resolves. The results screen used to claim "Assessment complete"
+  // with no indication either way, so a failed save looked identical to a stored one
+  // until an error appeared underneath it a moment later.
+  const [saving, setSaving] = useState(false);
 
   // 18 questions from content/assessments/placement-test.json, generated into a
   // module by scripts/gen-assessment.mjs. This replaces 7 questions that were
@@ -62,6 +67,7 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
 
     setScores(moduleScores);
     setIsComplete(true);
+    setSaving(true);
 
     // Submit to backend
     try {
@@ -77,6 +83,8 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
       // been submitted, so a network failure looked like a genuine result.
       console.error('Failed to submit assessment:', error);
       setSubmitError(apiErrorMessage(error));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -84,7 +92,16 @@ export function AssessmentFlow({ onComplete }: AssessmentProps) {
     return (
       <div className="page-transition">
         <Card className="max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6">Assessment complete</h2>
+          <h2 className="mb-2 text-2xl font-bold">Assessment complete</h2>
+          {/* Names which of the three states this is, rather than leaving the learner
+              to infer it from whether an error turns up a moment later. */}
+          <p className="mb-6 text-sm text-ground-400" role="status">
+            {saving
+              ? 'Saving your results…'
+              : submitError
+                ? 'Your results are shown below but were not saved.'
+                : 'Saved.'}
+          </p>
 
           {submitError && (
             <div className="mb-6 rounded-md border border-error/40 bg-error/10 p-4">

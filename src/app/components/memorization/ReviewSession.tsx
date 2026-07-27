@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { AyahAudioButton } from '@/components/audio/AyahAudioButton';
-import { apiPost } from '@/lib/api';
+import { apiPost, apiErrorMessage } from '@/lib/api';
 import { getSurah } from '@/lib/surahs';
 
 interface MemorizationEntry {
@@ -25,17 +25,39 @@ interface ReviewSessionProps {
 export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps) {
   const [step, setStep] = useState<'listen' | 'recite' | 'rate'>('listen');
   const [selfRating, setSelfRating] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleRecite = async () => {
     setStep('rate');
   };
 
-  const handleRate = (quality: number) => {
+  /**
+   * Record the rating, then advance.
+   *
+   * This used to be fire-and-forget: `.then(onComplete).catch(console.error)`. On
+   * success it worked. On failure it logged to a console the learner cannot see and
+   * `onComplete` never ran — so the button did nothing at all, with no error and no
+   * pending state, and a failed review was indistinguishable from a slow one. It
+   * also accepted repeat clicks in flight, scheduling the same ayah several times
+   * with different qualities.
+   */
+  const handleRate = async (quality: number) => {
+    if (saving) return;
     setSelfRating(quality);
-    // Submit review result
-    apiPost(`/api/memorization/${entry.id}/review`, { quality })
-      .then(() => onComplete(quality))
-      .catch(console.error);
+    setSaving(true);
+    setError(null);
+    try {
+      await apiPost(`/api/memorization/${entry.id}/review`, { quality });
+      onComplete(quality);
+    } catch (err) {
+      setError(apiErrorMessage(err));
+      // Cleared so the learner can pick again rather than being left looking at a
+      // selected rating that was never recorded.
+      setSelfRating(0);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -109,18 +131,29 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
           <h3 className="text-xl font-semibold mb-4">Step 3: Rate Your Recall</h3>
           <p className="text-gray-400 mb-6">How well did you remember?</p>
 
+          {error && (
+            <div
+              role="alert"
+              className="mb-4 rounded-md border border-error/40 bg-error/10 p-3 text-sm"
+            >
+              {error} — your rating was not saved. Pick again to retry.
+            </div>
+          )}
+
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((quality) => (
               <button
                 key={quality}
                 onClick={() => handleRate(quality)}
-                className={`w-full p-3 rounded-lg text-left transition-colors ${
+                disabled={saving}
+                className={`min-h-11 w-full rounded-lg p-3 text-left transition-colors disabled:opacity-50 ${
                   selfRating === quality
                     ? 'bg-leaf-500/20 border border-leaf-500'
-                    : 'bg-gray-700 hover:bg-gray-600'
+                    : 'bg-ground-800 hover:bg-ground-700'
                 }`}
               >
                 {getQualityLabel(quality)}
+                {saving && selfRating === quality ? ' — saving…' : ''}
               </button>
             ))}
           </div>

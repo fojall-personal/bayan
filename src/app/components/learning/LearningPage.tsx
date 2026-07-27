@@ -205,7 +205,7 @@ export function LearningPage({ userId }: LearningPageProps) {
           <div className="space-y-4">
             {lesson.content.examples.map((example, i) => (
               <div key={i} className="bg-gray-800 rounded-lg p-4">
-                <div className="text-2xl text-arabic mb-2" dir="rtl">
+                <div className="text-2xl text-arabic mb-2" dir="rtl" lang="ar">
                   {example.arabic}
                 </div>
                 <div className="text-sm text-gray-400 mb-1">
@@ -238,7 +238,7 @@ export function LearningPage({ userId }: LearningPageProps) {
                 <p className="text-gray-300 text-sm mb-2">{rule.description}</p>
                 {rule.letters && (
                   <div className="text-sm text-gray-400 mb-2">
-                    Letters: <span className="text-arabic text-lg" dir="rtl">{rule.letters}</span>
+                    Letters: <span className="text-arabic text-lg" dir="rtl" lang="ar">{rule.letters}</span>
                   </div>
                 )}
                 {rule.examples && (
@@ -333,7 +333,7 @@ export function LearningPage({ userId }: LearningPageProps) {
                           key={i}
                           className="flex items-center justify-between p-3 bg-gray-800 rounded-lg"
                         >
-                          <span className="text-arabic text-lg" dir="rtl">
+                          <span className="text-arabic text-lg" dir="rtl" lang="ar">
                             {pair.item}
                           </span>
                           <span className="text-gray-400">→</span>

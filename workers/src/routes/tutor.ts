@@ -12,6 +12,14 @@ import {
 } from '../lib/tutor-grounding';
 import { buckwalterToArabic, rootToArabic } from '../lib/buckwalter';
 import { buildFamily, grammarFacts, type MorphRow } from '../lib/root-families';
+import type {
+  AssessmentResultsRow,
+  LessonProgressRow,
+  MemorizationRow,
+  QuizAttemptsRow,
+  TutorConversationsRow,
+  UsersRow,
+} from '../db/schema';
 
 export const tutorRoutes = new Hono<AppEnv>();
 
@@ -25,19 +33,19 @@ tutorRoutes.post('/chat', async (c) => {
     // Load user context for personalized responses
     const [user, assessment, recentLessons, memorizationDue] =
       await Promise.all([
-        db.get<Record<string, unknown>>(
+        db.get<UsersRow>(
           `SELECT * FROM users WHERE id = ?`,
           [userId]
         ),
-        db.get<Record<string, unknown>>(
+        db.get<AssessmentResultsRow>(
           `SELECT * FROM assessment_results WHERE user_id = ? ORDER BY completed_at DESC LIMIT 1`,
           [userId]
         ),
-        db.query<Record<string, unknown>>(
+        db.query<LessonProgressRow>(
           `SELECT * FROM lesson_progress WHERE user_id = ? ORDER BY last_practiced DESC LIMIT 5`,
           [userId]
         ),
-        db.query<Record<string, unknown>>(
+        db.query<Pick<MemorizationRow, 'surah_id' | 'status'>>(
           `SELECT surah_id, status FROM memorization
            WHERE user_id = ? AND next_review <= datetime('now')
            LIMIT 10`,
@@ -50,7 +58,7 @@ tutorRoutes.post('/chat', async (c) => {
     }
 
     // Calculate weak areas from recent quiz attempts
-    const errors = await db.query<Record<string, unknown>>(
+    const errors = await db.query<Pick<QuizAttemptsRow, 'lesson_id' | 'module' | 'questions_correct' | 'questions_answered'>>(
       `SELECT lesson_id, module, questions_correct, questions_answered
        FROM quiz_attempts WHERE user_id = ? ORDER BY completed_at DESC LIMIT 20`,
       [userId]
@@ -198,7 +206,7 @@ tutorRoutes.get('/history', async (c) => {
   const db = getDb(c);
 
   try {
-    const history = await db.query<Record<string, unknown>>(
+    const history = await db.query<Pick<TutorConversationsRow, 'user_message' | 'assistant_message' | 'created_at'>>(
       `SELECT user_message, assistant_message, created_at
        FROM tutor_conversations
        WHERE user_id = ?

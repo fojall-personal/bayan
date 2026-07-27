@@ -4,6 +4,9 @@ import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 
 import { calculateCompositeScore, assignLearningPath, generateAssessmentResult } from '../lib/scoring';
+import type {
+  AssessmentResultsRow,
+} from '../db/schema';
 
 export const assessmentRoutes = new Hono<AppEnv>();
 
@@ -83,7 +86,7 @@ assessmentRoutes.get('/results', async (c) => {
   const db = getDb(c);
 
   try {
-    const result = await db.get<Record<string, unknown>>(
+    const result = await db.get<AssessmentResultsRow>(
       `SELECT * FROM assessment_results WHERE user_id = ? ORDER BY completed_at DESC LIMIT 1`,
       [userId]
     );

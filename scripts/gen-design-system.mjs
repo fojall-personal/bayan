@@ -103,6 +103,45 @@ for (const f of referenced) {
   }
 }
 
+// ── Arabic without a declared language ─────────────────────────────────────
+//
+// `text-arabic` sets the face and the leading. It does not tell the browser or a
+// screen reader that the text IS Arabic — `lang="ar"` does, and that drives font
+// fallback for glyphs the face lacks, plus pronunciation if it is read aloud.
+//
+// Three elements in LearningPage.tsx carried `text-arabic dir="rtl"` with no lang,
+// against the convention every other Arabic element follows. dir and lang are not
+// the same claim: dir is layout, lang is identity.
+{
+  const offenders = [];
+  const walk = async (dir) => {
+    for (const e of await readdir(dir, { withFileTypes: true })) {
+      if (['node_modules', '.next', 'out'].includes(e.name)) continue;
+      const full = join(dir, e.name);
+      if (e.isDirectory()) {
+        await walk(full);
+      } else if (e.name.endsWith('.tsx')) {
+        const src = await readFile(full, 'utf-8');
+        for (const m of src.matchAll(/<\w+\b[^>]*?>/gs)) {
+          // The exact class token, so `text-arabic-green` does not match.
+          if (!/className="[^"]*\btext-arabic\b(?![-\w])/.test(m[0])) continue;
+          if (m[0].includes('lang="ar"')) continue;
+          offenders.push(
+            `${full.replace(root + '/', '')}:${src.slice(0, m.index).split('\n').length}`
+          );
+        }
+      }
+    }
+  };
+  await walk(join(root, 'src/app'));
+  if (offenders.length > 0) {
+    problems.push(
+      `${offenders.length} element(s) use text-arabic without lang="ar": ` +
+        offenders.join(', ')
+    );
+  }
+}
+
 // ── Arabic shaping: the tajweed renderers may style colour and nothing else ──
 //
 // Wrapping part of a word in a span with horizontal padding forces the shaping

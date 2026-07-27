@@ -2,6 +2,11 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
+import type {
+  AssessmentResultsRow,
+  LessonProgressRow,
+  MemorizationRow,
+} from '../db/schema';
 
 export const progressRoutes = new Hono<AppEnv>();
 
@@ -11,7 +16,7 @@ progressRoutes.get('/scores', async (c) => {
   const db = getDb(c);
 
   try {
-    const history = await db.query<Record<string, unknown>>(
+    const history = await db.query<Pick<AssessmentResultsRow, 'literacy_score' | 'comprehension_score' | 'grammar_score' | 'memorization_score' | 'completed_at'>>(
       `SELECT literacy_score, comprehension_score, grammar_score, memorization_score, completed_at
        FROM assessment_results
        WHERE user_id = ?
@@ -49,13 +54,13 @@ async function getWeeklyProgress(
   startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
 
-  const lessons = await db.query<Record<string, unknown>>(
+  const lessons = await db.query<Pick<LessonProgressRow, 'lesson_id'>>(
     `SELECT lesson_id FROM lesson_progress
      WHERE user_id = ? AND last_practiced >= ?`,
     [userId, startOfWeek.toISOString()]
   );
 
-  const reviews = await db.query<Record<string, unknown>>(
+  const reviews = await db.query<Pick<MemorizationRow, 'id'>>(
     `SELECT id FROM memorization
      WHERE user_id = ? AND last_reviewed >= ?`,
     [userId, startOfWeek.toISOString()]
@@ -121,7 +126,7 @@ progressRoutes.get('/coverage', async (c) => {
 
     // The next root worth learning: the commonest one not yet known. This is the
     // whole curriculum — frequency order, no syllabus to author.
-    const next = await db.query<Record<string, unknown>>(
+    const next = await db.query<{ root: string; occurrences: number }>(
       `SELECT m.root, COUNT(*) AS occurrences
          FROM quran_word_morphology m
         WHERE m.root IS NOT NULL

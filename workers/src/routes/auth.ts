@@ -2,6 +2,9 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
+import type {
+  UsersRow,
+} from '../db/schema';
 
 export const authRoutes = new Hono<AppEnv>();
 
@@ -30,7 +33,7 @@ authRoutes.get('/profile', async (c) => {
     const db = getDb(c);
 
     try {
-      const user = await db.get<Record<string, unknown>>(
+      const user = await db.get<Pick<UsersRow, 'id' | 'goal' | 'onboarding_completed' | 'current_path' | 'created_at'>>(
         `SELECT id, goal, onboarding_completed, current_path, created_at FROM users WHERE id = ?`,
         [userId]
       );

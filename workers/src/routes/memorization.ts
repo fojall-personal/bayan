@@ -6,6 +6,7 @@ import type { Database } from '../lib/db';
 import { applySM2 } from '../lib/space-repetition';
 import { parseAyahRange } from '../lib/memorization-input';
 import type { MemorizationStatus } from '../lib/space-repetition';
+import type { MemorizationRow, MemorizationUnitsRow } from '../db/schema';
 
 export const memorizationRoutes = new Hono<AppEnv>();
 
@@ -16,7 +17,7 @@ memorizationRoutes.get('/surah/:surahId', async (c) => {
   const db = getDb(c);
 
   try {
-    const entries = await db.query<Record<string, unknown>>(
+    const entries = await db.query<MemorizationRow>(
       `SELECT * FROM memorization WHERE user_id = ? AND surah_id = ? ORDER BY ayah_from ASC`,
       [userId, surahId]
     );
@@ -61,7 +62,7 @@ memorizationRoutes.post('/add', async (c) => {
     }
 
     // Check if entry already exists
-    const existing = await db.get<Record<string, unknown>>(
+    const existing = await db.get<MemorizationRow>(
       `SELECT * FROM memorization WHERE user_id = ? AND surah_id = ? AND ayah_from = ? AND ayah_to = ?`,
       [userId, surahId, ayahFrom, ayahTo]
     );
@@ -96,7 +97,7 @@ memorizationRoutes.post('/:id/review', async (c) => {
   const { quality } = await c.req.json();
 
   try {
-    const entry = await db.get<Record<string, unknown>>(
+    const entry = await db.get<MemorizationRow>(
       `SELECT * FROM memorization WHERE id = ? AND user_id = ?`,
       [id, userId]
     );
@@ -162,7 +163,7 @@ memorizationRoutes.post('/:id/recall', async (c) => {
   const { recalledAyah } = await c.req.json();
 
   try {
-    const entry = await db.get<Record<string, unknown>>(
+    const entry = await db.get<MemorizationRow>(
       `SELECT * FROM memorization WHERE id = ? AND user_id = ?`,
       [id, userId]
     );
@@ -228,7 +229,9 @@ memorizationRoutes.get('/review/today', async (c) => {
   const db = getDb(c);
 
   try {
-    const due = await db.query<Record<string, unknown>>(
+    const due = await db.query<
+      MemorizationRow & { ayah_text: string | null; text_simple: string | null }
+    >(
       `SELECT m.*,
               q.text_uthmani AS ayah_text,
               q.text_simple  AS text_simple
@@ -252,7 +255,7 @@ memorizationRoutes.get('/surahs', async (c) => {
   const db = getDb(c);
 
   try {
-    const surahs = await db.query<Record<string, unknown>>(
+    const surahs = await db.query<Pick<MemorizationRow, 'surah_id'> & { mastered: number; learning: number; reviewing: number; new_ayahs: number }>(
       `SELECT surah_id,
               SUM(CASE WHEN status = 'mastered' THEN 1 ELSE 0 END) as mastered,
               SUM(CASE WHEN status = 'learning' THEN 1 ELSE 0 END) as learning,
@@ -299,7 +302,7 @@ memorizationRoutes.get('/curriculum', async (c) => {
   try {
     // LEFT JOIN so a unit the learner has already started is marked as such
     // rather than being offered again as if new.
-    const rows = await db.query<Record<string, unknown>>(
+    const rows = await db.query<Pick<MemorizationUnitsRow, 'id' | 'sequence' | 'level' | 'surah_id' | 'ayah_from' | 'ayah_to' | 'ayah_count' | 'surah_name' | 'rationale'> & { tracked_status: string | null }>(
       `SELECT u.id, u.sequence, u.level, u.surah_id, u.ayah_from, u.ayah_to,
               u.ayah_count, u.surah_name, u.rationale,
               m.status AS tracked_status

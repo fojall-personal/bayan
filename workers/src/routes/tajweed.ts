@@ -3,6 +3,10 @@ import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 import { colourTags, type RawTag } from '../lib/tajweed-colors';
+import type {
+  QuranVersesRow,
+  TajweedRulesRow,
+} from '../db/schema';
 
 export const tajweedRoutes = new Hono<AppEnv>();
 
@@ -12,7 +16,7 @@ tajweedRoutes.get('/verses/:surahId', async (c) => {
   const db = getDb(c);
 
   try {
-    const verses = await db.query<Record<string, unknown>>(
+    const verses = await db.query<Pick<QuranVersesRow, 'surah' | 'ayah' | 'text_uthmani' | 'text_simple' | 'tajweed_tags'>>(
       `SELECT surah, ayah, text_uthmani, text_simple, tajweed_tags
        FROM quran_verses
        WHERE surah = ?
@@ -24,7 +28,7 @@ tajweedRoutes.get('/verses/:surahId', async (c) => {
     // opinion on presentation. Colour comes from tajweed_rules, keyed by the
     // display category the rule belongs to. Read once per request: a long surah
     // has thousands of annotations and this would otherwise be a query per tag.
-    const paletteRows = await db.query<Record<string, unknown>>(
+    const paletteRows = await db.query<Pick<TajweedRulesRow, 'id' | 'name' | 'color'>>(
       `SELECT id, name, color FROM tajweed_rules`
     );
     const palette = new Map(
@@ -83,7 +87,17 @@ tajweedRoutes.get('/mastery', async (c) => {
   const db = getDb(c);
 
   try {
-    const mastery = await db.query<Record<string, unknown>>(
+    const mastery = await db.query<
+      // The aliases this SELECT actually produces: `correct`, not
+      // `correct_attempts`, plus a computed percentage. Writing the type from
+      // memory got both wrong; tsc said so immediately, which is the point.
+      Pick<TajweedRulesRow, 'name' | 'color' | 'color_name'> & {
+        rule_id: string;
+        total_attempts: number;
+        correct: number;
+        mastery_percentage: number;
+      }
+    >(
       `SELECT r.id as rule_id, r.name, r.color, r.color_name,
               COUNT(tp.id) as total_attempts,
               SUM(CASE WHEN tp.correct = 1 THEN 1 ELSE 0 END) as correct,

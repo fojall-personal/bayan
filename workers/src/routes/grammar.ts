@@ -10,6 +10,11 @@ import {
   grammarFacts,
   type MorphRow,
 } from '../lib/root-families';
+import type {
+  GrammarExerciseBankRow,
+  GrammarMasteryRow,
+  LessonsRow,
+} from '../db/schema';
 
 export const grammarRoutes = new Hono<AppEnv>();
 
@@ -20,12 +25,12 @@ grammarRoutes.get('/deepdive/:category', async (c) => {
   const db = getDb(c);
 
   try {
-    const mastery = await db.get<Record<string, unknown>>(
+    const mastery = await db.get<GrammarMasteryRow>(
       `SELECT * FROM grammar_mastery WHERE user_id = ? AND category = ?`,
       [userId, category]
     );
 
-    const lessons = await db.query<Record<string, unknown>>(
+    const lessons = await db.query<LessonsRow>(
       `SELECT * FROM lessons WHERE module = 'grammar' AND level >= ? ORDER BY level ASC`,
       [(mastery?.mastery_level as number) || 1]
     );
@@ -168,7 +173,7 @@ grammarRoutes.get('/mastery', async (c) => {
   const db = getDb(c);
 
   try {
-    const mastery = await db.query<Record<string, unknown>>(
+    const mastery = await db.query<GrammarMasteryRow>(
       `SELECT * FROM grammar_mastery WHERE user_id = ?`,
       [userId]
     );
@@ -273,7 +278,7 @@ grammarRoutes.get('/exercises', async (c) => {
   }
 
   try {
-    const rows = await db.query<Record<string, unknown>>(
+    const rows = await db.query<Pick<GrammarExerciseBankRow, 'id' | 'kind' | 'level' | 'word_arabic' | 'prompt' | 'answer' | 'options' | 'explanation' | 'surah_id' | 'ayah_id' | 'root'>>(
       `SELECT id, kind, level, word_arabic, prompt, answer, options, explanation,
               surah_id, ayah_id, root
        FROM grammar_exercise_bank

@@ -4,6 +4,11 @@ import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 import type { LessonRow } from '../types';
 import { applySM2 } from '../lib/space-repetition';
+import type {
+  LessonProgressRow,
+  LessonsRow,
+  UsersRow,
+} from '../db/schema';
 
 export interface Exercise {
   type: 'multiple_choice' | 'fill_blank' | 'match' | string;
@@ -81,7 +86,7 @@ learningRoutes.get('/next', async (c) => {
 
   try {
     // Get user's current path
-    const user = await db.get<Record<string, unknown>>(
+    const user = await db.get<Pick<UsersRow, 'current_path'>>(
       `SELECT current_path FROM users WHERE id = ?`,
       [userId]
     );
@@ -102,7 +107,7 @@ learningRoutes.get('/next', async (c) => {
     }));
 
     // Get completed lesson IDs
-    const completedLessons = await db.query<Record<string, unknown>>(
+    const completedLessons = await db.query<Pick<LessonProgressRow, 'lesson_id'>>(
       `SELECT lesson_id FROM lesson_progress WHERE user_id = ? AND completed = 1`,
       [userId]
     );
@@ -134,7 +139,7 @@ learningRoutes.get('/next', async (c) => {
     }
 
     // Get current progress for this lesson
-    const progress = await db.get<Record<string, unknown>>(
+    const progress = await db.get<LessonProgressRow>(
       `SELECT * FROM lesson_progress WHERE user_id = ? AND lesson_id = ?`,
       [userId, nextLesson.id]
     );
@@ -187,7 +192,7 @@ learningRoutes.get('/lessons', async (c) => {
       (where.length ? ` WHERE ${where.join(' AND ')}` : '') +
       ' ORDER BY level ASC, id ASC';
 
-    const lessons = await db.query<Record<string, unknown>>(sql, params);
+    const lessons = await db.query<LessonsRow>(sql, params);
 
     return c.json({
       data: lessons.map((l) => ({
@@ -210,7 +215,7 @@ learningRoutes.get('/lessons/:id', async (c) => {
   const db = getDb(c);
 
   try {
-    const lesson = await db.get<Record<string, unknown>>(
+    const lesson = await db.get<LessonsRow>(
       `SELECT * FROM lessons WHERE id = ?`,
       [lessonId]
     );
@@ -219,7 +224,7 @@ learningRoutes.get('/lessons/:id', async (c) => {
       return c.json({ error: 'Lesson not found' }, 404);
     }
 
-    const progress = await db.get<Record<string, unknown>>(
+    const progress = await db.get<LessonProgressRow>(
       `SELECT * FROM lesson_progress WHERE user_id = ? AND lesson_id = ?`,
       [userId, lessonId]
     );
@@ -255,7 +260,7 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
 
   try {
     // Get lesson to parse exercises
-    const lesson = await db.get<Record<string, unknown>>(
+    const lesson = await db.get<LessonsRow>(
       `SELECT * FROM lessons WHERE id = ?`,
       [lessonId]
     );
@@ -355,6 +360,30 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
 });
 
 // GET /api/learning/flashcards — Get vocabulary flashcards for review
+/**
+ * One due flashcard, as the query shapes it.
+ *
+ * Not any single table's row: meaning and transliteration are COALESCEd from
+ * `vocabulary` then `quran_word_gloss`, the root comes from a correlated subquery
+ * over the morphology, and `meaning_source` is computed. Describing it explicitly is
+ * the point — the previous `Record<string, unknown>` meant `card.meaning_sauce` would
+ * have compiled just as happily as `card.meaning_source`.
+ */
+interface DueFlashcardRow {
+  word: string;
+  meaning_known: number;
+  reading_known: number;
+  next_review: string | null;
+  reviews: number;
+  meaning: string | null;
+  transliteration: string | null;
+  root: string | null;
+  part_of_speech: string | null;
+  surah_id: number | null;
+  ayah_id: number | null;
+  meaning_source: 'dictionary' | 'gloss' | null;
+}
+
 learningRoutes.get('/flashcards', async (c) => {
   const userId = c.get('userId');
   const db = getDb(c);
@@ -363,7 +392,7 @@ learningRoutes.get('/flashcards', async (c) => {
     // LEFT JOIN, not an inner join: a word already in someone's queue should
     // still appear if it is missing from the content table, rather than silently
     // vanishing from their review list.
-    const dueCards = await db.query<Record<string, unknown>>(
+    const dueCards = await db.query<DueFlashcardRow>(
       // The curated table covers 103 words. Hifz-plan words come from the gloss
       // table, which covers all 77,429 — so a word from your own ayahs would
       // otherwise arrive with no meaning at all and the card would be unanswerable.

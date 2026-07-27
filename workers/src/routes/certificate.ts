@@ -2,6 +2,10 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
+import type {
+  MemorizationRow,
+  UsersRow,
+} from '../db/schema';
 
 export const certificateRoutes = new Hono<AppEnv>();
 
@@ -12,7 +16,7 @@ certificateRoutes.get('/export', async (c) => {
 
   try {
     // Get user info
-    const user = await db.get<Record<string, unknown>>(
+    const user = await db.get<UsersRow>(
       `SELECT * FROM users WHERE id = ?`,
       [userId]
     );
@@ -22,7 +26,7 @@ certificateRoutes.get('/export', async (c) => {
     }
 
     // Get memorized surahs
-    const memorization = await db.query<Record<string, unknown>>(
+    const memorization = await db.query<Pick<MemorizationRow, 'surah_id'> & { ayah_count: number }>(
       `SELECT surah_id, COUNT(*) as ayah_count
        FROM memorization
        WHERE user_id = ? AND status = 'mastered'
