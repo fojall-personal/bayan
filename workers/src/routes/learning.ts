@@ -360,10 +360,45 @@ learningRoutes.get('/flashcards', async (c) => {
     // still appear if it is missing from the content table, rather than silently
     // vanishing from their review list.
     const dueCards = await db.query<Record<string, unknown>>(
+      // The curated table covers 103 words. Hifz-plan words come from the gloss
+      // table, which covers all 77,429 — so a word from your own ayahs would
+      // otherwise arrive with no meaning at all and the card would be unanswerable.
+      //
+      // Joined on the location stored at enrolment, NOT aggregated by word form.
+      // The first version used `MIN(english) ... GROUP BY arabic`, which picks an
+      // arbitrary gloss from any of the word's occurrences, and it showed:
+      //   ٱللَّهِ → "(The) Promise of Allah"      ءَامَنُوا۟ → "(again) believed"
+      // Each is a real gloss of that form somewhere, and none is the gloss from the
+      // ayah being studied. Same for the root: joining Arabic `vm.word` against
+      // morphology's `form` column never matched, because `form` is Buckwalter —
+      // which is why every card reported root=null.
       `SELECT vm.word, vm.meaning_known, vm.reading_known, vm.next_review, vm.reviews,
-              v.meaning, v.transliteration, v.root, v.part_of_speech
+              COALESCE(v.meaning, g.english)                 AS meaning,
+              COALESCE(v.transliteration, g.transliteration) AS transliteration,
+              -- A scalar subquery, not a join. The corpus is annotated per SEGMENT,
+              -- so one word_index carries up to five morphology rows (al-, wa-, the
+              -- stem…) and joining on location alone multiplied each flashcard into
+              -- five identical copies. The stem is the row that has a root.
+              COALESCE(
+                v.root,
+                (SELECT mm.root FROM quran_word_morphology mm
+                  WHERE mm.surah_id   = vm.source_surah
+                    AND mm.ayah_id    = vm.source_ayah
+                    AND mm.word_index = vm.source_position
+                    AND mm.root IS NOT NULL
+                  ORDER BY mm.segment_index LIMIT 1)
+              )                                                AS root,
+              v.part_of_speech,
+              vm.source_surah AS surah_id, vm.source_ayah AS ayah_id,
+              CASE WHEN v.meaning IS NOT NULL THEN 'dictionary'
+                   WHEN g.english  IS NOT NULL THEN 'gloss'
+                   ELSE NULL END                             AS meaning_source
        FROM vocabulary_mastery vm
        LEFT JOIN vocabulary v ON v.word = vm.word
+       LEFT JOIN quran_word_gloss g
+              ON g.surah_id = vm.source_surah
+             AND g.ayah_id  = vm.source_ayah
+             AND g.position = vm.source_position
        WHERE vm.user_id = ? AND vm.next_review <= datetime('now')
        ORDER BY vm.next_review ASC
        LIMIT 20`,
@@ -380,6 +415,11 @@ learningRoutes.get('/flashcards', async (c) => {
         transliteration: card.transliteration ?? null,
         root: card.root ?? null,
         partOfSpeech: card.part_of_speech ?? null,
+        // Provenance. A flashcard with no reason behind it is a vocabulary list,
+        // which is what spaced repetition was meant to replace.
+        source:
+          card.surah_id && card.ayah_id ? `${card.surah_id}:${card.ayah_id}` : null,
+        meaningSource: card.meaning_source ?? null,
         meaningKnown: card.meaning_known,
         readingKnown: card.reading_known,
         dueDate: card.next_review,
@@ -416,16 +456,85 @@ learningRoutes.post('/vocabulary/start', async (c) => {
   }
 
   try {
-    const next = await db.query<{ word: string }>(
-      `SELECT v.word
-       FROM vocabulary v
-       LEFT JOIN vocabulary_mastery vm
-         ON vm.word = v.word AND vm.user_id = ?
-       WHERE vm.word IS NULL
-       ORDER BY v.frequency_rank ASC
-       LIMIT ?`,
-      [userId, count]
+    // ── F3: words from the hifz plan first ────────────────────────────────
+    //
+    // This used to order by frequency_rank over the 103-row curated table and
+    // ignore the learner entirely, so someone memorising Al-Fatihah was handed the
+    // globally commonest words instead. Vocabulary study and memorisation were
+    // pulling in different directions when they are the same work seen twice.
+    //
+    // Ordered by how often the word occurs in the WHOLE Quran, so the most reusable
+    // words in your own ayahs come first. Deduplicated on the diacritic-stripped
+    // form, because the same word recurs across ayahs with different case endings
+    // and would otherwise arrive as several separate cards.
+    const fromPlan = await db.query<{
+      word: string;
+      surah_id: number;
+      ayah_id: number;
+      position: number;
+    }>(
+      `WITH plan_words AS (
+         SELECT g.arabic AS word,
+                g.surah_id, g.ayah_id, g.position
+           FROM memorization m
+           JOIN quran_word_gloss g
+             ON g.surah_id = m.surah_id
+            AND g.ayah_id BETWEEN m.ayah_from AND m.ayah_to
+          WHERE m.user_id = ?
+            AND g.english IS NOT NULL AND g.english <> ''
+            -- Only words that carry lexical meaning. Without this the queue fills
+            -- with وَلَا, إِنَّ, إِلَّا, هُوَ and عَلَيْهِمْ — a flashcard for "and
+            -- not" teaches nothing, and it is the same mistake that put 390
+            -- function words into the comprehension bank. The corpus decides, not
+            -- an English wordlist, which cannot know ٱلَّذِينَ is a relative pronoun.
+            AND EXISTS (
+              SELECT 1 FROM quran_word_morphology w
+               WHERE w.surah_id = g.surah_id
+                 AND w.ayah_id = g.ayah_id
+                 AND w.word_index = g.position
+                 AND w.pos IN ('N', 'V', 'ADJ', 'PN', 'ADV')
+            )
+       ),
+       ranked AS (
+         SELECT p.word,
+                p.surah_id, p.ayah_id, p.position,
+                (SELECT COUNT(*) FROM quran_word_gloss q WHERE q.arabic = p.word) AS occurrences,
+                ROW_NUMBER() OVER (PARTITION BY p.word ORDER BY p.surah_id, p.ayah_id, p.position) AS dup
+           FROM plan_words p
+       )
+       SELECT r.word, r.surah_id, r.ayah_id, r.position
+         FROM ranked r
+         LEFT JOIN vocabulary_mastery vm
+           ON vm.word = r.word AND vm.user_id = ?
+        WHERE vm.word IS NULL AND r.dup = 1
+        ORDER BY r.occurrences DESC
+        LIMIT ?`,
+      [userId, userId, count]
     );
+
+    // Fall back to global frequency when the plan is empty or exhausted. Kept as the
+    // fallback rather than the default — which is the whole change.
+    const remaining = count - fromPlan.length;
+    const fromFrequency =
+      remaining > 0
+        ? await db.query<{
+            word: string;
+            surah_id: number | null;
+            ayah_id: number | null;
+            position: number | null;
+          }>(
+            `SELECT v.word, NULL AS surah_id, NULL AS ayah_id, NULL AS position
+               FROM vocabulary v
+               LEFT JOIN vocabulary_mastery vm
+                 ON vm.word = v.word AND vm.user_id = ?
+              WHERE vm.word IS NULL
+              ORDER BY v.frequency_rank ASC
+              LIMIT ?`,
+            [userId, remaining]
+          )
+        : [];
+
+    const next = [...fromPlan, ...fromFrequency];
 
     if (next.length === 0) {
       return c.json({ added: 0, words: [], message: 'No new words available' });
@@ -435,14 +544,27 @@ learningRoutes.post('/vocabulary/start', async (c) => {
     for (const row of next) {
       await db.run(
         `INSERT INTO vocabulary_mastery
-           (user_id, word, meaning_known, reading_known, last_seen, next_review, reviews, ease_factor, interval_days)
-         VALUES (?, ?, 0, 0, NULL, datetime('now'), 0, 2.5, 1)
+           (user_id, word, meaning_known, reading_known, last_seen, next_review,
+            reviews, ease_factor, interval_days,
+            source_surah, source_ayah, source_position)
+         VALUES (?, ?, 0, 0, NULL, datetime('now'), 0, 2.5, 1, ?, ?, ?)
          ON CONFLICT(user_id, word) DO NOTHING`,
-        [userId, row.word]
+        [userId, row.word, row.surah_id, row.ayah_id, row.position]
       );
     }
 
-    return c.json({ added: next.length, words: next.map((r) => r.word) });
+    return c.json({
+      added: next.length,
+      words: next.map((r) => r.word),
+      // Where each word came from, so the UI can say "Al-Fatihah 1:2" rather than
+      // presenting an unexplained list.
+      sources: next.map((r) => ({
+        word: r.word,
+        source: r.surah_id ? `${r.surah_id}:${r.ayah_id}` : 'frequency',
+      })),
+      fromHifzPlan: fromPlan.length,
+      fromFrequency: fromFrequency.length,
+    });
   } catch (error) {
     console.error('Vocabulary start error:', error);
     return c.json({ error: 'Internal server error' }, 500);

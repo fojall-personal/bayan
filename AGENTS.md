@@ -152,8 +152,8 @@ Each module is built on the completed design system and component library from P
 ### Database (D1)
 - Use parameterized queries (no string interpolation)
 - Index foreign keys and frequently filtered columns
-- Migrations go in `src/lib/db/migrations/`
-- Seed data in `src/lib/db/seed.ts`
+- Migrations go in `workers/src/db/migrations/`, numbered and applied in order
+- Seed data in `workers/src/db/seed-user.sql` and `scripts/seed-lessons.sql` (generated)
 
 ### Components
 - Keep components <150 lines (extract sub-components)
@@ -459,7 +459,7 @@ npm run dev
 
 ### Running Database Migrations
 ```bash
-npx wrangler d1 execute languagebuilder-db --file=src/lib/db/migrations/001_initial.sql
+cd workers && npx wrangler d1 migrations apply languagebuilder --local
 ```
 
 ### Adding a New Module

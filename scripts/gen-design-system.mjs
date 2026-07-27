@@ -1035,6 +1035,51 @@ levels shape the lesson path. It just does not get to invent a vocabulary.</p>`,
   'Twelve sampled roots, a minute of work, and a bulk seed the learner opts into.'
 ), 'utf-8');
 
+await writeFile(join(OUT, 'preview/spec-vocab-hifz.html'), shell(
+  'Spec — vocabulary scoped to the hifz plan', 'Product',
+  `<p style="max-width:66ch">F3, the last open plan item. The spaced-repetition
+machinery is already complete — <code>POST /api/learning/vocabulary/start</code>
+enrols words, <code>POST /api/learning/flashcards/review</code> grades them through
+SM-2, and both work. <strong>The gap is only which words it picks.</strong></p>
+
+<p class="note" style="border-color:${colour('color-error')}">Enrolment orders by
+<code>frequency_rank</code> over the 103-row curated <code>vocabulary</code> table
+and ignores the learner entirely. Someone memorising Al-Fatihah, Al-'Asr and
+Al-Ikhlas — 58 words between them — is handed the globally commonest words instead,
+so vocabulary study and memorisation pull in different directions when they should
+be the same work seen twice.</p>
+
+<h2>What a card should look like</h2>
+<div style="max-width:480px;background:${colour('ground-900')};
+ border:1px solid ${colour('gold-500')}66;border-radius:${tokens.get('radius-lg')};padding:22px">
+  <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:.75rem">
+    <span>3 of 12 due</span><span style="color:${colour('gold-400')}">Al-Fatihah 1:2</span></div>
+  <p class="ar" style="font-size:2.6rem;text-align:center;margin:16px 0 6px">ٱلْعَـٰلَمِينَ</p>
+  <p style="text-align:center;color:var(--muted);font-size:.8rem;margin:0">l-ʿālamīna</p>
+  <div style="border-top:1px solid ${colour('ground-800')};margin:18px 0 0;padding-top:14px">
+    <p style="margin:0;font-size:1.05rem">of the worlds</p>
+    <p style="margin:4px 0 0;color:var(--muted);font-size:.78rem">
+      root <span class="ar">علم</span> · 73 occurrences · in an ayah you are memorising</p>
+  </div>
+</div>
+<p class="note">The provenance line is the point: <strong>Al-Fatihah 1:2</strong>
+tells the learner why this word and not another. A flashcard with no reason behind it
+is a vocabulary list, which is the thing spaced repetition was supposed to replace.</p>
+
+<h2>Selection order</h2>
+<div class="grid" style="gap:10px;max-width:620px">
+${box('1 · Words in your hifz plan', 'From <code>memorization</code> joined to <code>quran_word_gloss</code>. Ordered by how often the word occurs in the whole Quran, so the most reusable words in YOUR ayahs come first.')}
+${box('2 · Then global frequency', 'When the plan is empty or exhausted, fall back to the curated table ordered by <code>frequency_rank</code> — the current behaviour, kept as the fallback rather than the default.')}
+${box('Deduplicated by normalised form', 'The same word appears across ayahs with different diacritics and case endings. Without folding, a learner gets ٱلْعَٰلَمِينَ five times as five separate cards.')}
+${box('Meaning: curated first, gloss second', '<code>vocabulary</code> has a dictionary meaning for 103 words; <code>quran_word_gloss</code> has a contextual gloss for all 77,429. Prefer the dictionary entry, fall back to the gloss, and never show a card with neither.')}
+</div>
+<p class="note">One behaviour worth stating: a word is <em>not</em> skipped because its
+root is already known. Roots and words are different knowledge — knowing علم does not
+mean you can read ٱلْعَـٰلَمِينَ — and conflating them would quietly shrink the queue
+on a false equivalence.</p>`,
+  'The SRS already works. It just was not studying the ayahs you are actually memorising.'
+), 'utf-8');
+
 // Tokens as CSS, for anyone consuming the system directly
 await writeFile(join(OUT, 'colors_and_type.css'),
   `/* Bayan design tokens — GENERATED from src/app/styles/globals.css.\n` +

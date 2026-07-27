@@ -20,7 +20,8 @@ What works today, honestly:
 - **Adaptive paths** — the assessment assigns one of three curricula from your
   weakest domain, and the result is stored rather than re-derived.
 - **Learning** — lessons with graded exercises, sticky completion, best-of
-  scoring, and a flashcard queue.
+  scoring, and a flashcard queue drawn from the ayahs you are memorising: content
+  words only, commonest-in-the-Quran first, each card naming the ayah it came from.
 - **Spaced repetition** — an SM-2 scheduler for memorization, with an add-ayah UI, a
   due-today queue and a 908-unit ordered curriculum.
 - **Tajweed** — per-rule mastery, and colour-coded verses across all 6,236 ayahs.
@@ -279,15 +280,15 @@ application, in any Cloudflare account, would be accepted.
 
 **Last updated: 2026-07-26**
 
-**Everything is deployed and working.** All 36 API endpoints resolve, all 10
+**Everything is deployed and working.** All 49 API endpoints resolve, all 13
 pages render, the database has 6,236 Quran verses and 77K morphology rows.
 
 | Component | Status |
 |-----------|--------|
-| Frontend (10 routes) | ✅ All rendering 200 OK |
-| Navigation (7 links) | ✅ All wired up |
-| API (36 endpoints) | ✅ All resolving |
-| Database (D1) | ✅ 9 migrations applied, seeded |
+| Frontend (13 routes) | ✅ All rendering 200 OK |
+| Navigation (6 links) | ✅ All wired up |
+| API (49 endpoints) | ✅ All resolving |
+| Database (D1) | ✅ 18 migrations applied, seeded |
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |
 | Cloudflare Access | ✅ Enforcing — every path 302s to the login |
@@ -326,7 +327,7 @@ microphone capture cannot be verified headlessly.
 |---|---|---|
 | F1 | Reader | ✅ `/read` — one ayah, five lenses, plus the whole-surah tajweed reader |
 | F2 | Hifz tracker | ✅ add-ayah UI, 908-unit curriculum, SM-2 review |
-| F3 | Vocabulary SRS | ◻ words are not yet scoped to the hifz plan |
+| F3 | Vocabulary SRS | ✅ scoped to the hifz plan — content words from your own ayahs, each card citing its source |
 | F4 | Comprehension checks | ✅ 1,200 items from 77,429 word glosses |
 | F5 | Diagnostic placement | ✅ and no longer a gate — skippable, with root calibration instead |
 | F6 | Tajweed track | ✅ rule reference, per-rule mastery, ten colours all ≥4.5:1 |
@@ -334,10 +335,10 @@ microphone capture cannot be verified headlessly.
 | F8 | Tutor | ✅ rewritten as corpus lookups; it refuses rather than inventing Arabic |
 | F9 | Root families | ✅ 4,950 derived exercises, all 25 (kind, level) buckets full |
 
-**Next, in rough order:** scope vocabulary SRS to the hifz plan (F3); decide which of
-the 13 endpoints with no caller to retire (`gen-api-docs.mjs` lists them); and have a
-human read the ten grammar lessons, which is the only remaining risk no gate can
-cover.
+**Next, in rough order:** decide which of the 13 endpoints with no caller to retire
+(`gen-api-docs.mjs` lists them); and have a human read the ten grammar lessons, which
+is the only remaining risk no gate can cover — every mechanical claim in them is
+checked, but whether they teach well is not a property a script can decide.
 
 ### What's working today
 

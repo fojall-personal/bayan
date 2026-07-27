@@ -190,6 +190,45 @@ const pagesBlock =
     .join('\n') +
   '\n```';
 
+// ── README counts ──────────────────────────────────────────────────────────
+//
+// The status table in README.md claimed "10 routes", "36 endpoints", "7 links"
+// and "9 migrations" while the real numbers were 13, 49, 6 and 18. Four numbers,
+// four wrong, for the same reason the endpoint list was wrong: a human retypes
+// them and nothing objects. This script already counts routes and endpoints, so
+// it owns those rows now.
+const README = join(root, 'README.md');
+const migrationCount = (await readdir(join(root, 'workers/src/db/migrations'))).filter(
+  (f) => f.endsWith('.sql')
+).length;
+const nav = await readFile(join(root, 'src/app/components/layout/Nav.tsx'), 'utf-8');
+// The nav array only — `isActive(href: string)` and other mentions must not count.
+const navCount = [...nav.matchAll(/\{\s*href:\s*'\/[^']*',\s*label:/g)].length;
+
+const README_ROWS = [
+  [/\| Frontend \(\d+ routes\) \|/, `| Frontend (${pages.length} routes) |`],
+  [/\| Navigation \(\d+ links\) \|/, `| Navigation (${navCount} links) |`],
+  [/\| API \(\d+ endpoints\) \|/, `| API (${list.length} endpoints) |`],
+  [
+    /\| Database \(D1\) \| ✅ \d+ migrations applied, seeded \|/,
+    `| Database (D1) | ✅ ${migrationCount} migrations applied, seeded |`,
+  ],
+  // The prose sentence immediately above the table repeats two of them.
+  [/All \d+ API endpoints resolve, all \d+\n?pages render/, null],
+];
+
+let readme = await readFile(README, 'utf-8');
+const readmeBefore = readme;
+for (const [pattern, replacement] of README_ROWS) {
+  if (replacement === null) continue;
+  readme = readme.replace(pattern, replacement);
+}
+// The prose sentence wraps, so match across the newline and rewrite both numbers.
+readme = readme.replace(
+  /All \d+ API endpoints resolve, all \d+(\s+)pages render/,
+  `All ${list.length} API endpoints resolve, all ${pages.length}$1pages render`
+);
+
 const agents = await readFile(AGENTS, 'utf-8');
 const START = '## API Endpoints (Live)';
 const startIdx = agents.indexOf(START);
@@ -223,6 +262,14 @@ if (updated.includes(PAGES_HEADING)) {
 }
 
 if (check) {
+  if (readme !== readmeBefore) {
+    process.stderr.write(
+      '✘ README.md status table is out of date — it should read ' +
+        `${pages.length} routes, ${navCount} nav links, ${list.length} endpoints, ` +
+        `${migrationCount} migrations.\n  Run: node scripts/gen-api-docs.mjs\n`
+    );
+    process.exit(1);
+  }
   if (updated !== agents) {
     const current = agents.slice(fenceStart, fenceEnd + 3);
     const currentPaths = new Set([...current.matchAll(/^\w+\s+(\/\S+)/gm)].map((m) => m[1]));
@@ -242,7 +289,8 @@ if (check) {
     process.exit(1);
   }
   process.stdout.write(
-    `✅ AGENTS.md documents ${list.length} endpoints and ${pages.length} pages` +
+    `✅ AGENTS.md documents ${list.length} endpoints and ${pages.length} pages; ` +
+      `README counts agree (${navCount} nav links, ${migrationCount} migrations)` +
       (orphans.length ? ` (${orphans.length} orphaned page: ${orphans.map((o) => o.path).join(', ')})` : '') +
       (apiOrphans.length ? ` (${apiOrphans.length} uncalled: ${apiOrphans.join(', ')})` : '') +
       '\n'
@@ -251,8 +299,11 @@ if (check) {
 }
 
 await writeFile(AGENTS, updated, 'utf-8');
+if (readme !== readmeBefore) await writeFile(README, readme, 'utf-8');
 process.stdout.write(
-  `wrote ${list.length} endpoints and ${pages.length} pages into AGENTS.md\n`
+  `wrote ${list.length} endpoints and ${pages.length} pages into AGENTS.md\n` +
+    `  README: ${pages.length} routes, ${navCount} nav links, ${list.length} endpoints, ` +
+    `${migrationCount} migrations\n`
 );
 if (orphans.length) {
   process.stdout.write(`  orphaned pages: ${orphans.map((o) => o.path).join(', ')}\n`);
