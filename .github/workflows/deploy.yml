@@ -190,8 +190,12 @@ jobs:
       # via a direct REST call with the owning account id pinned. 7403 is authorization
       # for the D1 SERVICE on the account, so no endpoint choice gets around it.
       #
-      # To enable this, CLOUDFLARE_API_TOKEN needs D1 access on the account that owns
-      # database 6216c466 (Cloudflare dashboard → API Tokens → edit → add "D1: Edit").
+      # To enable this, CLOUDFLARE_API_TOKEN needs the D1:Edit permission on account
+      # 26f84481311bd42e09b8bdca6804661d, which owns database 6216c466. Cloudflare requires
+      # D1:Edit explicitly for HTTP API writes — Edit on another product plus D1:Read used
+      # to be enough and no longer is. The ACCOUNT_ID secret is already correct: the
+      # mismatch check in seed-remote-d1.mjs never fired, and the Pages-config step
+      # succeeds against that same account in the same run.
       # Then this becomes one step:
       #
       #   - name: Seed lesson content into D1

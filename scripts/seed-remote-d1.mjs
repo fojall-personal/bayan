@@ -7,22 +7,22 @@
  * Needs CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID and D1_DATABASE_ID in the
  * environment.
  *
- * ── Why not `wrangler d1 execute --file` ────────────────────────────────────
+ * ── Why the query api rather than `wrangler d1 execute --file` ─────────────
  *
- * Because it cannot run in CI, and the reason is narrower than it first looked.
+ * `--file` uploads through the IMPORT api, which needs the file staged; the query api
+ * takes statements directly and accepts several per request (verified: two SELECTs
+ * return two result sets), so a generated seed goes in a few batches with no staging.
  *
- * `--file` uploads through the IMPORT api (/d1/database/:id/import), which returns
- * "Authentication error [code: 10000]" for the repository's token. I concluded from that
- * one error that the token had no D1 write permission, told the user so, and reverted the
- * automation. That was an inference from a single endpoint, not a measurement.
+ * It does NOT get around a permission problem, and an earlier version of this comment
+ * claimed it did. The repository's CI token returns code 7403 on every D1 route —
+ * import, query via wrangler, and query via direct REST with the owning account pinned.
+ * 7403 is authorization for the D1 service on the account, so endpoint choice is
+ * irrelevant; the token needs D1:Edit, which Cloudflare requires explicitly for HTTP
+ * API writes. Until then this runs from a machine whose credential has that permission.
  *
- * Two probes in CI proved it wrong: the same token reads D1 and WRITES to it happily
- * through the query api (/d1/database/:id/query). Only the import path is closed. So
- * seeding needs no permission change at all — it needs the other endpoint.
- *
- * The query endpoint accepts several statements in one `sql` string (verified: two
- * SELECTs return two result sets), so the file is sent in batches rather than one
- * statement at a time.
+ * How that mistake happened, since it wasted two pushes: I probed the token with
+ * `continue-on-error: true` steps and read each step's `.conclusion`, which GitHub forces
+ * to "success" for such steps. Both probes had failed. Read `.outcome`.
  */
 
 import { readFile } from 'node:fs/promises';
@@ -38,16 +38,14 @@ const { CLOUDFLARE_API_TOKEN: token, D1_DATABASE_ID: database } = process.env;
 /**
  * The account that owns this D1 database.
  *
- * Not read from CLOUDFLARE_ACCOUNT_ID, and that is the fix for a 403. In CI the raw REST
- * call returned code 7403 — "the given account is not valid or is not authorized to
- * access this service" — while a wrangler probe against the same database succeeded,
- * because wrangler resolves the account from the token rather than trusting the secret.
- * So the secret and the account owning the database are not the same value.
+ * Pinned rather than read from CLOUDFLARE_ACCOUNT_ID. An earlier comment here claimed
+ * the secret held a different account and that this was the fix for a 403 — both wrong.
+ * The mismatch note below never fired in CI, so the secret's account is correct, and the
+ * 403 was the token lacking D1 access entirely (code 7403, service authorization).
  *
- * Hardcoded because an account id is an identifier, not a credential: it appears in this
- * workflow, in the README, and in Cloudflare's own error messages. Keeping it beside the
- * database id — which was already a literal here — means one fewer thing that can be
- * configured wrongly and fail at deploy time.
+ * Still pinned, because an account id is an identifier rather than a credential — it
+ * appears in the workflow, the README and Cloudflare's error text — and keeping it beside
+ * the database id leaves one fewer thing that can be configured wrongly.
  */
 const OWNING_ACCOUNT = '26f84481311bd42e09b8bdca6804661d';
 const account = OWNING_ACCOUNT;
