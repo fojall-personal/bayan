@@ -182,28 +182,30 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/sync-pages-config.mjs --check
 
-      # Lesson content ships with the code that renders it.
+      # Lesson content is NOT seeded here. The CI token cannot reach D1 at all.
       #
-      # Not via `wrangler d1 execute --file`: that uploads through the IMPORT api
-      # (/d1/database/:id/import), which returns "Authentication error [code: 10000]" for
-      # this token. I first read that as "the token cannot write to D1", said so, and
-      # reverted the automation — an inference from one endpoint rather than a
-      # measurement. Two probes then showed the same token reads AND writes D1 quite
-      # happily through the QUERY api. Only the import path is closed, so seeding needs
-      # the other endpoint and no permission change at all.
+      # Every route was tried and every one returns code 7403, "The given account is not
+      # valid or is not authorized to access this service": the import api that
+      # `wrangler d1 execute --file` uses, the query api via wrangler, and the query api
+      # via a direct REST call with the owning account id pinned. 7403 is authorization
+      # for the D1 SERVICE on the account, so no endpoint choice gets around it.
       #
-      # Idempotent: every statement is INSERT OR REPLACE keyed on the lesson id. Runs
-      # before the Pages deploy so content is in place when the code that reads it goes
-      # live, and the script refuses to apply a partial seed.
-      - name: Seed lesson content into D1
-        if: github.event_name != 'pull_request'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          # No CLOUDFLARE_ACCOUNT_ID: it does not match the account owning this database,
-          # which is why the raw REST call returned 7403 while wrangler succeeded. The
-          # script pins the owner.
-          D1_DATABASE_ID: 6216c466-c244-4c16-8569-c7281585fbc6
-        run: node scripts/seed-remote-d1.mjs scripts/seed-lessons.sql
+      # To enable this, CLOUDFLARE_API_TOKEN needs D1 access on the account that owns
+      # database 6216c466 (Cloudflare dashboard → API Tokens → edit → add "D1: Edit").
+      # Then this becomes one step:
+      #
+      #   - name: Seed lesson content into D1
+      #     if: github.event_name != 'pull_request'
+      #     env:
+      #       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      #       D1_DATABASE_ID: 6216c466-c244-4c16-8569-c7281585fbc6
+      #     run: node scripts/seed-remote-d1.mjs scripts/seed-lessons.sql
+      #
+      # A warning about diagnosing this, because it cost two wrong turns. I probed the
+      # token with `continue-on-error: true` steps and read their `.conclusion`, which
+      # GitHub forces to "success" for such steps — the real result is in `.outcome`. Both
+      # probes had failed with 7403 and I read them as passing, concluded the token DID
+      # have D1 access, and said so. Read .outcome, or do not use continue-on-error.
 
       - name: Deploy to Cloudflare Pages
         if: github.event_name != 'pull_request'
