@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { apiFetch, apiErrorMessage } from '@/lib/api';
+import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
 import { getSurah } from '@/lib/surahs';
 
 interface Exercise {
@@ -103,11 +103,27 @@ export function ExerciseRunner() {
 
   const choose = (option: string) => {
     if (picked !== null) return; // one answer per item
+    const isCorrect = option === current.answer;
     setPicked(option);
     setScore((s) => ({
-      right: s.right + (option === current.answer ? 1 : 0),
+      right: s.right + (isCorrect ? 1 : 0),
       total: s.total + 1,
     }));
+
+    // Record it. This was local state only, so a learner could work through all
+    // 4,950 exercises and the app would remember none of it — POST
+    // /api/grammar/exercise existed the whole time with no caller.
+    //
+    // Deliberately not awaited and deliberately silent: recording is bookkeeping,
+    // and blocking the answer reveal or showing an error over a failed write would
+    // punish the learner for something that is not their problem.
+    apiPost('/api/grammar/exercise', {
+      exerciseId: current.id,
+      answer: option,
+      correct: isCorrect,
+    }).catch(() => {
+      // Progress bookkeeping is best-effort; the exercise itself still works.
+    });
   };
 
   if (loading) {

@@ -27,7 +27,8 @@ What works today, honestly:
 - **Tajweed** — per-rule mastery, and colour-coded verses across all 6,236 ayahs.
   Ten rule colours, each ≥4.5:1 on the canvas, applied to the script rather than
   boxed behind it so Arabic stays joined.
-- **Grammar** — sentence parsing, conjugation tables and corpus root families.
+- **Grammar** — sentence parsing and corpus root families, with 4,950 derived
+  exercises whose results are recorded per kind and shown on Progress.
 - **Tutor** — corpus lookups, not a model. It answers a word, a root, a location or a
   named tajweed rule, and refuses rather than inventing Arabic.
 - **Coverage** — how much of the Quran you can read, computed from the roots you
@@ -280,19 +281,19 @@ application, in any Cloudflare account, would be accepted.
 
 **Last updated: 2026-07-26**
 
-**Everything is deployed and working.** All 41 API endpoints resolve, all 13
+**Everything is deployed and working.** All 39 API endpoints resolve, all 13
 pages render, the database has 6,236 Quran verses and 77K morphology rows.
 
 | Component | Status |
 |-----------|--------|
 | Frontend (13 routes) | ✅ All rendering 200 OK |
 | Navigation (6 links) | ✅ All wired up |
-| API (41 endpoints) | ✅ All resolving |
+| API (39 endpoints) | ✅ All resolving |
 | Database (D1) | ✅ 18 migrations applied, seeded |
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |
 | Cloudflare Access | ✅ Enforcing — every path 302s to the login |
-| Grammar (corpus-derived) | ✅ 4,950 graded exercises, all 25 (kind, level) buckets full, 114/114 surahs |
+| Grammar (corpus-derived) | ✅ 4,950 graded exercises, all 25 (kind, level) buckets full, 114/114 surahs; results recorded per exercise kind |
 | Memorization curriculum | ✅ 908 ordered units across all 114 surahs |
 | Content correctness | ✅ Gated in CI; 14 seeded defects all caught |
 | Design system | ✅ Generated from globals.css, published to claude.ai/design, drift gated |
@@ -333,12 +334,15 @@ microphone capture cannot be verified headlessly.
 | F6 | Tajweed track | ✅ rule reference, per-rule mastery, ten colours all ≥4.5:1 |
 | F7 | Progress | ✅ weekly activity calendar and coverage — ayahs readable from known roots. No daily streak counter: the helper that computed one had no caller and was removed |
 | F8 | Tutor | ✅ rewritten as corpus lookups; it refuses rather than inventing Arabic |
-| F9 | Root families | ✅ 4,950 derived exercises, all 25 (kind, level) buckets full |
+| F9 | Root families | ✅ 4,950 derived exercises, all 25 (kind, level) buckets full, and answers now recorded — mastery per exercise kind shows on /progress |
 
-**Next, in rough order:** decide which of the 13 endpoints with no caller to retire
-(`gen-api-docs.mjs` lists them); and have a human read the ten grammar lessons, which
-is the only remaining risk no gate can cover — every mechanical claim in them is
-checked, but whether they teach well is not a property a script can decide.
+**Next:** have a human read the ten grammar lessons. That is the only remaining risk
+no gate can cover — every mechanical claim in them is checked (sun/moon membership,
+roots against the corpus, every Arabic example attested in the Quran), but whether
+they *teach well* is not a property a script can decide.
+
+Endpoint triage is finished: every endpoint the app serves now has a caller, and
+`gen-api-docs.mjs --check` fails if that stops being true.
 
 ### What's working today
 

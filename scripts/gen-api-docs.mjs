@@ -286,6 +286,20 @@ if (check) {
     );
     process.exit(1);
   }
+  // An endpoint with no caller is dead code or a lost feature, and this repo has now
+  // had both: /api/progress/dashboard outlived the page it served, while
+  // /api/tutor/history and /api/grammar/mastery were working features no screen ever
+  // opened. Thirteen had accumulated silently because this only *reported* them.
+  // Reaching zero is the easy part; staying there needs a red build.
+  if (apiOrphans.length > 0) {
+    process.stderr.write(
+      `✘ ${apiOrphans.length} endpoint(s) served with no caller:\n` +
+        apiOrphans.map((o) => `    ${o}\n`).join('') +
+        '  Wire it to a screen, or delete it. If it is genuinely called in a way this\n' +
+        '  script cannot see, add it to the exemption in scripts/gen-api-docs.mjs.\n'
+    );
+    process.exit(1);
+  }
   if (updated !== agents) {
     const current = agents.slice(fenceStart, fenceEnd + 3);
     const currentPaths = new Set([...current.matchAll(/^\w+\s+(\/\S+)/gm)].map((m) => m[1]));

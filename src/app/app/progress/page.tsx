@@ -16,9 +16,40 @@ interface ScoreEntry {
   completed_at: string;
 }
 
+/** One row of GET /api/grammar/mastery. */
+interface MasteryEntry {
+  category: string;
+  masteryLevel: number;
+  totalAttempts: number;
+  correctAttempts: number;
+  percentage: number;
+}
+
+/**
+ * Human labels for the seven exercise kinds the derived bank actually contains.
+ *
+ * Mirrors the list in ExerciseRunner so both screens name a kind the same way. The
+ * raw values are database enums — `case_ending`, `pos_id` — and showing those to a
+ * learner would be leaking a column name into the UI.
+ */
+const KIND_LABELS: Record<string, string> = {
+  word_meaning: 'Word meaning',
+  find_word: 'Find the word in an ayah',
+  verb_form: 'Verb form (I–XII)',
+  case_ending: "Case ending (i'rab)",
+  root_id: 'Root identification',
+  pos_id: 'Part of speech',
+  aspect: 'Verb aspect',
+  // Lesson-driven attempts record their module instead of a bank kind.
+  grammar: 'Lesson exercises — grammar',
+  tajweed: 'Lesson exercises — tajweed',
+  literacy: 'Lesson exercises — literacy',
+};
+
 export default function ProgressPage() {
   const router = useRouter();
   const [scores, setScores] = useState<ScoreEntry[]>([]);
+  const [mastery, setMastery] = useState<MasteryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +63,14 @@ export default function ProgressPage() {
       const data = await apiFetch<{ data: ScoreEntry[] }>('/api/progress/scores');
       setScores(data.data || []);
       setError(null);
+      // Separate try: grammar mastery is additive, and failing to load it should not
+      // blank out the score history that did load.
+      try {
+        const m = await apiFetch<{ data: MasteryEntry[] }>('/api/grammar/mastery');
+        setMastery(m.data || []);
+      } catch {
+        setMastery([]);
+      }
     } catch (err) {
       console.error('Failed to fetch scores:', err);
       setError(apiErrorMessage(err));
@@ -61,6 +100,61 @@ export default function ProgressPage() {
           >
             Try again
           </button>
+        </Card>
+      )}
+
+      {/* Grammar by exercise type.
+          
+          Nothing showed this before, because nothing recorded it: the runner kept
+          the score in local state and POST /api/grammar/exercise had no caller, so
+          4,950 exercises produced no durable result. Only attempted kinds appear —
+          an untouched kind is not a weakness, and listing all seven would imply
+          measurements that were never taken. */}
+      {mastery.length > 0 && (
+        <Card>
+          <h2 className="mb-4 text-xl font-bold">Grammar by exercise type</h2>
+          <div className="space-y-3">
+            {[...mastery]
+              .sort((a, b) => a.percentage - b.percentage)
+              .map((m) => (
+                <div key={m.category}>
+                  <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
+                    <span>{KIND_LABELS[m.category] ?? m.category}</span>
+                    {/* Raw counts beside the percentage: "3 of 3 · 100%" reads very
+                        differently from "47 of 52 · 90%". */}
+                    <span className="text-ground-400">
+                      {m.correctAttempts} of {m.totalAttempts} · {m.percentage}%
+                    </span>
+                  </div>
+                  <div
+                    className="h-1.5 overflow-hidden rounded-full bg-ground-800"
+                    role="progressbar"
+                    aria-valuenow={m.percentage}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={KIND_LABELS[m.category] ?? m.category}
+                  >
+                    <div
+                      className={`h-full rounded-full ${
+                        m.percentage >= 80
+                          ? 'bg-leaf-500'
+                          : m.percentage >= 50
+                            ? 'bg-gold-500'
+                            : 'bg-error'
+                      }`}
+                      style={{ width: `${m.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+          </div>
+          <p className="mt-4 text-xs text-ground-400">
+            Only types you have attempted appear. Practise more in{' '}
+            <Link href="/grammar" className="text-gold-400 hover:underline">
+              Grammar
+            </Link>
+            .
+          </p>
         </Card>
       )}
 

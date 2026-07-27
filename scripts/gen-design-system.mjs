@@ -23,7 +23,7 @@
  * does not. --check makes drift a red build instead of a silent lie.
  */
 
-import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rm, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -1035,6 +1035,72 @@ levels shape the lesson path. It just does not get to invent a vocabulary.</p>`,
   'Twelve sampled roots, a minute of work, and a bulk seed the learner opts into.'
 ), 'utf-8');
 
+await writeFile(join(OUT, 'preview/spec-grammar-mastery.html'), shell(
+  'Spec — the exercise bank records nothing', 'Product',
+  `<p style="max-width:66ch">The derived grammar bank is the largest thing in the
+app: <strong>4,950 exercises</strong> across seven kinds and five levels, every item
+traceable to a corpus row. A learner can work through all of them and the app will
+remember <strong>none of it</strong>.</p>
+
+<h2>Three failures stacked, which is why nobody noticed</h2>
+<p class="note" style="border-color:${colour('color-error')}">
+<strong>1 — Nothing is ever sent.</strong> <code>ExerciseRunner.choose()</code> updates
+a local <code>score</code> state and stops there. <code>POST /api/grammar/exercise</code>
+exists and has no caller.<br><br>
+<strong>2 — If it were sent, the category lookup could not match.</strong> The handler
+does <code>SELECT module FROM lessons WHERE id = ?</code> against the <em>exercise</em>
+id. Bank ids look like <code>aspect-2-8-4-1</code>; lesson ids look like
+<code>grammar-01</code>. A join between them returns zero rows — measured, not
+assumed — so <code>grammar_mastery</code> is never written.<br><br>
+<strong>3 — Nothing reads it.</strong> <code>GET /api/grammar/mastery</code> has no
+caller, so the empty table was never visible either.</p>
+
+<p style="max-width:66ch">Each failure hides the next. Fixing only the missing caller
+would still write nothing; fixing only the join would still never fire.</p>
+
+<h2>Where it surfaces — /progress</h2>
+<div style="max-width:520px;background:${colour('ground-900')};
+ border:1px solid ${colour('ground-800')};border-radius:${tokens.get('radius-lg')};padding:20px">
+  <p style="margin:0 0 14px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;
+   color:var(--muted)">Grammar by exercise type</p>
+  ${[
+    ['Word meaning', 47, 52],
+    ['Case ending (i’rab)', 12, 31],
+    ['Verb form (I–XII)', 8, 9],
+    ['Root identification', 3, 3],
+  ].map(([label, right, total]) => {
+    const pct = Math.round((right / total) * 100);
+    const bar = pct >= 80 ? colour('leaf-500') : pct >= 50 ? colour('gold-500') : colour('color-error');
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px">
+        <span>${label}</span>
+        <span style="color:var(--muted)">${right} of ${total} · ${pct}%</span></div>
+      <div style="height:6px;background:${colour('ground-800')};border-radius:3px">
+        <div style="height:6px;width:${pct}%;background:${bar};border-radius:3px"></div></div>
+    </div>`;
+  }).join('')}
+  <p style="margin:14px 0 0;font-size:.75rem;color:var(--muted)">Only types you have
+  attempted appear. An untouched type is not a weakness.</p>
+</div>
+
+<h2>Rules this follows</h2>
+<ul style="max-width:66ch">
+  <li><strong>Category is the exercise kind</strong> — the seven the bank actually
+  has, resolved from <code>grammar_exercise_bank.kind</code>. The lesson-module
+  lookup stays as a fallback so lesson-driven attempts keep working.</li>
+  <li><strong>Attempted only.</strong> Seven rows where four have data would imply
+  three weaknesses that were never measured — the same fabrication as inferring
+  known roots from a placement score.</li>
+  <li><strong>Raw counts beside the percentage.</strong> "3 of 3 · 100%" reads very
+  differently from "47 of 52 · 90%", and the percentage alone hides which is which.</li>
+  <li><strong>mastery_level gets derived or nothing.</strong> The column defaults to 1
+  and has never been updated, so the endpoint's <code>masteryLevel</code> is the
+  literal number 1 for everyone. Either it means something or it should not be
+  returned.</li>
+</ul>`,
+  'The largest feature in the app stores no result. Three stacked failures, each hiding the next.'
+), 'utf-8');
+
 await writeFile(join(OUT, 'preview/spec-tutor-loop.html'), shell(
   'Spec — the tutor remembers, and suggests from your own errors', 'Product',
   `<p style="max-width:66ch">Two endpoints have been live since the tutor shipped and
@@ -1206,7 +1272,13 @@ control had an accessible name via \`aria-label\` or a wrapping label.
 `, 'utf-8');
 
 process.stdout.write(`wrote design system to ${OUT}\n`);
-process.stdout.write(`  9 preview cards, colors_and_type.css (${tokens.size} tokens), README.md\n`);
+// Counted, not typed. This line read "9 preview cards" while 23 were being written —
+// a hardcoded literal in the one script whose whole purpose is to stop hand-maintained
+// numbers from drifting.
+const cardCount = (await readdir(join(OUT, 'preview'))).filter((f) => f.endsWith('.html')).length;
+process.stdout.write(
+  `  ${cardCount} preview cards, colors_and_type.css (${tokens.size} tokens), README.md\n`
+);
 if (problems.length) {
   process.stdout.write(`  ${problems.length} token problem(s) reported above and documented in the bundle\n`);
 }

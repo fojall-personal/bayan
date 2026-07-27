@@ -315,7 +315,6 @@ GET    /api/auth/profile
 GET    /api/auth/whoami
 GET    /api/certificate/export
 GET    /api/grammar/deepdive/:category
-GET    /api/grammar/drills/forms
 POST   /api/grammar/exercise
 GET    /api/grammar/exercises         (4,950-item graded bank; ?level=1-5 &kind=)
 GET    /api/grammar/mastery
@@ -331,7 +330,6 @@ POST   /api/learning/vocabulary/start
 POST   /api/memorization/:id/recall
 POST   /api/memorization/:id/review
 POST   /api/memorization/add
-GET    /api/memorization/all
 GET    /api/memorization/curriculum   (908 ordered units; ?level=1-6 &limit &offset)
 GET    /api/memorization/review/today
 GET    /api/memorization/surah/:surahId

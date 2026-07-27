@@ -28,25 +28,6 @@ memorizationRoutes.get('/surah/:surahId', async (c) => {
   }
 });
 
-// GET /api/memorization/all — Get all memorization entries for user
-memorizationRoutes.get('/all', async (c) => {
-  const userId = c.get('userId');
-  const db = getDb(c);
-
-  try {
-    const all = await db.query<Record<string, unknown>>(
-      `SELECT surah_id, status, COUNT(*) as ayah_count FROM memorization
-       WHERE user_id = ? GROUP BY surah_id, status`,
-      [userId]
-    );
-
-    return c.json({ entries: all });
-  } catch (error) {
-    console.error('Memorization all error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});
-
 // POST /api/memorization/add — Add a new memorization entry
 memorizationRoutes.post('/add', async (c) => {
   const userId = c.get('userId');
