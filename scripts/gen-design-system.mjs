@@ -1074,6 +1074,83 @@ levels shape the lesson path. It just does not get to invent a vocabulary.</p>`,
   'Twelve sampled roots, a minute of work, and a bulk seed the learner opts into.'
 ), 'utf-8');
 
+await writeFile(join(OUT, 'preview/spec-new-exercise-kinds.html'), shell(
+  'Spec — five exercise kinds from annotation already ingested', 'Product',
+  `<p style="max-width:66ch">The exercise generator reads five fields out of the corpus.
+The ingest captured far more, and roughly <strong>108,000 annotated facts</strong> have
+been sitting in the database unused — enough for five new kinds covering grammar the app
+has never drilled once.</p>
+
+<p class="note" style="border-color:${colour('color-error')}">This also corrects a claim
+I made twice: that the corpus does not annotate definiteness or negation, which is why
+grammar-01 and grammar-10 were left with no practice link. It annotates both —
+<code>DET</code> on 8,377 prefix segments and <code>POS:NEG</code> on 2,688. I had checked
+the <code>pos</code> column and never looked at <code>tag</code>.</p>
+
+<h2>What is there</h2>
+<table style="border-collapse:collapse;font-size:.85rem;max-width:660px">
+  <tr style="text-align:left;color:var(--muted)">
+    <th style="padding:6px 14px 6px 0">Annotation</th><th style="padding:6px 14px 6px 0">Rows</th>
+    <th style="padding:6px 0">Becomes</th></tr>
+  ${[
+    ['gender + person + number (3MS, 2MP…)', '49,007', 'subject agreement'],
+    ['mood (IND / JUS / SUBJ)', '11,420', 'mood after particles'],
+    ['INDEF, and the DET prefix', '8,672 + 8,377', 'definiteness'],
+    ['PASS (active is unmarked)', '4,665', 'voice'],
+    ['POS:NEG', '2,688', 'negation'],
+  ].map(([a, n, b]) => `<tr>
+      <td style="padding:5px 14px 5px 0">${a}</td>
+      <td style="padding:5px 14px 5px 0;color:var(--muted)">${n}</td>
+      <td style="padding:5px 0;color:${colour('leaf-400')}">${b}</td></tr>`).join('')}
+</table>
+
+<h2>The design decision: agreement, not gender trivia</h2>
+<p class="note">Asking "what gender is this word" tests a label the learner can read off
+the ending, and teaches nothing about reading. The corpus fuses person, gender and number
+into one tag — <code>3MS</code>, <code>2MP</code>, <code>1P</code> — which supports a
+better question: <strong>who is the subject of this verb?</strong> Decoding who did what
+to whom is precisely what a reader needs, and the ending is the only thing that says so.</p>
+
+<div style="max-width:520px;background:${colour('ground-900')};
+ border:1px solid ${colour('ground-800')};border-radius:${tokens.get('radius-lg')};padding:20px">
+  <p style="margin:0 0 4px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;
+   color:var(--muted)">Subject agreement · level 2</p>
+  <p class="ar" style="font-size:2.2rem;text-align:center;margin:14px 0 4px">تُفْسِدُوا۟</p>
+  <p style="text-align:center;color:var(--muted);font-size:.78rem;margin:0 0 16px">2:11</p>
+  ${['he', 'you (m. pl.)', 'they (f.)', 'we'].map((o, i) => `
+  <div style="border:1px solid ${i === 1 ? colour('leaf-500') : colour('ground-800')};
+   border-radius:${tokens.get('radius-md')};padding:9px 12px;margin-bottom:7px;font-size:.9rem">
+    ${o}${i === 1 ? ` <span style="float:right;color:${colour('leaf-400')};font-size:.72rem">✓</span>` : ''}
+  </div>`).join('')}
+  <p style="margin:12px 0 0;font-size:.75rem;color:var(--muted)">The corpus tags this
+  2MP — second person, masculine, plural. Nothing but the ـُوا ending carries that.</p>
+</div>
+
+<h2>Rules these follow</h2>
+<ul style="max-width:66ch">
+  <li><strong>Definiteness is a word-level question, not a segment one.</strong> The
+  article is its own DET prefix segment and INDEF sits on the stem, so the generator has
+  to look at the whole word — every other kind here reads a single segment. Getting that
+  wrong would ask "is ٱلْكِتَابُ definite" about the bare ال.</li>
+  <li><strong>Active is unmarked.</strong> Only PASS appears, so voice questions must draw
+  their active examples from verbs with no PASS rather than from a field that says ACT —
+  and a missing field is not the same as an absent feature elsewhere in this data.</li>
+  <li><strong>Negation asks which word negates, not whether the sentence is negative.</strong>
+  The tag marks the particle; the sentence-level reading is not annotated and would be a
+  guess dressed as a fact.</li>
+  <li><strong>Mood only on imperfect verbs.</strong> JUS and SUBJ are governed by preceding
+  particles, so the prompt shows enough of the ayah for the particle to be visible —
+  otherwise the question is unanswerable and the learner is guessing.</li>
+  <li><strong>Same level rule as the existing five kinds</strong> — difficulty from form
+  frequency, so "level 3" means one thing across all ten.</li>
+</ul>
+
+<p class="note">Two of these fill the gaps left in lesson-practice.ts: definiteness →
+grammar-01, negation → grammar-10. Predication remains genuinely unannotated, so
+grammar-03 keeps no practice link, which stays the honest answer.</p>`,
+  'Roughly 108,000 annotated facts were ingested and never used. Five kinds, no hand-authored Arabic.'
+), 'utf-8');
+
 await writeFile(join(OUT, 'preview/spec-fsrs.html'), shell(
   'Spec — FSRS replaces SM-2, and the rating scale has to change', 'Product',
   `<p style="max-width:66ch">Both schedulers run SM-2: a fixed heuristic hand-tuned

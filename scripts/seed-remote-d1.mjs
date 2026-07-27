@@ -107,7 +107,12 @@ const statements = sql
 
 // The file is generated one statement per line, so the count is knowable. Asserting it
 // turns a silent partial apply into a refusal.
-const expected = (sql.match(/INSERT OR REPLACE/g) ?? []).length;
+//
+// Counts every statement, not just INSERTs: the derived-content seed opens with a DELETE
+// that clears the kinds it is about to write, and counting inserts alone made the check
+// fire on a file that was perfectly correct — a refusal is only useful if it means
+// something is actually wrong.
+const expected = (sql.match(/^\s*(?:INSERT|DELETE|UPDATE)\b/gim) ?? []).length;
 if (expected > 0 && statements.length !== expected) {
   process.stderr.write(
     `✘ split produced ${statements.length} statement(s) but the file has ${expected} ` +

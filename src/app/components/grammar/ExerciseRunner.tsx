@@ -2,7 +2,7 @@
 
 // Runs the corpus-derived grammar exercise bank.
 //
-// 17,206 items across 7 kinds and 5 levels, all generated from the morphology
+// 26,694 items across 12 kinds and 5 levels, all generated from the morphology
 // corpus. Every one carries the surah:ayah it came from, which is shown after
 // answering — the citation is the point. An exercise you can trace is one you can
 // disprove, which is exactly what the five hand-written grammar errors were not.
@@ -46,6 +46,12 @@ const KINDS = [
   { value: 'root_id', label: 'Root identification' },
   { value: 'pos_id', label: 'Part of speech' },
   { value: 'aspect', label: 'Verb aspect' },
+  // Kinds 6–10, from annotation the generator had never read.
+  { value: 'subject_agreement', label: 'Who is the subject' },
+  { value: 'definiteness', label: 'Definite or indefinite' },
+  { value: 'mood', label: 'Mood (indicative / subjunctive / jussive)' },
+  { value: 'voice', label: 'Active or passive' },
+  { value: 'negation', label: 'Which word negates' },
 ];
 
 const LEVELS = [

@@ -269,7 +269,12 @@ grammarRoutes.get('/exercises', async (c) => {
     params.push(n);
   }
   if (kind) {
-    const allowed = ['verb_form', 'case_ending', 'root_id', 'pos_id', 'aspect', 'word_meaning', 'find_word'];
+    // Ten kinds. The five added later read annotation the ingest had captured and the
+    // generator never used — roughly 108,000 facts sitting idle.
+    const allowed = [
+      'verb_form', 'case_ending', 'root_id', 'pos_id', 'aspect', 'word_meaning',
+      'find_word', 'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
+    ];
     if (!allowed.includes(kind)) {
       return c.json({ error: `kind must be one of ${allowed.join(', ')}` }, 400);
     }

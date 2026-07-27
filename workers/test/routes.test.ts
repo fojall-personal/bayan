@@ -645,3 +645,57 @@ describe('lesson results explain the mistakes', () => {
     }
   });
 });
+
+describe('the exercise bank exposes all twelve kinds', () => {
+  const KINDS = [
+    'verb_form', 'case_ending', 'root_id', 'pos_id', 'aspect', 'word_meaning',
+    'find_word', 'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
+  ];
+
+  it('accepts every kind the generator emits', async () => {
+    const t = H();
+    for (const kind of KINDS) {
+      const { status, body } = await t.json<{ data: unknown[] }>(
+        `/api/grammar/exercises?kind=${kind}&limit=1`
+      );
+      // The bank is empty in the harness, so an empty list is the expected answer. What
+      // matters is that the kind is not REJECTED — the allowlist in grammar.ts and the
+      // generator's kinds drifted apart once already, and a rejected kind means a filter
+      // the UI offers and the API refuses.
+      expect(status, `${kind} was rejected`).toBe(200);
+      expect(Array.isArray(body.data)).toBe(true);
+    }
+  });
+
+  it('still rejects a kind that does not exist', async () => {
+    const { status, body } = await H().json<{ error: string }>(
+      '/api/grammar/exercises?kind=definitness' // a plausible typo
+    );
+    expect(status).toBe(400);
+    expect(body.error).toMatch(/kind must be one of/);
+  });
+
+  it('grades the new kinds under their own names', async () => {
+    const t = H();
+    // subject_agreement, so mastery is recorded against the kind the learner drilled.
+    t.db
+      .prepare(
+        `INSERT INTO grammar_exercise_bank
+           (id, kind, level, word_arabic, prompt, answer, options, explanation,
+            surah_id, ayah_id, word_index, segment_index)
+         VALUES ('sa-1', 'subject_agreement', 1, 'يَقُولُ', 'Who is the subject?', 'he',
+                 '["he","she","we","they"]', 'Tagged 3MS.', 2, 8, 1, 1)`
+      )
+      .run();
+    const { status } = await t.json('/api/grammar/exercise', {
+      method: 'POST',
+      body: JSON.stringify({ exerciseId: 'sa-1', answer: 'he', correct: true }),
+    });
+    expect(status).toBe(200);
+    const row = t.db
+      .prepare(`SELECT category, correct_attempts FROM grammar_mastery WHERE user_id = ?`)
+      .get(TEST_USER) as { category: string; correct_attempts: number };
+    expect(row.category).toBe('subject_agreement');
+    expect(row.correct_attempts).toBe(1);
+  });
+});

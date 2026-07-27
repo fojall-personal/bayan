@@ -256,6 +256,7 @@ for (const n of notes) process.stdout.write(`  note  ${n}\n`);
   );
   const BANK_KINDS = new Set([
     'aspect', 'case_ending', 'verb_form', 'pos_id', 'root_id', 'word_meaning', 'find_word',
+    'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
   ]);
 
   const mapped = new Map();

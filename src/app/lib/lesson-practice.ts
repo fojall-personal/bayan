@@ -31,7 +31,12 @@ export type PracticeKind =
   | 'pos_id'
   | 'root_id'
   | 'word_meaning'
-  | 'find_word';
+  | 'find_word'
+  | 'definiteness'
+  | 'negation'
+  | 'mood'
+  | 'voice'
+  | 'subject_agreement';
 
 export interface LessonPractice {
   kind: PracticeKind;
@@ -42,9 +47,15 @@ export interface LessonPractice {
 }
 
 export const LESSON_PRACTICE: Record<string, LessonPractice | null> = {
-  // Definiteness is not annotated in the corpus. Part-of-speech drills would look
-  // related and teach something else.
-  'grammar-01': null,
+  // Was null on the belief that definiteness is not annotated. It is: DET on 8,377 prefix
+  // segments. I had checked the `pos` column and never looked at `tag`.
+  'grammar-01': {
+    kind: 'definiteness',
+    label: 'Definite or indefinite',
+    because:
+      'The lesson teaches the article ال, and the corpus marks exactly that — a DET ' +
+      'prefix segment, or INDEF on the stem.',
+  },
 
   'grammar-02': {
     kind: 'aspect',
@@ -58,9 +69,12 @@ export const LESSON_PRACTICE: Record<string, LessonPractice | null> = {
   'grammar-03': null,
 
   'grammar-04': {
-    kind: 'aspect',
-    label: 'Perfect or imperfect',
-    because: 'Same distinction as the past-tense lesson, approached from the other side.',
+    kind: 'mood',
+    label: 'Mood (indicative / subjunctive / jussive)',
+    because:
+      'The present-tense lesson is where mood becomes visible — jussive and subjunctive ' +
+      'only occur on imperfect verbs, governed by a preceding particle. Sharper than ' +
+      'aspect here, which the past-tense lesson already drills.',
   },
 
   'grammar-05': {
@@ -97,9 +111,15 @@ export const LESSON_PRACTICE: Record<string, LessonPractice | null> = {
     because: 'Demonstratives carry their own POS tag, so identification drills reach them.',
   },
 
-  // Negative particles are tagged, but "which particle negates this" is not a question
-  // the bank asks, and pos_id would mostly serve nouns and verbs.
-  'grammar-10': null,
+  // "Which particle negates this" is now a question the bank asks — 651 of them, from
+  // the 2,688 NEG-tagged segments.
+  'grammar-10': {
+    kind: 'negation',
+    label: 'Which word negates',
+    because:
+      'POS:NEG marks the particle, which is what the lesson teaches. The sentence-level ' +
+      'reading is not annotated, so the drill asks about the particle only.',
+  },
 };
 
 /** The practice link target for a lesson, or null when there is nothing honest to offer. */
