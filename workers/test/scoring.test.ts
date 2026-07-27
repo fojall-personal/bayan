@@ -12,7 +12,11 @@ import {
   calculateCompositeScore,
   generateAssessmentResult,
 } from '../src/lib/scoring';
-import { isAnswerCorrect } from '../src/routes/learning';
+import {
+  isAnswerCorrect,
+  expectedAnswerText,
+  givenAnswerText,
+} from '../src/routes/learning';
 import {
   schedule,
   gradeFromAccuracy,
@@ -257,5 +261,50 @@ describe('match exercises', () => {
     // outright, which is why it could never be scored.
     expect('correct' in ex).toBe(false);
     expect(isAnswerCorrect(ex, JSON.stringify(ex.pairs.map((p) => p.answer)))).toBe(true);
+  });
+});
+
+describe('lesson review text', () => {
+  const mc = {
+    type: 'multiple_choice',
+    question: 'Which form means "they (men) wrote"?',
+    options: ['كَتَبْنَ', 'كَتَبْنَا', 'كَتَبُوا', 'كَتَبْتُ'],
+    correct: 2,
+  };
+
+  it('names the option the learner chose, not its index', () => {
+    // "You answered 3" was a database value leaking into the UI.
+    expect(givenAnswerText(mc, 3)).toBe('كَتَبْتُ');
+    expect(givenAnswerText(mc, '3')).toBe('كَتَبْتُ');
+    expect(expectedAnswerText(mc)).toBe('كَتَبُوا');
+  });
+
+  it('reports an unanswered exercise as nothing rather than as a wrong answer', () => {
+    for (const empty of [undefined, null, '']) {
+      expect(givenAnswerText(mc, empty)).toBeNull();
+    }
+  });
+
+  it('renders a match as pairs on both sides', () => {
+    const m = {
+      type: 'match',
+      pairs: [
+        { item: 'كَتَبُوا', answer: 'they (men) wrote' },
+        { item: 'كَتَبْنَا', answer: 'we wrote' },
+      ],
+    };
+    expect(givenAnswerText(m, JSON.stringify(['we wrote', 'they (men) wrote']))).toBe(
+      'we wrote, they (men) wrote'
+    );
+    expect(expectedAnswerText(m)).toBe(
+      'كَتَبُوا → they (men) wrote, كَتَبْنَا → we wrote'
+    );
+    // A partly filled match reads as unanswered rather than as a half-answer.
+    expect(givenAnswerText(m, JSON.stringify(['', '']))).toBeNull();
+  });
+
+  it('falls back to the raw value rather than throwing on junk', () => {
+    expect(givenAnswerText({ type: 'match', pairs: [] }, 'not json')).toBe('not json');
+    expect(expectedAnswerText({ type: 'fill_blank' })).toBeNull();
   });
 });

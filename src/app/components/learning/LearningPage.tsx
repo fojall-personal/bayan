@@ -53,13 +53,38 @@ interface LearningPageProps {
   userId: string;
 }
 
+/**
+ * One exercise's outcome, from the submit response.
+ *
+ * The score alone told the learner nothing actionable: "1 of 2 correct" with no way to
+ * find out which, what the answer was, or why. The grading loop knew all of it and
+ * discarded it, and the `explanation` prose in every exercise had never been read.
+ */
+interface ReviewItem {
+  index: number;
+  type: string;
+  question: string | null;
+  /** Already rendered as readable text by the server. */
+  given: string | null;
+  expected: string | null;
+  correct: boolean;
+  answered: boolean;
+  explanation: string | null;
+}
+
 export function LearningPage({ userId }: LearningPageProps) {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string | number>>({});
-  const [result, setResult] = useState<{ score: number; correct: number; total: number; completed: boolean } | null>(null);
+  const [result, setResult] = useState<{
+    score: number;
+    correct: number;
+    total: number;
+    completed: boolean;
+    review?: ReviewItem[];
+  } | null>(null);
 
   // ?lesson=<id> opens that lesson instead of the next unlocked one.
   //
@@ -303,16 +328,89 @@ export function LearningPage({ userId }: LearningPageProps) {
               <div className="text-3xl font-bold mb-2">
                 {result.score}%
               </div>
-              <div className="text-gray-400 mb-6">
+              <div className="mb-6 text-ground-300">
                 {result.correct} of {result.total} correct
               </div>
-              {result.completed ? (
-                <Button onClick={handleNextLesson}>Next Lesson</Button>
-              ) : (
-                <Button variant="secondary" onClick={fetchNextLesson}>
-                  Try Next Lesson
-                </Button>
+
+              {/* What went wrong, and why.
+                *
+                * Wrong answers first: they are the reason to read this at all. The
+                * explanation is the authored prose that had been stored and never
+                * shown, which is the whole point of the screen. */}
+              {result.review && result.review.length > 0 && (
+                <ul className="mb-6 space-y-3 text-left">
+                  {[...result.review]
+                    .sort((a, b) => Number(a.correct) - Number(b.correct))
+                    .map((item) => (
+                      <li
+                        key={item.index}
+                        className={`rounded-md border p-4 ${
+                          item.correct ? 'border-ground-800' : 'border-error/40'
+                        }`}
+                      >
+                        <div className="flex items-baseline gap-2">
+                          <span
+                            aria-hidden="true"
+                            className={item.correct ? 'text-leaf-400' : 'text-error'}
+                          >
+                            {item.correct ? '✓' : '✗'}
+                          </span>
+                          <p className="text-sm" dir="auto">
+                            {item.question ?? `Exercise ${item.index + 1}`}
+                          </p>
+                        </div>
+
+                        {!item.correct && (
+                          <p className="mt-2 text-sm text-ground-300" dir="auto">
+                            You answered{' '}
+                            <span className="text-arabic text-ground-100" lang="ar">
+                              {item.given ?? 'not answered'}
+                            </span>
+                            {item.expected && (
+                              <>
+                                {' · answer: '}
+                                <span className="text-arabic text-leaf-400" lang="ar">
+                                  {item.expected}
+                                </span>
+                              </>
+                            )}
+                          </p>
+                        )}
+
+                        {item.explanation && (
+                          <p className="mt-2 text-sm text-ground-400" dir="auto">
+                            {item.explanation}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                </ul>
               )}
+
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                {result.completed ? (
+                  <Button onClick={handleNextLesson}>Next Lesson</Button>
+                ) : (
+                  <>
+                    {/* Retrying the SAME lesson is the point when you have just been
+                      * told what you got wrong. The only button used to skip to the
+                      * next one, which is the opposite of what a failed attempt calls
+                      * for. */}
+                    <Button
+                      onClick={() => {
+                        setResult(null);
+                        setAnswers({});
+                        setCurrentExerciseIndex(0);
+                      }}
+                    >
+                      Try this lesson again
+                    </Button>
+                    <Button variant="secondary" onClick={fetchNextLesson}>
+                      Skip to next lesson
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           ) : (
             /* Exercise View */

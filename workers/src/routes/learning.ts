@@ -17,6 +17,8 @@ export interface Exercise {
   options?: string[];
   correct?: string | number;
   pairs?: Array<{ item: string; answer: string }>;
+  /** Authored prose explaining the answer. Stored all along, never shown. */
+  explanation?: string;
 }
 
 /**
@@ -103,6 +105,59 @@ export function isAnswerCorrect(exercise: Exercise, given: unknown): boolean {
   }
 
   return false;
+}
+
+/**
+ * The right answer, as text a learner can read.
+ *
+ * Each type stores its key differently: multiple choice holds an option INDEX, fill
+ * in the blank holds the string, and match holds `pairs`. Returning the raw `correct`
+ * would show "2" for a multiple choice, which tells the learner nothing.
+ */
+export function expectedAnswerText(exercise: Exercise): string | null {
+  if (exercise.type === 'match') {
+    if (!exercise.pairs?.length) return null;
+    return exercise.pairs.map((p) => `${p.item} → ${p.answer}`).join(', ');
+  }
+  if (exercise.correct === undefined || exercise.correct === null) return null;
+  if (exercise.type === 'multiple_choice') {
+    const idx = Number(exercise.correct);
+    return exercise.options?.[idx] ?? String(exercise.correct);
+  }
+  return String(exercise.correct);
+}
+
+/**
+ * What the learner answered, as text they can read.
+ *
+ * Multiple choice travels as an option INDEX, so the review screen showed "You
+ * answered 3" — a database value leaking into the UI, the same class of defect as the
+ * raw Buckwalter on /read and the always-1 masteryLevel. Resolved here because this is
+ * where the options are; the client should not need the answer key to describe an
+ * answer.
+ */
+export function givenAnswerText(exercise: Exercise, given: unknown): string | null {
+  if (given === undefined || given === null || given === '') return null;
+  if (exercise.type === 'match') {
+    try {
+      const chosen = typeof given === 'string' ? JSON.parse(given) : given;
+      if (Array.isArray(chosen)) {
+        const filled = chosen.filter((v) => typeof v === 'string' && v.length > 0);
+        return filled.length > 0 ? filled.join(', ') : null;
+      }
+    } catch {
+      return String(given);
+    }
+    return String(given);
+  }
+  if (exercise.type === 'multiple_choice') {
+    const idx = typeof given === 'number' ? given : Number(given);
+    if (Number.isInteger(idx) && exercise.options?.[idx] !== undefined) {
+      return exercise.options[idx];
+    }
+    return String(given);
+  }
+  return String(given);
 }
 
 export const learningRoutes = new Hono<AppEnv>();
@@ -311,6 +366,25 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
     let correctCount = 0;
     let gradedCount = 0;
 
+    /**
+     * What happened on each exercise, so the learner can be told.
+     *
+     * The loop already knew this and threw it away: the response carried a score and
+     * nothing else, so "1 of 2 correct" left no way to find out WHICH one, what the
+     * right answer was, or why. Every exercise in the content carries an
+     * `explanation` that was written, stored, and never read after grading.
+     */
+    const review: Array<{
+      index: number;
+      type: string;
+      question: string | null;
+      given: string | null;
+      expected: string | null;
+      correct: boolean;
+      answered: boolean;
+      explanation: string | null;
+    }> = [];
+
     for (let i = 0; i < exercises.length; i++) {
       const exercise = exercises[i];
       const given = responses[i];
@@ -322,8 +396,38 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
       // graded now (against `pairs`, all-or-nothing), so the skip is gone and a
       // three-exercise lesson is scored out of three.
       gradedCount++;
-      if (isAnswerCorrect(exercise, given)) correctCount++;
+      const ok = isAnswerCorrect(exercise, given);
+      if (ok) correctCount++;
+      review.push({
+        index: i,
+        type: exercise.type,
+        question: exercise.question ?? null,
+        given: givenAnswerText(exercise, given),
+        expected: expectedAnswerText(exercise),
+        correct: ok,
+        answered: true,
+        explanation: exercise.explanation ?? null,
+      });
     }
+
+    // Skipped exercises are reported too, marked unanswered rather than wrong. An
+    // exercise the learner never reached is not a mistake they made.
+    for (let i = 0; i < exercises.length; i++) {
+      if (review.some((r) => r.index === i)) continue;
+      const exercise = exercises[i];
+      if (!exercise) continue;
+      review.push({
+        index: i,
+        type: exercise.type,
+        question: exercise.question ?? null,
+        given: givenAnswerText(exercise, responses[i]),
+        expected: expectedAnswerText(exercise),
+        correct: false,
+        answered: false,
+        explanation: exercise.explanation ?? null,
+      });
+    }
+    review.sort((a, b) => a.index - b.index);
 
     const totalExercises = gradedCount;
     const finalScore = totalExercises > 0 ? Math.round((correctCount / totalExercises) * 100) : 0;
@@ -379,6 +483,8 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
         correct: correctCount,
         total: totalExercises,
         completed: isCompleted,
+        // Per-exercise outcomes, so the result screen can say which ones and why.
+        review,
       },
     });
   } catch (error) {
