@@ -293,7 +293,7 @@ pages render, the database has 6,236 Quran verses and 77K morphology rows.
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |
 | Cloudflare Access | ✅ Enforcing — every path 302s to the login |
-| Grammar (corpus-derived) | ✅ 4,950 graded exercises, all 25 (kind, level) buckets full, 114/114 surahs; results recorded per exercise kind |
+| Grammar (corpus-derived) | ✅ 17,206 graded exercises, all 35 (kind, level) buckets full, 114/114 surahs; results recorded per exercise kind |
 | Memorization curriculum | ✅ 908 ordered units across all 114 surahs |
 | Content correctness | ✅ Gated in CI; 14 seeded defects all caught |
 | Design system | ✅ Generated from globals.css, published to claude.ai/design, drift gated |
@@ -334,7 +334,7 @@ microphone capture cannot be verified headlessly.
 | F6 | Tajweed track | ✅ rule reference, per-rule mastery, ten colours all ≥4.5:1 |
 | F7 | Progress | ✅ weekly activity calendar and coverage — ayahs readable from known roots. No daily streak counter: the helper that computed one had no caller and was removed |
 | F8 | Tutor | ✅ rewritten as corpus lookups; it refuses rather than inventing Arabic |
-| F9 | Root families | ✅ 4,950 derived exercises, all 25 (kind, level) buckets full, and answers now recorded — mastery per exercise kind shows on /progress |
+| F9 | Root families | ✅ 17,206 derived exercises, all 35 (kind, level) buckets full, and answers now recorded — mastery per exercise kind shows on /progress |
 
 **Next:** have a human read the ten grammar lessons. That is the only remaining risk
 no gate can cover — every mechanical claim in them is checked (sun/moon membership,

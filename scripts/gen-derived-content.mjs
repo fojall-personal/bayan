@@ -303,7 +303,13 @@ for (const s of segments) {
 // and payload size rather than scarcity. Buckets that cannot fill report short
 // instead of being padded — level 5 verb_form is genuinely thin because rare
 // roots do not supply enough whole-word verbs.
-const PER_BUCKET = 150;
+// Items per (kind, level) bucket.
+//
+// Configurable because the right number is a question about the corpus, not a constant:
+// raising it until buckets report short is how you find where the annotation runs out.
+// 150 gave 3,750 derived items across 25 buckets with every bucket full, so there was
+// clearly headroom.
+const PER_BUCKET = Number(process.env.PER_BUCKET ?? 150);
 
 /**
  * Round-robin over surahs instead of taking the head of the list.

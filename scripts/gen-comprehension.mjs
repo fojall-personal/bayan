@@ -343,7 +343,10 @@ for (const [key, group] of byAyah) {
 // head of an ordered list where a spread was needed.
 //
 // Round-robin over surahs instead. Deterministic, so reruns are reproducible.
-const PER_BUCKET = 120;
+// Configurable for the same reason as the morphology generator: the ceiling is a
+// property of the gloss data, and raising it until buckets report short is how you find
+// where it sits.
+const PER_BUCKET = Number(process.env.COMPREHENSION_PER_BUCKET ?? 120);
 
 function spreadAcrossSurahs(items, cap) {
   const queues = new Map();

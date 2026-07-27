@@ -82,6 +82,12 @@ jobs:
       - name: Assert the generated DB row types match the migrations
         run: node scripts/gen-db-types.mjs --check
 
+      # "4,950 derived exercises" was written into five places by hand, so raising the
+      # bank to 17,206 left every one of them lying. The manifest records what was
+      # actually ingested and this holds the prose to it.
+      - name: Assert the documented content counts match what shipped
+        run: node scripts/gen-content-manifest.mjs --check
+
       # 39 tests over grading, scoring, the SM-2 scheduler and the Quran ingest
       # alignment gate. Every case corresponds to a bug that shipped or a
       # behaviour previously checked only by hand. Adding them found a live one:
