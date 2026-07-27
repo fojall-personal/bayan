@@ -203,6 +203,40 @@ jobs:
       # failing the build is a step nobody notices is broken, which is the failure this
       # comment exists to prevent.
 
+      # TEMPORARY DIAGNOSTIC — remove after reading the result.
+      #
+      # Distinguishes two explanations for the earlier failure. `d1 execute --file` uses
+      # the IMPORT api (/d1/database/:id/import); `--command` uses the QUERY api. The
+      # failure was on /import specifically, so either the token has no D1 write at all,
+      # or it has query access and import needs more. If the query below succeeds, the
+      # seeding can be done without changing any token.
+      - name: DIAGNOSTIC probe D1 query access
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers
+          command: d1 execute languagebuilder --remote --command "SELECT COUNT(*) AS lessons FROM lessons;" -y
+
+      # Second probe: a WRITE via the query api rather than the import api.
+      - name: DIAGNOSTIC probe D1 write via query api
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers
+          command: d1 execute languagebuilder --remote --command "UPDATE lessons SET updated_at = updated_at WHERE id = 'grammar-01';" -y
+
       - name: Deploy to Cloudflare Pages
         if: github.event_name != 'pull_request'
         uses: cloudflare/wrangler-action@v3
