@@ -646,10 +646,11 @@ describe('lesson results explain the mistakes', () => {
   });
 });
 
-describe('the exercise bank exposes all twelve kinds', () => {
+describe('the exercise bank exposes all sixteen kinds', () => {
   const KINDS = [
     'verb_form', 'case_ending', 'root_id', 'pos_id', 'aspect', 'word_meaning',
     'find_word', 'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
+    'word_role', 'relative_pronoun', 'demonstrative', 'conditional',
   ];
 
   it('accepts every kind the generator emits', async () => {

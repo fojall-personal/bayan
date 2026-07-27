@@ -36,7 +36,11 @@ export type PracticeKind =
   | 'negation'
   | 'mood'
   | 'voice'
-  | 'subject_agreement';
+  | 'subject_agreement'
+  | 'word_role'
+  | 'relative_pronoun'
+  | 'demonstrative'
+  | 'conditional';
 
 export interface LessonPractice {
   kind: PracticeKind;
@@ -106,9 +110,11 @@ export const LESSON_PRACTICE: Record<string, LessonPractice | null> = {
   },
 
   'grammar-09': {
-    kind: 'pos_id',
-    label: 'Identify the part of speech',
-    because: 'Demonstratives carry their own POS tag, so identification drills reach them.',
+    kind: 'demonstrative',
+    label: 'Which word is the demonstrative',
+    because:
+      'Exact now. DEM has its own drill, so this no longer has to settle for the generic ' +
+      'part-of-speech question that merely happened to include demonstratives.',
   },
 
   // "Which particle negates this" is now a question the bank asks — 651 of them, from

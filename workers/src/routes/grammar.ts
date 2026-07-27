@@ -274,6 +274,7 @@ grammarRoutes.get('/exercises', async (c) => {
     const allowed = [
       'verb_form', 'case_ending', 'root_id', 'pos_id', 'aspect', 'word_meaning',
       'find_word', 'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
+      'word_role', 'relative_pronoun', 'demonstrative', 'conditional',
     ];
     if (!allowed.includes(kind)) {
       return c.json({ error: `kind must be one of ${allowed.join(', ')}` }, 400);

@@ -1074,6 +1074,75 @@ levels shape the lesson path. It just does not get to invent a vocabulary.</p>`,
   'Twelve sampled roots, a minute of work, and a bulk seed the learner opts into.'
 ), 'utf-8');
 
+await writeFile(join(OUT, 'preview/spec-word-role-kinds.html'), shell(
+  'Spec — four kinds from the remaining POS tags, not eight', 'Product',
+  `<p style="max-width:66ch">Eight tagged classes had volume and no dedicated drill:
+REL, PRON, ACC, T, DEM, COND, LOC, INTG. Reachable only through <code>pos_id</code>, which
+asks the generic "what part of speech is this".</p>
+
+<p class="note" style="border-color:${colour('color-error')}">The obvious build is eight
+"which word is the X in this ayah" kinds. That would be padding: eight near-identical
+questions, each answerable by elimination once you know the other seven words are not
+particles. Volume is not the same as teaching.</p>
+
+<h2>The question that discriminates</h2>
+<p style="max-width:66ch">A learner meeting ٱلَّذِينَ needs to know it is a relative
+pronoun — not that one exists somewhere nearby. So the main new kind gives the word and
+asks its role, with the other roles as options:</p>
+
+<div style="max-width:520px;background:${colour('ground-900')};
+ border:1px solid ${colour('ground-800')};border-radius:${tokens.get('radius-lg')};padding:20px">
+  <p style="margin:0 0 4px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;
+   color:var(--muted)">Word role · level 2</p>
+  <p class="ar" style="font-size:2.2rem;text-align:center;margin:14px 0 4px">ٱلَّذِينَ</p>
+  <p style="text-align:center;color:var(--muted);font-size:.78rem;margin:0 0 16px">2:6</p>
+  ${[['Relative pronoun', true], ['Demonstrative', false], ['Conditional particle', false],
+     ['Interrogative', false]].map(([o, ok]) => `
+  <div style="border:1px solid ${ok ? colour('leaf-500') : colour('ground-800')};
+   border-radius:${tokens.get('radius-md')};padding:9px 12px;margin-bottom:7px;font-size:.9rem">
+    ${o}${ok ? ` <span style="float:right;color:${colour('leaf-400')};font-size:.72rem">✓</span>` : ''}
+  </div>`).join('')}
+  <p style="margin:12px 0 0;font-size:.75rem;color:var(--muted)">Eight roles in the pool,
+  four shown: relative pronoun, demonstrative, conditional, interrogative, negation,
+  accusative particle, time adverb, place adverb.</p>
+</div>
+
+<h2>Four kinds</h2>
+<table style="border-collapse:collapse;font-size:.85rem;max-width:660px">
+  <tr style="text-align:left;color:var(--muted)">
+    <th style="padding:6px 14px 6px 0">Kind</th><th style="padding:6px 14px 6px 0">Pool</th>
+    <th style="padding:6px 0">Why it earns its place</th></tr>
+  ${[
+    ['word_role', '~6,500', 'the discriminating question, across all eight classes'],
+    ['relative_pronoun', '2,202', 'spotting الذي in a long ayah is its own skill'],
+    ['demonstrative', '773', 'gives grammar-09 a sharper drill than pos_id'],
+    ['conditional', '403', 'إن and لو change the mood of what follows'],
+  ].map(([k, n, why]) => `<tr>
+      <td style="padding:5px 14px 5px 0"><code>${k}</code></td>
+      <td style="padding:5px 14px 5px 0;color:var(--muted)">${n}</td>
+      <td style="padding:5px 0">${why}</td></tr>`).join('')}
+</table>
+
+<p class="note">PRON, ACC, T, LOC and INTG get no find-the-word kind of their own. They are
+in <code>word_role</code>, which is where they teach something; a separate "which word is
+the time adverb" would be the padding this spec exists to avoid.</p>
+
+<h2>Rules these follow</h2>
+<ul style="max-width:66ch">
+  <li><strong>One find-in-ayah implementation, not four.</strong> The negation kind already
+  does this — pick the tagged word, distractors from its neighbours, deduplicated on the
+  RENDERED string because different Buckwalter renders identically. That logic moves into a
+  helper the new kinds share, rather than being copied and drifting.</li>
+  <li><strong>Whole words only, as everywhere else.</strong> That halves REL and cuts PRON
+  from 3,301 to 840, because attached pronouns are suffixes rather than words — which is
+  itself the reason PRON gets no find-the-word kind.</li>
+  <li><strong>Distractors must be plausible.</strong> In word_role they are other real
+  roles; in the find kinds they are other words from the same ayah. A distractor nobody
+  could pick teaches nothing.</li>
+</ul>`,
+  'Eight tagged classes, four kinds. Volume is not the same as teaching.'
+), 'utf-8');
+
 await writeFile(join(OUT, 'preview/spec-new-exercise-kinds.html'), shell(
   'Spec — five exercise kinds from annotation already ingested', 'Product',
   `<p style="max-width:66ch">The exercise generator reads five fields out of the corpus.

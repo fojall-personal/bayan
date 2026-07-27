@@ -442,44 +442,148 @@ for (const s of segments) {
   });
 }
 
-// ── 9. Negation ────────────────────────────────────────────────────────────
+// ── 9. Find-the-word kinds: negation, relative pronoun, demonstrative, conditional ──
 //
-// Asks which word does the negating, not whether the sentence is negative: the tag marks
-// the PARTICLE, and the sentence-level reading is not annotated. Distractors are other
-// particles from the same ayah where possible, so the question is about recognising the
-// negator rather than spotting the odd word out.
+// One implementation, four kinds. The negation version came first and the other three
+// would have been copies of it — same tagged-word lookup, same neighbour distractors, same
+// dedupe on the RENDERED string because different Buckwalter renders identically once
+// diacritics map. Four copies is four places for that dedupe to be forgotten.
+//
+// Every one asks which word in the ayah does a job, and the distractors are its own
+// neighbours, so the question is about recognising the word rather than spotting the odd
+// one out of a list assembled from elsewhere.
+/**
+ * Every word of every ayah, reassembled, for use as a DISTRACTOR.
+ *
+ * Distractors do not have to be single-segment. The whole-word rule exists so the word
+ * being ASKED about is never a fragment like سْمِ — a distractor rendered as its complete
+ * word is perfectly fair, and restricting them to single-segment words was starving the
+ * find-the-word kinds: relative_pronoun came out at 652 of 2,202 available, because many
+ * ayahs simply do not contain three single-segment words besides the answer.
+ */
 const wordsByAyah = new Map();
-for (const s of segments) {
-  if (!isWholeWord(s)) continue;
-  const k = `${s.surah}:${s.ayah}`;
-  if (!wordsByAyah.has(k)) wordsByAyah.set(k, []);
-  wordsByAyah.get(k).push(s);
-}
-for (const s of segments) {
-  if (s.pos !== 'NEG') continue;
-  const answer = toArabic(s.form);
-  // Deduplicated by RENDERED form, not by position: an ayah repeats words, so two
-  // distractors could otherwise be the same word twice — or the same as the answer,
-  // which would make the question unanswerable rather than merely odd.
-  const seenForm = new Set([answer]);
-  const neighbours = [];
-  for (const o of wordsByAyah.get(`${s.surah}:${s.ayah}`) ?? []) {
-    if (o.word === s.word || !o.form || o.pos === 'NEG') continue;
-    const rendered = toArabic(o.form);
-    if (seenForm.has(rendered)) continue;
-    seenForm.add(rendered);
-    neighbours.push(o);
+{
+  const byWord = new Map();
+  for (const seg of segments) {
+    const wk = `${seg.surah}:${seg.ayah}:${seg.word}`;
+    if (!byWord.has(wk)) byWord.set(wk, []);
+    byWord.get(wk).push(seg);
   }
-  if (neighbours.length < 3) continue;
-  const picks = seededShuffle(neighbours, `neg${s.surah}${s.ayah}${s.word}`).slice(0, 3);
-  add('negation', s, {
+  for (const [wk, group] of byWord) {
+    const sorted = [...group].sort((a, b) => a.seg - b.seg);
+    const [surah, ayah, word] = wk.split(':').map(Number);
+    const k = `${surah}:${ayah}`;
+    if (!wordsByAyah.has(k)) wordsByAyah.set(k, []);
+    wordsByAyah.get(k).push({
+      surah, ayah, word,
+      // The complete word, so a multi-segment neighbour reads correctly.
+      rendered: sorted.map((x) => toArabic(x.form)).join(''),
+      // Any segment's POS is enough to exclude a neighbour that shares the answer's role.
+      roles: new Set(sorted.map((x) => x.pos).filter(Boolean)),
+    });
+  }
+}
+
+/**
+ * @param kind      bank kind
+ * @param pos       the POS tag that marks the answer
+ * @param prompt    (surah, ayah) => question text
+ * @param explain   (arabic, surah, ayah) => explanation
+ */
+function addFindInAyah(kind, pos, prompt, explain) {
+  for (const s of segments) {
+    if (s.pos !== pos) continue;
+    const answer = toArabic(s.form);
+    // Deduplicated by rendered form, not by position: an ayah repeats words, so two
+    // distractors could otherwise be the same word — or the same as the answer, which
+    // makes the question unanswerable rather than merely odd.
+    const seenForm = new Set([answer]);
+    const neighbours = [];
+    for (const o of wordsByAyah.get(`${s.surah}:${s.ayah}`) ?? []) {
+      // Excluded if it shares the role being asked about — otherwise the question has two
+      // right answers, which is worse than having too few options.
+      if (o.word === s.word || !o.rendered || o.roles.has(pos)) continue;
+      if (seenForm.has(o.rendered)) continue;
+      seenForm.add(o.rendered);
+      neighbours.push(o);
+    }
+    if (neighbours.length < 3) continue;
+    const picks = seededShuffle(neighbours, `${kind}${s.surah}${s.ayah}${s.word}`).slice(0, 3);
+    add(kind, s, {
+      level: levelFromForm(s.form),
+      prompt: prompt(s.surah, s.ayah),
+      answer,
+      options: [answer, ...picks.map((o) => o.rendered)],
+      explanation: explain(answer, s.surah, s.ayah),
+    });
+  }
+}
+
+addFindInAyah(
+  'negation',
+  'NEG',
+  (su, ay) => `Which word negates the statement in ${su}:${ay}?`,
+  (w, su, ay) =>
+    `${w} is tagged NEG in the corpus at ${su}:${ay}. The others carry their own parts ` +
+    'of speech and do not negate.'
+);
+addFindInAyah(
+  'relative_pronoun',
+  'REL',
+  (su, ay) => `Which word is the relative pronoun in ${su}:${ay}?`,
+  (w, su, ay) =>
+    `${w} at ${su}:${ay} is tagged REL — it introduces a clause describing something ` +
+    'already named, the way "which" or "who" does in English.'
+);
+addFindInAyah(
+  'demonstrative',
+  'DEM',
+  (su, ay) => `Which word is the demonstrative in ${su}:${ay}?`,
+  (w, su, ay) =>
+    `${w} at ${su}:${ay} is tagged DEM — it points at something, as "this" and "that" do.`
+);
+addFindInAyah(
+  'conditional',
+  'COND',
+  (su, ay) => `Which word makes ${su}:${ay} conditional?`,
+  (w, su, ay) =>
+    `${w} at ${su}:${ay} is tagged COND. A conditional particle also governs what ` +
+    'follows it, which is why the verb after one is often jussive.'
+);
+
+// ── 9b. Word role ──────────────────────────────────────────────────────────
+//
+// The question the find-the-word kinds cannot ask. A learner meeting ٱلَّذِينَ needs to
+// know it IS a relative pronoun, not that one exists somewhere in the ayah — and telling
+// a relative pronoun from a demonstrative from a conditional is the actual difficulty.
+//
+// Eight roles, four options per question, so the distractors are always other real roles.
+const ROLE_LABEL = {
+  REL: 'Relative pronoun',
+  DEM: 'Demonstrative',
+  COND: 'Conditional particle',
+  INTG: 'Interrogative',
+  NEG: 'Negation',
+  ACC: 'Accusative particle',
+  T: 'Time adverb',
+  LOC: 'Place adverb',
+};
+const ROLE_KEYS = Object.keys(ROLE_LABEL);
+for (const s of segments) {
+  if (!s.pos || !ROLE_LABEL[s.pos]) continue;
+  const answer = ROLE_LABEL[s.pos];
+  const others = seededShuffle(
+    ROLE_KEYS.filter((r) => r !== s.pos).map((r) => ROLE_LABEL[r]),
+    `role${s.surah}${s.ayah}${s.word}`
+  ).slice(0, 3);
+  add('word_role', s, {
     level: levelFromForm(s.form),
-    prompt: `Which word negates the statement in ${s.surah}:${s.ayah}?`,
+    prompt: `What role does ${toArabic(s.form)} play in ${s.surah}:${s.ayah}?`,
     answer,
-    options: [answer, ...picks.map((o) => toArabic(o.form))],
+    options: [answer, ...others],
     explanation:
-      `${answer} is tagged NEG in the corpus at ${s.surah}:${s.ayah}. The others carry ` +
-      'their own parts of speech and do not negate.',
+      `The corpus tags ${toArabic(s.form)} at ${s.surah}:${s.ayah} as ${s.pos} — ` +
+      `${answer.toLowerCase()}.`,
   });
 }
 
