@@ -4,7 +4,7 @@
  * ── Why this is a map and not a rule ────────────────────────────────────────
  *
  * The ten authored lessons carry 21 exercises between them — 2.1 each, against a gate
- * floor of 2. The derived bank next to them is a 30,053-item graded bank, every one
+ * floor of 2. The derived bank next to them is a 37,230-item graded bank, every one
  * traceable to a corpus row. Connecting the two multiplies the practice available without
  * adding a line of hand-authored Arabic, which matters because hand-authored Arabic is how
  * a moon letter ended up in the sun-letter list.
@@ -47,7 +47,14 @@ export type PracticeKind =
   | 'relative_pronoun'
   | 'demonstrative'
   | 'conditional'
-  | 'sentence_type';
+  | 'sentence_type'
+  // From the treebank's syntax layer — what a word DOES, not what it is.
+  | 'mubtada_khabar'
+  | 'subject_word'
+  | 'object'
+  | 'idafa'
+  | 'derived_noun'
+  | 'fronting';
 
 export interface LessonPractice {
   kind: PracticeKind;
@@ -76,19 +83,23 @@ export const LESSON_PRACTICE: Record<string, LessonPractice | null> = {
       'distinction the corpus records.',
   },
 
-  // Predication — which word is the مبتدأ and which the خبر — still has no corpus
-  // counterpart, and this was null for a year on that basis. The mistake was reading the
-  // lesson's TITLE and not its first sentence: "Arabic sentences begin with either a noun
-  // or a verb." That is a claim about the opening word's part of speech, which the corpus
-  // records for all 77,429 of them. The drill asks it and asks nothing further.
+  // Predication IS annotated after all — just not in the corpus this app started from.
+  //
+  // This entry was null on the grounds that nothing marks مبتدأ and خبر, then became
+  // sentence_type on the narrower ground that the opening word's part of speech is
+  // recorded. Both were true of Kais Dukes' morphology v0.4. Neither is true of the field:
+  // the Extended Quranic Treebank marks Pred on 4,399 tokens, and 2:2 resolves exactly as
+  // a grammarian would — ذَٰلِكَ the مبتدأ, ٱلْكِتَٰبُ its بدل, هُدًى the خبر.
+  //
+  // So the lesson now drills the thing it is named after. sentence_type remains a good
+  // kind and covers the lesson's opening claim; this covers its subject.
   'grammar-03': {
-    kind: 'sentence_type',
-    label: 'Nominal or verbal sentence',
+    kind: 'mubtada_khabar',
+    label: 'Which word is the predicate (خبر)',
     because:
-      "The lesson opens by dividing sentences by what they begin with, and POS on word 1 " +
-      'decides that exactly. It does NOT drill مبتدأ/خبر — the generator excludes every ' +
-      'case where the opening word could be an object, a prefixed particle, or a كان ' +
-      'sister, so nothing here rests on predication being annotated. It is not.',
+      'Exact. The lesson teaches مبتدأ + خبر and the treebank marks the خبر, cross-checked ' +
+      'against the nominative case the morphology records independently — a question that ' +
+      'was impossible here until a second source supplied the syntax.',
   },
 
   'grammar-04': {
@@ -106,12 +117,15 @@ export const LESSON_PRACTICE: Record<string, LessonPractice | null> = {
     because: 'An exact match: the lesson is i\'rab and the kind is the case the corpus records.',
   },
 
+  // Was case_ending, chosen because "the bank has no idafa-specific kind". It has one now:
+  // Poss on 9,807 tokens, of which 3,312 also carry the genitive the morphology records.
   'grammar-06': {
-    kind: 'case_ending',
-    label: 'Case endings in construct',
+    kind: 'idafa',
+    label: 'Which word is the مضاف إليه',
     because:
-      'Idafa governs the genitive, so case-ending drills exercise the thing the lesson ' +
-      'is about, even though the bank has no idafa-specific kind.',
+      'Exact, where this used to settle for generic case endings. The treebank marks the ' +
+      'إضافة relation itself, so the question is about the construction the lesson teaches ' +
+      'rather than about the genitive it happens to cause.',
   },
 
   'grammar-07': {

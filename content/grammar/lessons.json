@@ -64,7 +64,8 @@
         "correct": "الْكِتَابُ",
         "explanation": "ك is a moon letter, so the ل is pronounced."
       }
-    ]
+    ],
+    "category": "nahw"
   },
   {
     "id": "grammar-02",
@@ -137,7 +138,8 @@
         "correct": 1,
         "explanation": "كَتَبْنَا is “we wrote”. Note that ـْنَ alone — كَتَبْنَ — is “they (women) wrote”, so the final alif matters."
       }
-    ]
+    ],
+    "category": "sarf"
   },
   {
     "id": "grammar-03",
@@ -192,7 +194,8 @@
         "correct": 1,
         "explanation": "A nominal sentence is مبتدأ (subject) + خبر (predicate). فعل and فاعل belong to a verbal sentence."
       }
-    ]
+    ],
+    "category": "nahw"
   },
   {
     "id": "grammar-04",
@@ -238,7 +241,8 @@
         "correct": 0,
         "explanation": "The نـ prefix marks “we”. يـ is “he”, تـ is “you” or “she”, and أـ is “I”."
       }
-    ]
+    ],
+    "category": "sarf"
   },
   {
     "id": "grammar-05",
@@ -300,7 +304,8 @@
         "explanation": "إِلَى is a preposition, and a noun after a preposition is genitive (مجرور) — marked with a kasra.",
         "quranic": false
       }
-    ]
+    ],
+    "category": "nahw"
   },
   {
     "id": "grammar-06",
@@ -363,7 +368,8 @@
         "correct": 1,
         "explanation": "المضاف never takes ال. That is how you recognise the construction."
       }
-    ]
+    ],
+    "category": "nahw"
   },
   {
     "id": "grammar-07",
@@ -430,7 +436,8 @@
         "correct": 0,
         "explanation": "رَبِّكَ is the stem رَبِّ (“Lord”) plus the attached pronoun كَ (“your”). Attached pronouns are always the ending."
       }
-    ]
+    ],
+    "category": "nahw"
   },
   {
     "id": "grammar-08",
@@ -493,7 +500,8 @@
         "correct": 1,
         "explanation": "An unmarked verb is Form I. Reading that as “unknown” would drop the commonest form entirely."
       }
-    ]
+    ],
+    "category": "sarf"
   },
   {
     "id": "grammar-09",
@@ -556,7 +564,8 @@
         "correct": 0,
         "explanation": "تِلْكَ is the far feminine singular. هَٰذِهِ is its near counterpart, and ذَٰلِكَ is far but masculine."
       }
-    ]
+    ],
+    "category": "nahw"
   },
   {
     "id": "grammar-10",
@@ -623,6 +632,7 @@
         "correct": 1,
         "explanation": "لَنْ negates the future and governs the subjunctive."
       }
-    ]
+    ],
+    "category": "nahw"
   }
 ]

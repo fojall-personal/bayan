@@ -83,6 +83,7 @@ export interface LessonsRow {
   exercises: string;
   prerequisites: string;
   estimated_minutes: number;
+  category: string | null;
 }
 
 export interface MemorizationRow {
@@ -125,6 +126,22 @@ export interface QuizAttemptsRow {
   questions_correct: number;
   time_seconds: number | null;
   completed_at: string;
+}
+
+export interface QuranSyntaxRow {
+  sentence_id: number;
+  token_index: number;
+  head_index: number | null;
+  surah_id: number;
+  ayah_id: number;
+  word_index: number;
+  segment_index: number;
+  rel: string | null;
+  rel_ar: string | null;
+  constituent: string | null;
+  derived_noun: string | null;
+  token: string | null;
+  is_implied: number;
 }
 
 export interface QuranVersesRow {

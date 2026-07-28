@@ -79,7 +79,7 @@ const list = endpoints
 /** Notes worth keeping beside a path. Only for things a reader cannot infer. */
 const NOTES = {
   '/api/grammar/root/:root': 'corpus-derived root family, Arabic script',
-  '/api/grammar/exercises': '30,053-item graded bank; ?level=1-5 &kind=',
+  '/api/grammar/exercises': '37,230-item graded bank; ?level=1-5 &kind=',
   '/api/tutor/history': 'last 50 turns; the chat restores the most recent three',
   '/api/tutor/suggested-exercises': 'weak lessons by accuracy over answered questions',
   '/api/memorization/curriculum': '908 ordered units; ?level=1-6 &limit &offset',
@@ -178,7 +178,17 @@ const apiOrphans = list
     // orphans, most of which are called: a detector that cries wolf is worse than
     // none.
     const prefix = e.path.split('/:')[0];
-    return !allSource.includes(prefix);
+    // The match must END at a URL boundary, or a bare path is shadowed by any
+    // parameterised sibling that shares it. `/api/learning/lessons` counted as called
+    // because `/api/learning/lessons/${id}` contains it as a substring — so an endpoint
+    // returning 821 KB with no caller was structurally invisible to this check for as
+    // long as it existed. A path that IS a prefix of a real call site now has to appear
+    // followed by a quote, a backtick, a query string, or a closing brace.
+    if (e.path.includes('/:')) return !allSource.includes(prefix);
+    const boundary = new RegExp(
+      prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + String.raw`(?=[?'"\`\s)}]|$)`
+    );
+    return !boundary.test(allSource);
   })
   .map((e) => `${e.method} ${e.path}`);
 

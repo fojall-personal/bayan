@@ -37,7 +37,6 @@ const GETS: [path: string, note: string][] = [
   ['/api/grammar/mastery', 'no attempts yet'],
   ['/api/grammar/deepdive/nahw', 'a known category'],
   ['/api/grammar/root/ktb', 'a root absent from an empty corpus'],
-  ['/api/learning/lessons', 'no lessons seeded'],
   ['/api/learning/next', 'nothing unlocked yet'],
   ['/api/learning/flashcards', 'empty queue'],
   ['/api/memorization/surahs', 'nothing tracked'],
@@ -646,11 +645,13 @@ describe('lesson results explain the mistakes', () => {
   });
 });
 
-describe('the exercise bank exposes all seventeen kinds', () => {
+describe('the exercise bank exposes all twenty-three kinds', () => {
   const KINDS = [
     'verb_form', 'case_ending', 'root_id', 'pos_id', 'aspect', 'word_meaning',
     'find_word', 'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
     'word_role', 'relative_pronoun', 'demonstrative', 'conditional', 'sentence_type',
+    // From the treebank's syntax layer.
+    'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting',
   ];
 
   it('accepts every kind the generator emits', async () => {
@@ -725,5 +726,86 @@ describe('the exercise bank exposes all seventeen kinds', () => {
     expect(body.data).toHaveLength(1);
     expect(body.data[0].word).toBe('');
     expect(body.data[0].options).toHaveLength(4);
+  });
+
+  it('grades a treebank-derived kind against its own category', async () => {
+    const t = H();
+    // mubtada_khabar is the kind that exists only because a second corpus supplied the
+    // syntax. Mastery must record under its own name, not fold into case_ending, or
+    // /progress would report predication practice as case practice.
+    t.db
+      .prepare(
+        `INSERT INTO grammar_exercise_bank
+           (id, kind, level, word_arabic, prompt, answer, options, explanation,
+            surah_id, ayah_id, word_index, segment_index)
+         VALUES ('mk-1', 'mubtada_khabar', 1,
+                 'ذَٰلِكَ ٱلْكِتَٰبُ لَا رَيْبَ فِيهِ هُدًى لِّلْمُتَّقِينَ',
+                 'Which word is the predicate (خبر) in 2:2?', 'هُدًى',
+                 '["هُدًى","ذَٰلِكَ","رَيْبَ","فِيهِ"]',
+                 'Marked Pred and nominative.', 2, 2, 6, 1)`
+      )
+      .run();
+    const { status } = await t.json('/api/grammar/exercise', {
+      method: 'POST',
+      body: JSON.stringify({ exerciseId: 'mk-1', answer: 'هُدًى', correct: true }),
+    });
+    expect(status).toBe(200);
+    const row = t.db
+      .prepare(`SELECT category FROM grammar_mastery WHERE user_id = ?`)
+      .get(TEST_USER) as { category: string };
+    expect(row.category).toBe('mubtada_khabar');
+  });
+});
+
+describe('the deep-dive categories are three different things', () => {
+  // Before lessons.category existed, the endpoint took a category, used it for the
+  // mastery lookup, and queried `module = 'grammar'` — so all three tabs returned every
+  // lesson, 823 KB each, and Rhetoric returned 418 lessons containing no rhetoric.
+  const seed = (t: ReturnType<typeof H>) => {
+    for (const [id, category] of [
+      ['grammar-01', 'nahw'],
+      ['grammar-02', 'sarf'],
+      ['root-ktb', null],
+    ] as const) {
+      t.db
+        .prepare(
+          `INSERT INTO lessons (id, title, module, level, content, exercises,
+             prerequisites, estimated_minutes, category)
+           VALUES (?, ?, 'grammar', 1, '{}', '[]', '[]', 15, ?)`
+        )
+        .run(id, id, category);
+    }
+  };
+
+  it('returns only the lessons belonging to the requested discipline', async () => {
+    const t = H();
+    seed(t);
+    const nahw = await t.json<{ data: { lessons: { id: string }[] } }>(
+      '/api/grammar/deepdive/nahw'
+    );
+    const sarf = await t.json<{ data: { lessons: { id: string }[] } }>(
+      '/api/grammar/deepdive/sarf'
+    );
+    const balagha = await t.json<{ data: { lessons: { id: string }[] } }>(
+      '/api/grammar/deepdive/balagha'
+    );
+    expect(nahw.body.data.lessons.map((l) => l.id)).toEqual(['grammar-01']);
+    expect(sarf.body.data.lessons.map((l) => l.id)).toEqual(['grammar-02']);
+    // Honestly empty rather than quietly full. The UI states why.
+    expect(balagha.body.data.lessons).toEqual([]);
+    // And the uncategorised root lesson appears under none of them.
+    for (const r of [nahw, sarf, balagha]) {
+      expect(r.body.data.lessons.map((l) => l.id)).not.toContain('root-ktb');
+    }
+  });
+
+  it('rejects a category that is not one of the three', async () => {
+    // Previously returned 200 with every lesson, so a typo in a link looked like a
+    // working page.
+    const { status, body } = await H().json<{ error: string }>(
+      '/api/grammar/deepdive/rhetoric'
+    );
+    expect(status).toBe(400);
+    expect(body.error).toMatch(/category must be one of/);
   });
 });

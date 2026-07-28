@@ -176,8 +176,11 @@ notes.push(
   `lessons per level: ${present.map((lv) => `L${lv}=${levels.get(lv)}`).join(' ')}`
 );
 
-// ── Report ─────────────────────────────────────────────────────────────────
-for (const n of notes) process.stdout.write(`  note  ${n}\n`);
+// The notes flush moved to the END of this file. It sat here, above four blocks that each
+// push one, so the only note ever printed was this line's own — the grader-agreement
+// check, the practice mapping, the credited gates and the lesson categories all reported
+// nothing about what they had verified. Their fail() calls worked throughout; it was
+// solely the passing output that was lost, which is the harder kind to notice.
 // ── The grader and this gate must agree about what is gradable ──────────────
 {
   const grader = await readFile(join(root, 'workers/src/routes/learning.ts'), 'utf-8');
@@ -244,6 +247,47 @@ for (const n of notes) process.stdout.write(`  note  ${n}\n`);
   }
 }
 
+// ── Every authored lesson belongs to a named discipline ─────────────────────
+//
+// /grammar offers Syntax, Morphology and Rhetoric. Until the category column existed the
+// three tabs were one tab: the endpoint took a category, used it for the mastery lookup,
+// and then queried `module = 'grammar'`, so all three returned the same 418 lessons and
+// Rhetoric contained no rhetoric.
+//
+// Checked here rather than trusted because the failure mode is silent in exactly the same
+// way: a lesson with no category simply never appears under any tab, and a lesson with a
+// misspelt one disappears just as quietly.
+{
+  const CATEGORIES = new Set(['nahw', 'sarf', 'balagha']);
+  const counts = new Map();
+  for (const lesson of authoredLessons) {
+    if (!CATEGORIES.has(lesson.category)) {
+      fail(
+        'category',
+        `${lesson.id} has category ${JSON.stringify(lesson.category)} — every authored ` +
+          'lesson must name its discipline: nahw, sarf or balagha'
+      );
+      continue;
+    }
+    counts.set(lesson.category, (counts.get(lesson.category) ?? 0) + 1);
+  }
+  // Generated root lessons must NOT claim one. They teach vocabulary in a root family,
+  // and 408 of them under a Syntax heading is what made the payload 823 KB.
+  const miscategorised = generatedLessons.filter((l) => l.category !== undefined);
+  if (miscategorised.length > 0) {
+    fail(
+      'category',
+      `${miscategorised.length} generated root lesson(s) carry a grammar category — they ` +
+        'teach vocabulary, not nahw, sarf or balagha'
+    );
+  }
+  notes.push(
+    'lesson categories: ' +
+      [...counts].sort().map(([k, v]) => `${k}=${v}`).join(' ') +
+      `, ${generatedLessons.length} generated uncategorised`
+  );
+}
+
 // ── The review document's gate list ─────────────────────────────────────────
 //
 // docs/lesson-review.html tells a human reader which gates already settle the structural
@@ -285,6 +329,7 @@ for (const n of notes) process.stdout.write(`  note  ${n}\n`);
     'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
     'word_role', 'relative_pronoun', 'demonstrative', 'conditional',
     'sentence_type',
+    'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting',
   ]);
 
   const mapped = new Map();
@@ -345,6 +390,9 @@ for (const lesson of lessons) {
     }
   }
 }
+
+// ── Report ─────────────────────────────────────────────────────────────────
+for (const n of notes) process.stdout.write(`  note  ${n}\n`);
 
 if (problems.length === 0) {
   process.stdout.write(

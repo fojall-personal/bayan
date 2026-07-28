@@ -29,7 +29,7 @@ What works today, honestly:
 - **Tajweed** — per-rule mastery, and colour-coded verses across all 6,236 ayahs.
   Ten rule colours, each ≥4.5:1 on the canvas, applied to the script rather than
   boxed behind it so Arabic stays joined.
-- **Grammar** — sentence parsing and corpus root families, with 30,053 derived
+- **Grammar** — sentence parsing and corpus root families, with 37,230 derived
   exercises whose results are recorded per kind and shown on Progress, plus 418
   lessons: ten authored and 408 generated one-per-root from the corpus.
 - **Tutor** — corpus lookups, not a model. It answers a word, a root, a location or a
@@ -48,7 +48,7 @@ What works today, honestly:
 | Database | Cloudflare D1, with `wrangler d1 migrations` |
 | Storage | Cloudflare R2 |
 | Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
-| Tests | Vitest (201 test blocks) + ESLint + `tsc`, all gated in CI |
+| Tests | Vitest (204 test blocks) + ESLint + `tsc`, all gated in CI |
 | CI/CD | GitHub Actions → Cloudflare Pages |
 | Cost | $0/month — a hard constraint, see plan §5 |
 
@@ -207,7 +207,7 @@ defect:
 | `sync-pages-config.mjs --check` | a missing Pages binding — the state that once made every data route 500 |
 
 ```bash
-cd workers   && npx tsc --noEmit && npm test    # 201 vitest test blocks
+cd workers   && npx tsc --noEmit && npm test    # 204 vitest test blocks
 cd src/app   && npx tsc --noEmit && npm run lint
 ```
 
@@ -334,19 +334,19 @@ application, in any Cloudflare account, would be accepted.
 
 **Last updated: 2026-07-26**
 
-**Everything is deployed and working.** All 40 API endpoints resolve, all 13
+**Everything is deployed and working.** All 39 API endpoints resolve, all 13
 pages render, the database has 6,236 Quran verses and 77K morphology rows.
 
 | Component | Status |
 |-----------|--------|
 | Frontend (13 routes) | ✅ All rendering 200 OK |
 | Navigation (6 links) | ✅ All wired up |
-| API (40 endpoints) | ✅ All resolving |
-| Database (D1) | ✅ 20 migrations applied, seeded |
+| API (39 endpoints) | ✅ All resolving |
+| Database (D1) | ✅ 21 migrations applied, seeded |
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |
 | Cloudflare Access | ✅ Enforcing — every path 302s to the login |
-| Grammar (corpus-derived) | ✅ 30,053 graded exercises, 83 (kind, level) buckets, 114/114 surahs; results recorded per exercise kind |
+| Grammar (corpus-derived) | ✅ 37,230 graded exercises, 113 (kind, level) buckets, 114/114 surahs; results recorded per exercise kind |
 | Memorization curriculum | ✅ 908 ordered units across all 114 surahs |
 | Content correctness | ✅ Gated in CI; 14 seeded defects all caught |
 | Design system | ✅ Generated from globals.css, published to claude.ai/design, drift gated |
@@ -387,7 +387,7 @@ microphone capture cannot be verified headlessly.
 | F6 | Tajweed track | ✅ rule reference, per-rule mastery, ten colours all ≥4.5:1 |
 | F7 | Progress | ✅ weekly activity calendar and coverage — ayahs readable from known roots. No daily streak counter: the helper that computed one had no caller and was removed |
 | F8 | Tutor | ✅ rewritten as corpus lookups; it refuses rather than inventing Arabic |
-| F9 | Root families | ✅ 30,053 derived exercises across seventeen kinds, and answers recorded — mastery per kind shows on /progress. Ten kinds were added after the first seven, all from annotation the ingest had captured and the generator never read: definiteness, negation, mood, voice, subject agreement, word role, relative pronoun, demonstrative, conditional, and sentence type |
+| F9 | Root families | ✅ 37,230 derived exercises across twenty-three kinds, and answers recorded — mastery per kind shows on /progress. Ten kinds were added after the first seven, all from annotation the ingest had captured and the generator never read: definiteness, negation, mood, voice, subject agreement, word role, relative pronoun, demonstrative, conditional, and sentence type |
 
 ### Research plan P1–P5
 

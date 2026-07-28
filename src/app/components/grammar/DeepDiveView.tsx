@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -26,6 +27,26 @@ const CATEGORY_INFO: Record<string, { name: string; icon: React.ElementType }> =
   nahw: { name: 'Syntax (النَّحْو)', icon: Layout },
   sarf: { name: 'Morphology (الصَّرْف)', icon: Beaker },
   balagha: { name: 'Rhetoric (البَلَاغَة)', icon: Feather },
+};
+
+/**
+ * Why a discipline has no lessons, in the learner's terms.
+ *
+ * Balagha is the honest one and the reason this text exists. Every lesson in this app is
+ * either derived from annotation or checked against it, and no annotated source records
+ * what an ayah does RHETORICALLY: the published Quranic balagha corpus covers Surah
+ * Ibrahim verses 1–2, 41 words in total. Word order is the exception, because a treebank
+ * can see it, which is why fronting has drills while simile and metaphor do not.
+ */
+const EMPTY_REASON: Record<string, string> = {
+  nahw: 'No syntax lessons are loaded. Run the lesson seed.',
+  sarf: 'No morphology lessons are loaded. Run the lesson seed.',
+  balagha:
+    'Every lesson here is checked against annotated data, and no available source ' +
+    'records what an ayah does rhetorically — the published Quranic rhetoric corpus ' +
+    'covers two verses. Word order is the exception a treebank can see, so fronting ' +
+    '(تقديم) has drills in the exercise bank while simile and metaphor await a source ' +
+    'that can be checked.',
 };
 
 export function DeepDiveView({ category }: DeepDiveViewProps) {
@@ -116,6 +137,21 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
               </div>
             </div>
           </div>
+        </Card>
+      )}
+
+      {/* A category with no lessons says so, and says why.
+          Until the category column existed all three tabs returned the same 418 lessons,
+          so this state could not arise — Rhetoric looked as full as Syntax while
+          containing no rhetoric at all. An empty grid would replace one wrong impression
+          with another, so the reason is stated. */}
+      {lessons.length === 0 && (
+        <Card>
+          <h2 className="text-lg font-bold mb-2">No {info.name} lessons yet</h2>
+          <p className="text-gray-400 mb-3">{EMPTY_REASON[category]}</p>
+          <Link href="/grammar" className="text-gold-400 hover:underline text-sm">
+            Practise from the corpus-derived exercise bank instead →
+          </Link>
         </Card>
       )}
 

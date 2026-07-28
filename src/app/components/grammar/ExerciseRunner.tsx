@@ -2,7 +2,7 @@
 
 // Runs the corpus-derived grammar exercise bank.
 //
-// 30,053 items across 17 kinds and 5 levels, all generated from the morphology
+// 37,230 items across 23 kinds and 5 levels, all generated from the morphology
 // corpus. Every one carries the surah:ayah it came from, which is shown after
 // answering — the citation is the point. An exercise you can trace is one you can
 // disprove, which is exactly what the five hand-written grammar errors were not.
@@ -59,7 +59,25 @@ const KINDS = [
   { value: 'conditional', label: 'Which word makes it conditional' },
   // Kind 17, for grammar-03 — the one lesson that had no practice at all.
   { value: 'sentence_type', label: 'Nominal or verbal sentence' },
+  // Kinds 18–23, from the treebank's syntax layer: what a word DOES, which the
+  // morphology corpus never recorded. Every one is cross-checked against the
+  // hand-verified case before it reaches the bank.
+  { value: 'mubtada_khabar', label: 'Which word is the predicate (خبر)' },
+  { value: 'subject_word', label: 'Which word is the doer (فاعل)' },
+  { value: 'object', label: 'Which word is the object (مفعول به)' },
+  { value: 'idafa', label: 'Which word is the مضاف إليه' },
+  { value: 'derived_noun', label: 'Participle or verbal noun' },
+  { value: 'fronting', label: 'Which word is fronted (تقديم)' },
 ];
+
+/**
+ * Kinds whose subject is a whole ayah rather than one word, so the type steps down and is
+ * allowed to wrap. derived_noun is deliberately absent: it asks about a single word's
+ * pattern, and shrinking that would hide the diacritics that distinguish مُفْعِل from مُفْعَل.
+ */
+const WHOLE_AYAH_KINDS = new Set([
+  'find_word', 'mubtada_khabar', 'subject_word', 'object', 'idafa', 'fronting',
+]);
 
 const LEVELS = [
   { value: '', label: 'All levels' },
@@ -217,7 +235,7 @@ export function ExerciseRunner() {
           {current.word !== '' && (
             <p
               className={`text-center mb-6 text-naskh leading-loose ${
-                current.kind === 'find_word' ? 'text-2xl' : 'text-5xl'
+                WHOLE_AYAH_KINDS.has(current.kind) ? 'text-2xl' : 'text-5xl'
               }`}
               dir="rtl"
             >

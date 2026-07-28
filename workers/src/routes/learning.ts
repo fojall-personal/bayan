@@ -252,44 +252,17 @@ learningRoutes.get('/next', async (c) => {
   }
 });
 
-// GET /api/learning/lessons — Get all lessons (or filtered by module/level)
-learningRoutes.get('/lessons', async (c) => {
-  const db = getDb(c);
-  const { module: mod, level } = c.req.query();
-
-  try {
-    const where: string[] = [];
-    const params: unknown[] = [];
-
-    if (mod) {
-      where.push('module = ?');
-      params.push(mod);
-    }
-    if (level) {
-      where.push('level = ?');
-      params.push(level);
-    }
-
-    const sql =
-      'SELECT * FROM lessons' +
-      (where.length ? ` WHERE ${where.join(' AND ')}` : '') +
-      ' ORDER BY level ASC, id ASC';
-
-    const lessons = await db.query<LessonsRow>(sql, params);
-
-    return c.json({
-      data: lessons.map((l) => ({
-        ...l,
-        content: JSON.parse((l.content as string) || '[]'),
-        exercises: JSON.parse((l.exercises as string) || '[]'),
-        prerequisites: JSON.parse((l.prerequisites as string) || '[]'),
-      })),
-    });
-  } catch (error) {
-    console.error('Learning lessons error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});
+// GET /api/learning/lessons was here, and is deleted.
+//
+// It returned every lesson with content, exercises and prerequisites all parsed: 821 KB
+// once the curriculum grew from 10 lessons to 418. Nothing called it. /learn loads one
+// lesson — /lessons/:id or /next — and /grammar uses the deep-dive endpoint.
+//
+// Worth recording WHY the orphan gate never flagged it, because the gate was written
+// precisely to catch this and could not. It tests `allSource.includes(prefix)`, and this
+// path is a strict prefix of `/api/learning/lessons/${id}`, which IS called. Any bare
+// path that prefixes a parameterised sibling was therefore unflaggable. gen-api-docs.mjs
+// now requires the match to end at a URL boundary.
 
 // GET /api/learning/lessons/:id — Get single lesson with progress
 learningRoutes.get('/lessons/:id', async (c) => {

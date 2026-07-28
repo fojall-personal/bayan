@@ -19,10 +19,23 @@ import type {
 export const grammarRoutes = new Hono<AppEnv>();
 
 // GET /api/grammar/deepdive/:category — Get deep-dive content for nahw/sarf/balagha
+//
+// The category used to be read from the path, used for the mastery lookup, and then
+// ignored by the lesson query, which asked for `module = 'grammar'`. All three tabs
+// therefore returned byte-identical lists of all 418 lessons — 823 KB each, of which 408
+// were generated root-vocabulary lessons — and "Rhetoric" returned 418 lessons with no
+// rhetoric in them. Verified before fixing: the three responses matched exactly.
 grammarRoutes.get('/deepdive/:category', async (c) => {
   const { category } = c.req.param();
   const userId = c.get('userId');
   const db = getDb(c);
+
+  // Validated rather than interpolated hopefully. An unknown category previously returned
+  // the full lesson list, so a typo in a link looked like a working page.
+  const CATEGORIES = ['nahw', 'sarf', 'balagha'];
+  if (!CATEGORIES.includes(category)) {
+    return c.json({ error: `category must be one of ${CATEGORIES.join(', ')}` }, 400);
+  }
 
   try {
     const mastery = await db.get<GrammarMasteryRow>(
@@ -31,8 +44,8 @@ grammarRoutes.get('/deepdive/:category', async (c) => {
     );
 
     const lessons = await db.query<LessonsRow>(
-      `SELECT * FROM lessons WHERE module = 'grammar' AND level >= ? ORDER BY level ASC`,
-      [(mastery?.mastery_level as number) || 1]
+      `SELECT * FROM lessons WHERE category = ? AND level >= ? ORDER BY level ASC`,
+      [category, (mastery?.mastery_level as number) || 1]
     );
 
     return c.json({
@@ -276,6 +289,9 @@ grammarRoutes.get('/exercises', async (c) => {
       'find_word', 'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
       'word_role', 'relative_pronoun', 'demonstrative', 'conditional',
       'sentence_type',
+      // From the treebank's syntax layer, each emitted only where a relation and the
+      // hand-verified case concur — see scripts/gen-syntax-exercises.mjs.
+      'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting',
     ];
     if (!allowed.includes(kind)) {
       return c.json({ error: `kind must be one of ${allowed.join(', ')}` }, 400);

@@ -39,7 +39,9 @@ const generated = JSON.parse(
   await readFile(join(root, 'content/grammar/root-lessons.json'), 'utf-8')
 ).lessons;
 
-const lessons = [...(Array.isArray(authored) ? authored : authored.lessons), ...generated];
+const authoredList = Array.isArray(authored) ? authored : authored.lessons;
+const authoredIds = new Set(authoredList.map((l) => l.id));
+const lessons = [...authoredList, ...generated];
 
 const q = (v) => `'${String(v).replace(/'/g, "''")}'`;
 // Stable key order, so an unrelated reordering in the JSON cannot produce a diff.
@@ -50,6 +52,19 @@ const lines = [
   '-- Regenerate with: node scripts/gen-lessons-sql.mjs',
 ];
 
+/**
+ * The three classical disciplines, and which lessons belong to which.
+ *
+ * `category` is required on authored lessons and absent from generated root lessons,
+ * which is the honest split: a root lesson teaches vocabulary in a root family, not
+ * grammar, and serving 408 of them under a Syntax heading is what made the deep-dive
+ * payload 823 KB. NULL there means "not one of the three disciplines".
+ *
+ * Required rather than defaulted, because a silent default is how all three tabs came to
+ * show the same thing. A new authored lesson must state which discipline it teaches.
+ */
+const CATEGORIES = new Set(['nahw', 'sarf', 'balagha']);
+
 for (const l of lessons) {
   for (const field of ['id', 'title', 'module', 'level', 'content']) {
     if (l[field] === undefined) {
@@ -57,9 +72,27 @@ for (const l of lessons) {
       process.exit(1);
     }
   }
+  // Required of authored lessons, forbidden of generated ones — checked in both
+  // directions, because "missing" and "wrongly present" are equally silent at runtime:
+  // one hides a lesson from every tab, the other puts a vocabulary lesson under a
+  // grammar heading, which is how the payload reached 823 KB.
+  const isAuthored = authoredIds.has(l.id);
+  if (isAuthored && !CATEGORIES.has(l.category)) {
+    process.stderr.write(
+      `✘ authored lesson ${l.id} has category "${l.category}" — must be nahw, sarf or balagha\n`
+    );
+    process.exit(1);
+  }
+  if (!isAuthored && l.category !== undefined) {
+    process.stderr.write(
+      `✘ generated lesson ${l.id} carries category "${l.category}" — root lessons teach ` +
+        'vocabulary, not one of the three grammar disciplines\n'
+    );
+    process.exit(1);
+  }
   lines.push(
     'INSERT OR REPLACE INTO lessons (id, title, module, level, content, ' +
-      'exercises, prerequisites, estimated_minutes) VALUES (' +
+      'exercises, prerequisites, estimated_minutes, category) VALUES (' +
       [
         q(l.id),
         q(l.title),
@@ -69,6 +102,7 @@ for (const l of lessons) {
         q(json(l.exercises ?? [])),
         q(json(l.prerequisites ?? [])),
         Number(l.estimated_minutes ?? 15),
+        l.category === undefined ? 'NULL' : q(l.category),
       ].join(', ') +
       ');'
   );
