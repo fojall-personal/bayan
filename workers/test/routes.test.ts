@@ -238,9 +238,9 @@ describe('the ayah endpoint', () => {
         .prepare(
           `INSERT INTO quran_word_morphology
              (surah_id, ayah_id, word_index, segment_index, form, pos)
-           VALUES (1, 5, ?, 1, 'x', 'N')`
+           VALUES (1, 5, ?, 1, 'x', ?)`
         )
-        .run(pos);
+        .run(pos, pos === 2 ? 'V' : 'PRON');
     }
     const syntax = t.db.prepare(
       `INSERT INTO quran_syntax (sentence_id, token_index, head_index, surah_id, ayah_id,
@@ -249,8 +249,9 @@ describe('the ayah endpoint', () => {
     );
     // إيّاك is the object of نعبد.
     syntax.run(1, 0, 1, 1, 'Obj', 'مفعول به', 'إِيَّاكَ', 0);
-    // نعبد heads the sentence. `root` is plumbing: it marks the head, and printing it
-    // beside a word would tell a learner nothing.
+    // نعبد heads the sentence. `root` on a VERB is the main verb, resolved from the
+    // hand-verified part of speech — the treebank has no label distinguishing the two
+    // things `root` can mean.
     syntax.run(1, 1, null, 2, 'root', 'root', 'نَعْبُدُ', 0);
     // The subject Arabic carries INSIDE the verb — never written, so it cannot be pointed
     // at on the page. word_index is 0 by definition; the position comes from its head.
@@ -273,8 +274,10 @@ describe('the ayah endpoint', () => {
     expect(status).toBe(200);
     expect(body.data.words[0].segments[0].roleArabic).toBe('مفعول به');
     expect(body.data.words[0].segments[0].role).toMatch(/object/);
-    // `root` is filtered out — the lens shows grammar, not parse-tree bookkeeping.
-    expect(body.data.words[1].segments[0].role).toBeNull();
+    // `root` on a verb reads as the main verb, not as a مبتدأ. Resolved from the
+    // morphology's POS, since the treebank spells both as the same relation.
+    expect(body.data.words[1].segments[0].role).toMatch(/main verb/);
+    expect(body.data.words[1].segments[0].roleArabic).toBeNull();
 
     expect(body.data.elided).toHaveLength(2);
     const subj = body.data.elided.find((e) => e.roleArabic === 'فاعل')!;
@@ -285,6 +288,83 @@ describe('the ayah endpoint', () => {
     // The unreconstructed one keeps its role and loses its placeholder.
     const adj = body.data.elided.find((e) => e.roleArabic === 'صفة')!;
     expect(adj.arabic).toBeNull();
+  });
+
+  it('reads the head of a nominal sentence as the مبتدأ', async () => {
+    const t = H();
+    // The treebank has no مبتدأ label — it marks a sentence head as `root`, which means
+    // the main verb in a verbal sentence and the مبتدأ in a nominal one. Filtering `root`
+    // wholesale left 2:2's ذَٰلِكَ with no role while its خبر had one, which is the word
+    // grammar-03 is entirely about.
+    t.db
+      .prepare(
+        `INSERT INTO quran_verses (surah, ayah, text_uthmani, text_simple, translation, tajweed_tags)
+         VALUES (2, 2, 'ذَٰلِكَ ٱلْكِتَٰبُ', 'ذلك الكتاب', null, '[]')`
+      )
+      .run();
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_gloss (surah_id, ayah_id, position, arabic, transliteration, english)
+         VALUES (2, 2, 1, 'ذَٰلِكَ', '', '')`
+      )
+      .run();
+    const morph = t.db.prepare(
+      `INSERT INTO quran_word_morphology
+         (surah_id, ayah_id, word_index, segment_index, form, pos, case_case)
+       VALUES (2, 2, 1, 1, 'x', ?, ?)`
+    );
+    const syntax = t.db.prepare(
+      `INSERT INTO quran_syntax (sentence_id, token_index, head_index, surah_id, ayah_id,
+         word_index, segment_index, rel, rel_ar, constituent, derived_noun, token, is_implied)
+       VALUES (9, 0, NULL, 2, 2, 1, 1, 'root', 'root', NULL, NULL, 'ذَٰلِكَ', 0)`
+    );
+
+    // A demonstrative is indeclinable — no case at all — so absence must not read as
+    // disagreement, or every ذلك and هذا would lose its role.
+    morph.run('DEM', null);
+    syntax.run();
+    const demo = await t.json<{
+      data: { words: { segments: { role: string | null; roleArabic: string | null }[] }[] };
+    }>('/api/quran/ayah/2/2');
+    expect(demo.body.data.words[0].segments[0].roleArabic).toBe('مبتدأ');
+    expect(demo.body.data.words[0].segments[0].role).toMatch(/subject/);
+
+    // But an explicitly NON-nominative noun heading a sentence is the two sources
+    // disagreeing — a مبتدأ is nominative — so it gets no gloss rather than a wrong one.
+    //
+    // A second ayah in the SAME harness, not a second harness: H() is memoised per test,
+    // so calling it twice returns the same database and re-inserting 2:2 fails its unique
+    // key. That is the harness working as intended, and it cost one red run to notice.
+    t.db
+      .prepare(
+        `INSERT INTO quran_verses (surah, ayah, text_uthmani, text_simple, translation, tajweed_tags)
+         VALUES (2, 3, 'x', 'x', null, '[]')`
+      )
+      .run();
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_gloss (surah_id, ayah_id, position, arabic, transliteration, english)
+         VALUES (2, 3, 1, 'x', '', '')`
+      )
+      .run();
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_morphology
+           (surah_id, ayah_id, word_index, segment_index, form, pos, case_case)
+         VALUES (2, 3, 1, 1, 'x', 'N', 'ACC')`
+      )
+      .run();
+    t.db
+      .prepare(
+        `INSERT INTO quran_syntax (sentence_id, token_index, head_index, surah_id, ayah_id,
+           word_index, segment_index, rel, rel_ar, constituent, derived_noun, token, is_implied)
+         VALUES (10, 0, NULL, 2, 3, 1, 1, 'root', 'root', NULL, NULL, 'x', 0)`
+      )
+      .run();
+    const clash = await t.json<{
+      data: { words: { segments: { role: string | null }[] }[] };
+    }>('/api/quran/ayah/2/3');
+    expect(clash.body.data.words[0].segments[0].role).toBeNull();
   });
 });
 

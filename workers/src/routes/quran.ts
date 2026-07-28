@@ -59,6 +59,40 @@ function roleGloss(rel: string): string | null {
   return null;
 }
 
+/**
+ * `root` is the one relation whose meaning depends on the word carrying it.
+ *
+ * The treebank has no مبتدأ label. It marks the head of a sentence as `root`, and in a
+ * nominal sentence the head IS the مبتدأ — that is what heading a nominal sentence means,
+ * not an inference about it. In a verbal sentence the head is the verb.
+ *
+ * Filtering `root` as plumbing therefore left ذَٰلِكَ in 2:2 — the مبتدأ, the single word
+ * grammar-03 is about — showing no role at all, while its خبر showed one.
+ *
+ * Resolved by the word's part of speech, which the HAND-VERIFIED morphology supplies, and
+ * for a noun by its case as well: a مبتدأ is nominative, so a root noun the morphology
+ * calls accusative is a disagreement between the two sources and gets no gloss. Particles
+ * that head a sentence — إنّ, لا, the conditionals — get none either, since they are not
+ * the subject of anything.
+ *
+ * The Arabic is copied from grammar-03's own explanation, which already shows a learner
+ * "the subject (مبتدأ) and the predicate (خبر)". Nothing here is newly written in Arabic.
+ */
+const NOMINAL_HEAD_POS = new Set(['N', 'PN', 'ADJ', 'PRON', 'DEM']);
+function rootRole(
+  pos: string | null,
+  kase: string | null
+): { role: string; roleArabic: string | null } | null {
+  if (pos === 'V') return { role: 'the sentence’s main verb', roleArabic: null };
+  if (pos && NOMINAL_HEAD_POS.has(pos)) {
+    // Indeclinables carry no case at all, so absence is not disagreement — only an
+    // explicitly non-nominative reading is.
+    if (kase && kase !== 'NOM') return null;
+    return { role: 'subject — what the sentence is about', roleArabic: 'مبتدأ' };
+  }
+  return null;
+}
+
 export const quranRoutes = new Hono<AppEnv>();
 
 interface VerseRow {
@@ -226,14 +260,23 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
     // Role per (word, segment). Keyed on both because a prefixed word carries a relation
     // on its stem while the prefix carries its own, and attaching the stem's role to the
     // whole word would label بِسْمِ as a possessor when it is the بِ that governs.
-    const roleBySeg = new Map<string, { role: string; roleArabic: string }>();
+    // Morphology by segment, so `root` can be resolved against the hand-verified part of
+    // speech and case rather than against the parser's own view of them.
+    const morphBySeg = new Map<string, SegRow>();
+    for (const s of segments) morphBySeg.set(`${s.word_index}:${s.segment_index}`, s);
+
+    const roleBySeg = new Map<string, { role: string; roleArabic: string | null }>();
     for (const s of syntax) {
+      const key = `${s.word_index}:${s.segment_index}`;
+      if (s.rel === 'root') {
+        const m = morphBySeg.get(key);
+        const resolved = rootRole(m?.pos ?? null, m?.case_case ?? null);
+        if (resolved) roleBySeg.set(key, resolved);
+        continue;
+      }
       const gloss = roleGloss(s.rel);
       if (!gloss) continue; // plumbing — see ROLE_GLOSS
-      roleBySeg.set(`${s.word_index}:${s.segment_index}`, {
-        role: gloss,
-        roleArabic: s.rel_ar,
-      });
+      roleBySeg.set(key, { role: gloss, roleArabic: s.rel_ar });
     }
 
     // Group segments under their word, so the client never re-derives word shape.
