@@ -29,9 +29,12 @@ What works today, honestly:
 - **Tajweed** — per-rule mastery, and colour-coded verses across all 6,236 ayahs.
   Ten rule colours, each ≥4.5:1 on the canvas, applied to the script rather than
   boxed behind it so Arabic stays joined.
-- **Grammar** — sentence parsing and corpus root families, with 38,995 derived
+- **Grammar** — three real disciplines, not three tabs over one list: nahw and sarf
+  lessons, and balagha as the three devices that can actually be derived. 38,995
   exercises whose results are recorded per kind and shown on Progress, plus 418
-  lessons: ten authored and 408 generated one-per-root from the corpus.
+  lessons: ten authored and 408 generated one-per-root from the corpus. The reader's
+  Parse lens states what each word *does* — فاعل, مفعول به, خبر, مضاف إليه — and which
+  words are implied but never written.
 - **Tutor** — corpus lookups, not a model. It answers a word, a root, a location or a
   named tajweed rule, and refuses rather than inventing Arabic.
 - **Coverage** — how much of the Quran you can read, computed from the roots you
@@ -61,7 +64,7 @@ languagebuilder/
 │   ├── grammar/       # Grammar curriculum
 │   ├── assessments/   # Diagnostic test questions
 │   └── tajweed/       # Tajweed rule definitions
-├── scripts/           # 22 scripts: ingest-* pull pinned sources, gen-* derive content
+├── scripts/           # 25 scripts: ingest-* pull pinned sources, gen-* derive content
 │                     # and docs, check-* are the CI gates. Most take --check.
 ├── src/
 │   ├── app/           # Next.js app
@@ -345,6 +348,8 @@ pages render, the database has 6,236 Quran verses and 77K morphology rows.
 | Database (D1) | ✅ 21 migrations applied, seeded |
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |
+| Syntax layer | ✅ 117,947 rows from the Extended Quranic Treebank — roles, constituents, 11,157 elided tokens; shown in the Parse lens |
+| Rhetorical devices | ✅ 95-device taxonomy pinned and gated; three devices derivable (taqdīm, jinās, tashbīh), metaphor is not |
 | Cloudflare Access | ✅ Enforcing — every path 302s to the login |
 | Grammar (corpus-derived) | ✅ 38,995 graded exercises, 122 (kind, level) buckets, 114/114 surahs; results recorded per exercise kind |
 | Memorization curriculum | ✅ 908 ordered units across all 114 surahs |
@@ -387,7 +392,7 @@ microphone capture cannot be verified headlessly.
 | F6 | Tajweed track | ✅ rule reference, per-rule mastery, ten colours all ≥4.5:1 |
 | F7 | Progress | ✅ weekly activity calendar and coverage — ayahs readable from known roots. No daily streak counter: the helper that computed one had no caller and was removed |
 | F8 | Tutor | ✅ rewritten as corpus lookups; it refuses rather than inventing Arabic |
-| F9 | Root families | ✅ 38,995 derived exercises across twenty-five kinds, and answers recorded — mastery per kind shows on /progress. Ten kinds were added after the first seven, all from annotation the ingest had captured and the generator never read: definiteness, negation, mood, voice, subject agreement, word role, relative pronoun, demonstrative, conditional, and sentence type |
+| F9 | Root families | ✅ 38,995 derived exercises across twenty-five kinds, and answers recorded — mastery per kind shows on /progress. Seven kinds shipped first. Ten more came from annotation the ingest had captured and the generator never read (definiteness, negation, mood, voice, subject agreement, word role, relative pronoun, demonstrative, conditional, sentence type). Six came from the treebank's syntax layer, each cross-checked against the hand-verified case (mubtada/khabar, fa'il, maf'ul bihi, idafa, derived nouns, fronting). Two are rhetorical devices derivable from what the corpus already records: jinās and tashbīh |
 
 ### Research plan P1–P5
 
@@ -403,8 +408,22 @@ Greentech, and the lexical-coverage literature) rather than from the original pl
 | P5 | Whole-Quran word frequency | ✅ shown beside each root in the Parse lens |
 
 Built after the plan, in response to use: a lesson result screen that says what you got
-wrong and why, lesson-to-drill mappings, the exercise bank tripled to 17,206, sixty
-generated root lessons, the review document, and content deploying itself.
+wrong and why, lesson-to-drill mappings, 408 generated root lessons, the review document,
+and content deploying itself.
+
+Then a second corpus, which was not in any plan because I had assumed it did not exist. The
+Extended Quranic Treebank supplies the SYNTAX the morphology lacks, and three things
+followed from it. The `/grammar` deep-dive stopped being three tabs showing one thing —
+the endpoint took a category, used it for the mastery lookup and then queried
+`module = 'grammar'`, so Syntax, Morphology and Rhetoric returned byte-identical lists of
+all 418 lessons at 823 KB each. The Parse lens now states what each word DOES, not only
+what it is. And grammar-03 drills مبتدأ and خبر, which I had recorded here as permanently
+impossible — true of the corpus this project started from, false of the field.
+
+Balagha went from nothing to three devices, all derived: fronting from the treebank's
+dependency direction, paronomasia from shared roots, and simile from the comparison kāf.
+Metaphor and metonymy have none and will not until a source annotates them; no available
+source does — the published Quranic rhetoric corpus covers two verses.
 
 **Next:** have a human read the lessons — 418 of them now, 1,245 exercises. That is the
 only remaining risk no gate can cover: every mechanical claim is checked (sun/moon
@@ -466,9 +485,34 @@ failure path, a reachable file, passing types and tests.
 - Never commit credentials or API tokens
 - Use environment variables for all sensitive data
 
+## 📚 Data sources and attribution
+
+Every fact this app teaches comes from one of these. Each is pinned by SHA-256 in the
+script that ingests it, so a swapped file fails loudly instead of quietly teaching
+something else. **The first four licences require attribution wherever the data is
+displayed** — not merely here — which is why the reader, the exercise runner and the tutor
+each carry a source line.
+
+| Source | What it gives | Licence |
+|---|---|---|
+| [Quranic Arabic Corpus v0.4](https://corpus.quran.com) (Kais Dukes) | 128,219 morphology segments — what each word IS: root, lemma, part of speech, case, verb form | GNU GPL |
+| [Extended Quranic Treebank](https://doi.org/10.1016/j.dib.2025.111940) (Nashir, Mohsen, Al-Shargabi, Nour & Al-onazi, *Data in Brief* 62:111940, 2025) | 117,947 syntax rows — what each word DOES: فاعل, مفعول به, خبر, مضاف إليه, plus 11,157 reconstructed elided tokens | CC BY 4.0 |
+| [Arabic Rhetorical Device Taxonomy v0.1.1](https://github.com/Al-Balagha/Arabic-Rhetoric) (Encyclopedia of Arabic Rhetoric) | 95 rhetorical devices — the vocabulary this app names devices by. No Quranic annotation; it produces no exercises | CC BY 4.0 |
+| [quran-align](https://github.com/cpfair/quran-align) | 154,799 word-level recitation timings for two reciters | CC BY |
+| [Tanzil](https://tanzil.net) | The Uthmani text (6,236 verses) and the Saheeh International translation | CC BY |
+
+The treebank's syntax layer is the one source here that is **not** hand-verified: its
+authors report 95.7% LAS on a 350-sentence sample, with no corpus-wide inter-annotator
+agreement. Nothing derived from it reaches a learner on its own — an exercise is emitted
+only where the treebank's relation and the hand-verified morphological case concur, and
+`scripts/ingest-treebank.mjs` refuses to load a release whose agreement has dropped below
+the measured floors. The Parse lens, which cannot filter that way without blanking every
+pronoun, names both sources and states the accuracy instead.
+
 ## 📝 License
 
-Private repository — all rights reserved.
+Private repository — all rights reserved. The ingested data keeps its own licences, listed
+above.
 
 ### Local development against one origin
 

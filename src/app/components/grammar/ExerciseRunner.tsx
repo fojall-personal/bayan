@@ -154,9 +154,9 @@ export function ExerciseRunner() {
       total: s.total + 1,
     }));
 
-    // Record it. This was local state only, so a learner could work through all
-    // 4,950 exercises and the app would remember none of it — POST
-    // /api/grammar/exercise existed the whole time with no caller.
+    // Record it. This was local state only, so a learner could work through the whole
+    // bank — 4,950 items at the time — and the app would remember none of it. POST
+    // /api/grammar/exercise existed throughout, with no caller.
     //
     // Deliberately not awaited and deliberately silent: recording is bookkeeping,
     // and blocking the answer reveal or showing an error over a failed write would

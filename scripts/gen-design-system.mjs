@@ -631,7 +631,10 @@ await writeFile(join(OUT, 'preview/flow-today.html'), shell(
   <h2>Then</h2>
   <div class="grid" style="gap:10px">
 ${box('Lesson 6 — The Idafa Construction', 'Level 2 · 20 min · unlocked by Case Endings')}
-${box('20 grammar exercises at level 3', 'Verb form, case ending, word meaning · drawn from 4,950')}
+${/* Phrased as "N-item bank" on purpose: that is the shape gen-content-manifest.mjs
+     matches, so this number now fails the build when it drifts. It said 4,950 through
+     eight regenerations of the bank because "drawn from 4,950" matched no pattern. */ ''}
+${box('20 grammar exercises at level 3', 'Verb form, case ending, word meaning · from a 38,995-item bank')}
 ${box('Add an ayah to memorize', 'Curriculum suggests An-Nas 3 next · 908 ordered units')}
   </div>
 </div>
@@ -1298,7 +1301,15 @@ already effectively ask.</p>
 
 await writeFile(join(OUT, 'preview/spec-grammar-mastery.html'), shell(
   'Spec — the exercise bank records nothing', 'Product',
-  `<p style="max-width:66ch">The derived grammar bank is the largest thing in the
+  `<p class="note" style="border-color:${colour('color-success')}">
+<strong>Shipped — this describes a state that no longer exists.</strong> All three failures
+below are fixed: <code>choose()</code> posts every answer, the handler asks the BANK for the
+kind before falling back to lessons, and /progress reads per-kind mastery. Kept as the
+record of how three bugs hid each other, in the same spirit as the banners on
+<code>modules/</code>. The figures are as they were then — the bank now holds 38,995 items
+across 25 kinds.</p>
+
+<p style="max-width:66ch">The derived grammar bank is the largest thing in the
 app: <strong>4,950 exercises</strong> across seven kinds and five levels, every item
 traceable to a corpus row. A learner can work through all of them and the app will
 remember <strong>none of it</strong>.</p>

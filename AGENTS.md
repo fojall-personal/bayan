@@ -192,21 +192,54 @@ from the migrations — see "Route-layer tests" below. Listed here as intent, no
 
 ## Content Data
 
-### Quran Data
-- **Script:** Uthmani (Tanzil.net)
-- **Translation:** Dr. Mustafa Khattab (The Clear Quran)
-- **Audio:** Quran.com API (Alafasy, Abdul Basit, Minshawi)
-- **Structure:** 114 surahs, 6236 ayahs, 30 juz
+This section described a plan, not the build, and three of its claims were wrong: the
+translation is Saheeh International rather than Khattab, the grammar curriculum is 418
+lessons rather than 30, and the vocabulary file holds 103 words rather than 1,000. Corrected
+against the files, and every number below is either checked by a gate or cheap to re-derive.
+
+### Sources, and what each licence requires
+
+Every one is pinned by SHA-256 in the script that ingests it. **The first four require
+attribution wherever the data is DISPLAYED**, not merely in a doc — the reader, the exercise
+runner and the tutor each carry a source line, and removing one is a licence breach rather
+than a tidiness question.
+
+| Source | Gives | Licence |
+|---|---|---|
+| Quranic Arabic Corpus v0.4 (Kais Dukes) | 128,219 morphology segments — what a word IS | GNU GPL |
+| Extended Quranic Treebank (Nashir et al., *Data in Brief* 62:111940, 2025, doi:10.1016/j.dib.2025.111940) | 117,947 syntax rows — what a word DOES, plus 11,157 elided tokens | CC BY 4.0 |
+| Arabic Rhetorical Device Taxonomy v0.1.1 | 95 device names. No Quranic annotation, no exercises | CC BY 4.0 |
+| quran-align | 154,799 word timings, two reciters | CC BY |
+| Tanzil | Uthmani text and the Saheeh International translation | CC BY |
+
+**The treebank is the one source that is not hand-verified** — 95.7% LAS on a 350-sentence
+sample, no corpus-wide IAA. Never derive an exercise from it alone: `gen-syntax-exercises.mjs`
+emits only where its relation and the morphology's case concur, and `ingest-treebank.mjs`
+refuses a release whose agreement has fallen. If you add a syntax-derived kind, keep that
+rule or say in the code why it does not apply.
+
+### Quran data
+- **Script:** Uthmani, Tanzil, SHA-pinned. 114 surahs, 6,236 ayahs
+- **Translation:** Saheeh International via Tanzil, SHA-pinned
+- **Audio:** everyayah.com — Alafasy, Al-Husary, Al-Minshawi (`src/app/lib/ayah-audio.ts`).
+  Word-level timings exist for Alafasy only; Husary is offered but quran-align covers a
+  different encode of it, so highlighting is off rather than approximate
+- **Glosses:** 77,429 word-by-word, 96.2% agreement with five independent translators
 
 ### Vocabulary
-- 1000 most frequent Quranic words
-- Categorized by surah, theme, part of speech
-- Arabic-English translation pairs
+- `content/vocabulary/core-100.json` — 103 authored entries
+- The live flashcard queue is not that file: it is drawn from the ayahs the learner is
+  memorising, content words first, commonest-in-the-Quran first, each card citing its source
 
-### Grammar Curriculum
-- 30 lessons covering nahw, sarf, balagha
-- Interactive sentence parsing
-- Conjugation tables (all verb forms)
+### Grammar curriculum
+- 418 lessons: 10 authored, 408 generated one-per-root from the corpus
+- Authored lessons carry `category` — `nahw` or `sarf`. Generated ones carry none, because
+  they teach vocabulary in a root family and are not one of the three disciplines
+- Balagha has no lessons. It has three derived exercise kinds — fronting, jinās, tashbīh —
+  and the Rhetoric tab says so. Metaphor and metonymy are not derivable and no available
+  source annotates them
+- 38,995 exercises across 25 kinds; `gen-content-manifest.mjs --check` holds every count
+  quoted in prose to what is actually in the database
 
 ---
 
@@ -319,12 +352,20 @@ node scripts/gen-design-system.mjs --check  # token drift, Arabic shaping, lang=
 node scripts/gen-api-docs.mjs --check       # this file's endpoint/page lists, envelopes, orphans
 node scripts/gen-db-types.mjs --check       # row types vs migrations
 node scripts/gen-content-manifest.mjs --check   # content counts quoted in prose
+node scripts/ingest-ardt.mjs --check        # rhetorical-device names resolve to the taxonomy
 node scripts/sync-pages-config.mjs --check  # Pages bindings (needs Cloudflare creds)
 ```
 
-Two need a local corpus (`data/` and `.wrangler/`, both gitignored): `check-content` and
-the corpus half of `gen-root-lessons`. The latter degrades to structural checks and says
-so rather than passing silently.
+Three read `data/` or `.wrangler/`, both gitignored, so neither exists on a CI runner:
+`check-content`, the corpus half of `gen-root-lessons`, and the re-parse half of
+`ingest-ardt`. The last two degrade to structural checks and SAY the comparison was
+skipped rather than passing silently — the shape to copy if you add another.
+
+Not a gate, and must not become one: `node scripts/ingest-treebank.mjs --verify-only`.
+It validates the treebank against the morphology and asserts the relation/case agreement
+that every syntax-derived exercise depends on, but there is nothing to check without the
+57 MB source, so it belongs on a machine that has it. Run it after changing anything about
+how that layer is trusted.
 
 ## Route-layer tests
 
