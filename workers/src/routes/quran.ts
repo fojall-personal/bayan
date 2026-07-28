@@ -15,6 +15,50 @@ import { getDb } from '../lib/db';
 import { colourTags, type RawTag } from '../lib/tajweed-colors';
 import { buckwalterToArabic } from '../lib/buckwalter';
 
+/**
+ * English glosses for the grammatical roles worth putting in front of a reader.
+ *
+ * The ARABIC term is never written here — it comes from the treebank's own rel_ar column,
+ * which is correct for all 129 relations. That matters: hand-authored Arabic is how a moon
+ * letter reached the sun-letter list, and this file authors none.
+ *
+ * Curated rather than exhaustive. The treebank distinguishes 129 relations, and most are
+ * parser bookkeeping — `root` marks the head of a sentence, `link` a preposition's
+ * attachment, `NonRel` a prefix that carries no relation at all. Printing those beside a
+ * word would bury the four a learner is actually being taught. `gen` is omitted for a
+ * different reason: it says a word is governed by what precedes it, which the Parse lens
+ * already shows as its genitive case.
+ */
+const ROLE_GLOSS: Record<string, string> = {
+  Subj: 'subject — the doer',
+  Obj: 'object — what the verb acts on',
+  Pred: 'predicate — what is asserted',
+  Poss: 'possessor, in a construct',
+  Adj: 'adjective, describing the word before it',
+  App: 'appositive — renames what precedes it',
+  circ: 'circumstance — how or when',
+  Spec: 'specifier of an amount',
+  emph: 'emphasis',
+  cond: 'the condition',
+  neg: 'negation',
+  sub: 'relative clause',
+  conj: 'joined by a conjunction',
+};
+
+/**
+ * كان and إنّ and their sisters, which the treebank spells out per governing word:
+ * `subj <<kan>>`, `pred <<lays>>`, `subj<<in>>` — around a hundred variants. Matched by
+ * shape rather than enumerated, since the Arabic side (اسم كان, خبر إن) already names the
+ * governor exactly and enumerating a hundred English labels would be a hundred chances to
+ * mistype one.
+ */
+function roleGloss(rel: string): string | null {
+  if (ROLE_GLOSS[rel]) return ROLE_GLOSS[rel];
+  const m = /^(subj|pred)\s*<<.+>>$/.exec(rel);
+  if (m) return m[1] === 'subj' ? 'subject of a governing particle' : 'predicate of a governing particle';
+  return null;
+}
+
 export const quranRoutes = new Hono<AppEnv>();
 
 interface VerseRow {
@@ -76,7 +120,7 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
     );
     if (!verse) return c.json({ error: `No ayah ${surah}:${ayah}` }, 404);
 
-    const [glosses, segments, known, rules, neighbours, timings, rootCounts] =
+    const [glosses, segments, known, rules, neighbours, timings, rootCounts, syntax, elided] =
       await Promise.all([
       db.query<WordRow>(
         `SELECT position, arabic, transliteration, english
@@ -132,12 +176,65 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
           GROUP BY root`,
         [surah, ayah]
       ),
+      // What each word DOES — فاعل, مفعول به, خبر, مضاف إليه.
+      //
+      // The Parse lens is headed "What the corpus states" and stated everything except
+      // this, because the morphology does not record it. It comes from the treebank, whose
+      // 117,947 rows had no reader at all until this query: the exercise generator reads
+      // the source FILE, so the table was shipped to production and queried by nothing.
+      //
+      // Ordered by segment so a word's own stem wins over its prefix. is_implied rows are
+      // excluded here: they have no morphology row to attach to, and an elided subject is
+      // reported separately below rather than pretending to be a word on the page.
+      db.query<{ word_index: number; segment_index: number; rel: string; rel_ar: string }>(
+        `SELECT word_index, segment_index, rel, rel_ar
+           FROM quran_syntax
+          WHERE surah_id = ? AND ayah_id = ? AND is_implied = 0 AND rel IS NOT NULL
+          ORDER BY word_index, segment_index`,
+        [surah, ayah]
+      ),
+      // Words the treebank says are ELIDED — 11,157 across the Quran, most of them the
+      // subject pronoun Arabic carries inside its verb. Worth surfacing because حذف is a
+      // real feature of the language that a reader cannot see by looking, and because
+      // this is the one thing in the parse that is not on the page.
+      // Joined to its HEAD to recover a position. An implied token has word_index 0 by
+      // definition — it is not a word on the page — so on its own it can only say "an
+      // elided subject exists somewhere here". 1:5 has two identical (نحْنُ), and without
+      // the head there is no way to say which verb each belongs to.
+      db.query<{
+        head_word: number | null;
+        rel: string;
+        rel_ar: string;
+        token: string;
+      }>(
+        `SELECT h.word_index AS head_word, e.rel, e.rel_ar, e.token
+           FROM quran_syntax e
+           LEFT JOIN quran_syntax h
+             ON h.sentence_id = e.sentence_id AND h.token_index = e.head_index
+          WHERE e.surah_id = ? AND e.ayah_id = ?
+            AND e.is_implied = 1 AND e.rel IS NOT NULL
+          ORDER BY e.token_index`,
+        [surah, ayah]
+      ),
     ]);
 
     const knownRoots = new Set(known.map((k) => k.root));
     const occurrences = new Map(rootCounts.map((r) => [r.root, r.occurrences]));
     const timingByWord = new Map(timings.map((t) => [t.word_index, t]));
     const palette = new Map(rules.map((r) => [r.id, { color: r.color, name: r.name }]));
+
+    // Role per (word, segment). Keyed on both because a prefixed word carries a relation
+    // on its stem while the prefix carries its own, and attaching the stem's role to the
+    // whole word would label بِسْمِ as a possessor when it is the بِ that governs.
+    const roleBySeg = new Map<string, { role: string; roleArabic: string }>();
+    for (const s of syntax) {
+      const gloss = roleGloss(s.rel);
+      if (!gloss) continue; // plumbing — see ROLE_GLOSS
+      roleBySeg.set(`${s.word_index}:${s.segment_index}`, {
+        role: gloss,
+        roleArabic: s.rel_ar,
+      });
+    }
 
     // Group segments under their word, so the client never re-derives word shape.
     const segsByWord = new Map<number, SegRow[]>();
@@ -195,6 +292,11 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
           gender: s.gender,
           number: s.number,
           person: s.person,
+          // What this segment DOES, from the treebank. Null where the treebank records
+          // only plumbing for it, which is the honest answer rather than a guess — the
+          // same call the Parse lens already makes for a prefix with no morphology.
+          role: roleBySeg.get(`${g.position}:${s.segment_index}`)?.role ?? null,
+          roleArabic: roleBySeg.get(`${g.position}:${s.segment_index}`)?.roleArabic ?? null,
         })),
       };
     });
@@ -226,6 +328,22 @@ quranRoutes.get('/ayah/:surah/:ayah', async (c) => {
         // change when the data arrives.
         translation: verse.translation,
         words,
+        // Words the treebank says are ELIDED — present grammatically, absent from the
+        // page. Mostly the subject pronoun that Arabic carries inside its verb, which is
+        // why 1:5 نَعْبُدُ has a (نحْنُ) the reader will never see. Kept out of `words` on
+        // purpose: `words` mirrors what is written, and inserting a token there would put
+        // something on the page that is not in the mushaf.
+        elided: elided.map((e) => ({
+          // Which written word governs it, so the reader knows where to look. Null when
+          // the head is itself elided.
+          belongsToWord: e.head_word && e.head_word > 0 ? e.head_word : null,
+          role: roleGloss(e.rel),
+          roleArabic: e.rel_ar,
+          // `(*)` is the treebank's placeholder for an omitted word it does not
+          // reconstruct — as opposed to `(نحْنُ)`, where it does. Nulled rather than
+          // printed: showing a learner "(*)" is worse than showing them the role alone.
+          arabic: e.token && e.token !== '(*)' ? e.token : null,
+        })),
         tajweed,
         // The headline the screen shows. Computed here so the client cannot get a
         // different answer than /api/progress/coverage would give.

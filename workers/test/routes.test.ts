@@ -215,6 +215,77 @@ describe('the ayah endpoint', () => {
     expect(seg.lemma).not.toMatch(/[A-Za-z{}~`]/);
     expect(seg.arabic).not.toMatch(/[A-Za-z{}~`]/);
   });
+
+  it('states what each word does, and what is implied but unwritten', async () => {
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO quran_verses (surah, ayah, text_uthmani, text_simple, translation, tajweed_tags)
+         VALUES (1, 5, 'إِيَّاكَ نَعْبُدُ', 'اياك نعبد', null, '[]')`
+      )
+      .run();
+    for (const [pos, arabic] of [
+      [1, 'إِيَّاكَ'],
+      [2, 'نَعْبُدُ'],
+    ] as const) {
+      t.db
+        .prepare(
+          `INSERT INTO quran_word_gloss (surah_id, ayah_id, position, arabic, transliteration, english)
+           VALUES (1, 5, ?, ?, '', '')`
+        )
+        .run(pos, arabic);
+      t.db
+        .prepare(
+          `INSERT INTO quran_word_morphology
+             (surah_id, ayah_id, word_index, segment_index, form, pos)
+           VALUES (1, 5, ?, 1, 'x', 'N')`
+        )
+        .run(pos);
+    }
+    const syntax = t.db.prepare(
+      `INSERT INTO quran_syntax (sentence_id, token_index, head_index, surah_id, ayah_id,
+         word_index, segment_index, rel, rel_ar, constituent, derived_noun, token, is_implied)
+       VALUES (?, ?, ?, 1, 5, ?, 1, ?, ?, NULL, NULL, ?, ?)`
+    );
+    // إيّاك is the object of نعبد.
+    syntax.run(1, 0, 1, 1, 'Obj', 'مفعول به', 'إِيَّاكَ', 0);
+    // نعبد heads the sentence. `root` is plumbing: it marks the head, and printing it
+    // beside a word would tell a learner nothing.
+    syntax.run(1, 1, null, 2, 'root', 'root', 'نَعْبُدُ', 0);
+    // The subject Arabic carries INSIDE the verb — never written, so it cannot be pointed
+    // at on the page. word_index is 0 by definition; the position comes from its head.
+    syntax.run(1, 2, 1, 0, 'Subj', 'فاعل', '(نحْنُ)', 1);
+    // An omission the treebank does not reconstruct. `(*)` must not reach the screen.
+    syntax.run(1, 3, 1, 0, 'Adj', 'صفة', '(*)', 1);
+
+    const { status, body } = await t.json<{
+      data: {
+        words: { segments: { role: string | null; roleArabic: string | null }[] }[];
+        elided: {
+          belongsToWord: number | null;
+          role: string | null;
+          roleArabic: string | null;
+          arabic: string | null;
+        }[];
+      };
+    }>('/api/quran/ayah/1/5');
+
+    expect(status).toBe(200);
+    expect(body.data.words[0].segments[0].roleArabic).toBe('مفعول به');
+    expect(body.data.words[0].segments[0].role).toMatch(/object/);
+    // `root` is filtered out — the lens shows grammar, not parse-tree bookkeeping.
+    expect(body.data.words[1].segments[0].role).toBeNull();
+
+    expect(body.data.elided).toHaveLength(2);
+    const subj = body.data.elided.find((e) => e.roleArabic === 'فاعل')!;
+    // Resolved through the head, which is the only way to say WHICH verb carries it —
+    // 1:5 really has two identical (نحْنُ) and they belong to different verbs.
+    expect(subj.belongsToWord).toBe(2);
+    expect(subj.arabic).toBe('(نحْنُ)');
+    // The unreconstructed one keeps its role and loses its placeholder.
+    const adj = body.data.elided.find((e) => e.roleArabic === 'صفة')!;
+    expect(adj.arabic).toBeNull();
+  });
 });
 
 describe('grammar mastery records what the learner answered', () => {

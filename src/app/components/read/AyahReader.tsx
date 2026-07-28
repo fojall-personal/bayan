@@ -38,6 +38,13 @@ interface Segment {
   gender: string | null;
   number: string | null;
   person: string | null;
+  /**
+   * What the word DOES — subject, object, predicate, possessor — from the treebank.
+   * Null where the treebank records only structure for this segment.
+   */
+  role: string | null;
+  /** The Arabic term, taken from the treebank rather than written here. */
+  roleArabic: string | null;
 }
 interface Word {
   position: number;
@@ -68,6 +75,13 @@ interface Ayah {
   textUthmani: string;
   translation: string | null;
   words: Word[];
+  /** Grammatically present, absent from the page — mostly the subject inside a verb. */
+  elided?: {
+    belongsToWord: number | null;
+    role: string | null;
+    roleArabic: string | null;
+    arabic: string | null;
+  }[];
   tajweed: TajweedTag[];
   wordsToLearn: number;
   fullyReadable: boolean;
@@ -421,9 +435,24 @@ function MeaningLens({ data }: { data: Ayah }) {
 function ParseLens({ data }: { data: Ayah }) {
   return (
     <div>
-      <h3 className="mb-3 text-xs uppercase tracking-label text-ground-400">
+      <h3 className="mb-1 text-xs uppercase tracking-label text-ground-400">
         What the corpus states
       </h3>
+      {/* The two sources are NOT of equal standing, and this heading used to imply they
+          were — everything under it came from hand-verified morphology until the roles
+          arrived. Those come from a treebank whose parser reports 95.7% LAS, so roughly
+          one role in twenty-three is wrong.
+          The exercise bank handles this by emitting only items where the role and the
+          hand-verified case concur. A reference display cannot filter the same way without
+          blanking every pronoun and verb — they carry no case — so it says so instead.
+          Stating the provenance is the honest option; presenting a parser's output as
+          settled fact under this heading is not. */}
+      <p className="mb-3 text-xs text-ground-400">
+        Morphology from the Quranic Arabic Corpus, hand-verified. Grammatical roles
+        (shown in gold) from the Extended Quranic Treebank, where a parser supplied
+        much of the syntax — accurate to about 96%, so treat a surprising role as a
+        question rather than a verdict.
+      </p>
       <div className="space-y-3">
         {data.words.map((w) => (
           <div key={w.position} className="rounded-md border border-ground-800 p-3">
@@ -466,6 +495,22 @@ function ParseLens({ data }: { data: Ayah }) {
                       // unannotated, and guessing would be worse than saying so.
                       <span className="text-ground-400">not annotated</span>
                     )}
+                    {/* What the word DOES, on its own line and in the accent colour,
+                        because it is a different KIND of fact from the ones above: those
+                        describe the word in isolation, this one describes its job in this
+                        sentence. It also comes from a different source, and one whose
+                        parser is 95.7% accurate — so it is never the only thing shown. */}
+                    {seg.role && (
+                      <div className="mt-1 text-gold-400">
+                        {seg.roleArabic && (
+                          <span className="text-arabic" dir="rtl" lang="ar">
+                            {seg.roleArabic}
+                          </span>
+                        )}
+                        {seg.roleArabic ? ' — ' : ''}
+                        {seg.role}
+                      </div>
+                    )}
                   </li>
                 );
               })}
@@ -473,6 +518,35 @@ function ParseLens({ data }: { data: Ayah }) {
           </div>
         ))}
       </div>
+
+      {/* Elided words: grammatically present, never written.
+          Arabic carries the subject inside its verb, so نَعْبُدُ means "WE worship" with no
+          separate word for "we" — and a reader looking for one finds nothing. This is the
+          only part of the parse that cannot be pointed at on the page, which is exactly
+          why it is worth saying out loud. */}
+      {(data.elided?.length ?? 0) > 0 && (
+        <div className="mt-6 rounded-md border border-ground-800 p-3">
+          <h4 className="mb-2 text-xs uppercase tracking-label text-ground-400">
+            Implied, not written (حذف)
+          </h4>
+          <ul className="space-y-1">
+            {data.elided!.map((e, i) => (
+              <li key={i} className="text-sm text-ground-300">
+                {e.arabic && (
+                  <span className="text-arabic text-gold-400" dir="rtl" lang="ar">
+                    {e.arabic}
+                  </span>
+                )}{' '}
+                <span className="text-ground-400">
+                  {e.roleArabic ? `${e.roleArabic} — ` : ''}
+                  {e.role ?? 'implied'}
+                  {e.belongsToWord ? `, inside word ${e.belongsToWord}` : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
