@@ -96,6 +96,17 @@ jobs:
       - name: Assert the generated root lessons are sound
         run: node scripts/gen-root-lessons.mjs --check
 
+      # The rhetorical-device names this app puts on screen must resolve to devices a
+      # published taxonomy defines. Bayan names three — al-taqdīm, al-jinās, al-tashbīh —
+      # and a name is exactly the kind of claim no other gate here can check, because it
+      # is about a convention rather than about the text.
+      #
+      # Runs without data/, which CI does not have: the committed registry is checked for
+      # structure and for those three devices, and the re-parse is skipped and reported as
+      # skipped. That is the shape gen-root-lessons.mjs had to learn the hard way.
+      - name: Assert the rhetorical-device names resolve to the taxonomy
+        run: node scripts/ingest-ardt.mjs --check
+
       # 39 tests over grading, scoring, the SM-2 scheduler and the Quran ingest
       # alignment gate. Every case corresponds to a bug that shipped or a
       # behaviour previously checked only by hand. Adding them found a live one:

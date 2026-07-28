@@ -928,6 +928,315 @@ for (const w of classifiedWords) {
   );
 }
 
+// ── 11. Paronomasia — two words, one root, one ayah ────────────────────────
+//
+// The one device of ʿilm al-badīʿ — the branch about wordplay and embellishment — that
+// falls out of data this project already trusts. Two different words built on the same root
+// inside one ayah is paronomasia, ARDT device CA-1 (al-jinās / al-tajnīs), and root is the
+// most heavily verified field in the corpus: 49,968 of them, in total agreement with an
+// independent treebank.
+//
+// Nothing about this is a judgement. Either two words in the ayah share a root or they do
+// not, and the corpus says which. Compare fronting, which needed a case cross-check, and
+// simile, which needs a source that does not exist.
+//
+// ── Why this is the volume balagha was missing ──────────────────────────────
+//
+// 3,450 root-pairs across 2,171 ayat, against fronting's 148. And the hits are the examples
+// the literature reaches for first: 1:1 ٱلرَّحْمَٰنِ / ٱلرَّحِيمِ, and 2:9 يُخَادِعُونَ / يَخْدَعُونَ,
+// which is the stock illustration of the device in al-Baqarah.
+//
+// ── The device is named as the taxonomy names it ────────────────────────────
+//
+// "Paronomasia (al-jinās)", in Latin transliteration, because that is what the CC-BY
+// registry publishes. Writing جناس in Arabic script would be authoring a term no pinned
+// source here contains — a small thing, but the لْكِتَابُ sun-letter error was a small thing.
+{
+  /** Roots per WORD, so a pair is found between words rather than between segments. */
+  const rootsOfWord = new Map();
+  for (const s of segments) {
+    if (!s.root) continue;
+    const k = `${s.surah}:${s.ayah}:${s.word}`;
+    if (!rootsOfWord.has(k)) rootsOfWord.set(k, new Set());
+    rootsOfWord.get(k).add(s.root);
+  }
+
+  /**
+   * Twenty words, where the locate-a-role kinds stop at eight or fourteen.
+   *
+   * Deliberately looser, because the work is different. "Which word is the خبر" requires
+   * parsing the sentence, so a long ayah is genuinely harder. Here the learner compares the
+   * quoted word's root against four candidates — the rest of the ayah is context, not
+   * search space. Measured: 14 words yields 884 items, 20 yields 1,660, 30 yields 2,580.
+   * Twenty nearly doubles the bank for about two extra lines on screen; thirty starts
+   * putting whole paragraphs behind a four-option question.
+   */
+  const MAX_AYAH_WORDS = 20;
+  let pairs = 0;
+  let emitted = 0;
+  const dropped = { length: 0, thirdWord: 0, foils: 0, sameForm: 0 };
+
+  /**
+   * The Buckwalter form of each word's ROOTED segment, so difficulty can be read the same
+   * way every other kind reads it — from how often the word occurs, not the root.
+   */
+  const formOfWord = new Map();
+  for (const s of segments) {
+    if (!s.root) continue;
+    const k = `${s.surah}:${s.ayah}:${s.word}`;
+    if (!formOfWord.has(k)) formOfWord.set(k, s.form);
+  }
+
+  for (const [ayahKey, raw] of ayahText) {
+    const words = raw.split(/\s+/);
+    if (words.length > MAX_AYAH_WORDS) continue;
+    const [surah, ayah] = ayahKey.split(':').map(Number);
+
+    // Which words carry which root, within this ayah.
+    const byRoot = new Map();
+    for (let i = 0; i < words.length; i += 1) {
+      for (const r of rootsOfWord.get(`${surah}:${ayah}:${i + 1}`) ?? []) {
+        if (!byRoot.has(r)) byRoot.set(r, []);
+        byRoot.get(r).push(i + 1);
+      }
+    }
+
+    for (const [rootBw, indices] of byRoot) {
+      if (indices.length !== 2) {
+        // Three or more words on one root would give the question two right answers, and
+        // resolving that by picking one would be inventing a preference.
+        if (indices.length > 2) dropped.thirdWord += 1;
+        continue;
+      }
+      pairs += 1;
+      const [a, b] = indices;
+      const wordA = words[a - 1];
+      const wordB = words[b - 1];
+      // Identical surface forms are repetition (تكرار), a different device. The question
+      // would also be unanswerable, since two options would read the same.
+      if (!wordA || !wordB || wordA === wordB) {
+        dropped.sameForm += 1;
+        continue;
+      }
+
+      // Which of the pair is quoted and which is the answer, alternating by seed. Always
+      // quoting the earlier one would make "the later word" a winning strategy that
+      // required no knowledge of roots at all.
+      const flip = seededShuffle([0, 1], `jn${ayahKey}${rootBw}`)[0] === 1;
+      const askedIndex = flip ? b : a;
+      const answerIndex = flip ? a : b;
+      const asked = words[askedIndex - 1];
+      const answer = words[answerIndex - 1];
+
+      const seenForm = new Set([asked, answer]);
+      const foils = [];
+      for (let i = 0; i < words.length; i += 1) {
+        const wi = i + 1;
+        if (wi === askedIndex || wi === answerIndex) continue;
+        // A distractor must not share the asked root either.
+        if ((rootsOfWord.get(`${surah}:${ayah}:${wi}`) ?? new Set()).has(rootBw)) continue;
+        if (seenForm.has(words[i])) continue;
+        seenForm.add(words[i]);
+        foils.push(words[i]);
+      }
+      /**
+       * Three options allowed, for the same reason fronting allows them.
+       *
+       * 1:1 بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ is four words, of which two ARE the pair — so it
+       * yields two distractors, and requiring four dropped the most cited instance of the
+       * device in the entire Quran. 1:3 is the pair and nothing else.
+       *
+       * The remaining options are still the ayah's own words, so the learner is choosing
+       * between real candidates either way.
+       */
+      if (foils.length < 2) {
+        dropped.foils += 1;
+        continue;
+      }
+      const picks = seededShuffle(foils, `jnf${ayahKey}${rootBw}`).slice(0, 3);
+
+      const key = `jinas|${ayahKey}|${rootBw}`;
+      if (seenKey.has(key)) continue;
+      seenKey.add(key);
+      emitted += 1;
+      exercises.push({
+        id: `jinas-${surah}-${ayah}-${answerIndex}`,
+        kind: 'jinas',
+        level: levelFromForm(formOfWord.get(`${surah}:${ayah}:${answerIndex}`) ?? ''),
+        wordArabic: raw,
+        wordBuckwalter: '',
+        prompt: `${asked} shares its root with one other word in ${surah}:${ayah}. Which?`,
+        answer,
+        options: seededShuffle([answer, ...picks], `jno${ayahKey}${rootBw}`),
+        explanation:
+          // States the FACT, names the pattern, and stops.
+          //
+          // An earlier wording said this pattern "is the device", which over-claims in the
+          // same way a person-shift would if it were called التفات: two words from one root
+          // in one ayah is what CA-1 CONSISTS of, but whether a given instance carries
+          // rhetorical weight is a reading, not a corpus fact. 1:1 ٱلرَّحْمَٰنِ ٱلرَّحِيمِ is
+          // cited everywhere; 10:20 فَقُلْ / وَيَقُولُونَ is ordinary narration that happens
+          // to fit the pattern. The corpus cannot tell them apart, so this does not pretend
+          // to — the same line fronting takes about what its تقديم means.
+          `${asked} and ${answer} are both built on ${rootArabic(rootBw)}. Two words from ` +
+          'one root in one ayah is the pattern the Encyclopedia of Arabic Rhetoric lists ' +
+          'as CA-1, Paronomasia (al-jinās). Whether a particular instance is doing ' +
+          'rhetorical work — pulling sound and sense together — or is simply how the ' +
+          'sentence fell, is a matter of reading; the shared root is not. ' +
+          // Counted, not assumed to be three. A short ayah yields two distractors, and
+          // 1:1 — the most cited instance of this pattern anywhere — is one of them.
+          `The other ${picks.length === 1 ? 'option comes' : `${picks.length} options come`} ` +
+          'from different roots.',
+        surah,
+        ayah,
+        word: answerIndex,
+        seg: 0,
+        root: rootBw,
+      });
+    }
+  }
+  log(
+    `jinas: ${emitted} items from ${pairs} root-pairs — dropped ${dropped.thirdWord} with a ` +
+      `third word on the root, ${dropped.sameForm} identical forms (that is تكرار, not ` +
+      `jinās), ${dropped.foils} with too few distractors`
+  );
+}
+
+// ── 12. Simile — the marked kind ───────────────────────────────────────────
+//
+// ʿilm al-bayān, ARDT device B-1 (al-tashbīh), and I told the user this whole branch was
+// unreachable. That was wrong in a way worth being specific about: METAPHOR is unreachable,
+// because nothing on the surface marks it. Simile often carries a particle, and a particle
+// is a fact about the text.
+//
+// ── Why the particle alone is not enough, and what is ───────────────────────
+//
+// The comparison kāf is tagged `PREFIX|ka+` on 295 segments, distinct from the 1,062
+// pronoun suffixes that are also كَ. But taking all 295 gives nonsense: كَمَآ ءَامَنَ
+// ("as the people believed", 2:13) and كَذَٰلِكَ ("thus", 2:73) are manner and deixis, not a
+// comparison between two things.
+//
+// The discriminator is what the kāf attaches to. Its stem's part of speech decides:
+//
+//   ✓ 2:74  فَهِىَ كَٱلْحِجَارَةِ   kāf + noun     — hearts compared to stones
+//   ✓ 2:19  أَوْ كَصَيِّبٍ         kāf + noun     — compared to a rainstorm
+//   ✓ 2:17  كَمَثَلِ ٱلَّذِى        kāf + noun     — the stock simile of al-Baqarah
+//   ✗ 2:13  كَمَآ                 kāf + SUB      — a manner clause
+//   ✗ 2:73  كَذَٰلِكَ              kāf + DEM      — "thus"
+//
+// A first attempt used a different rule — an ayah containing both a kāf and the lemma
+// مَثَل — and it accepted 2:113 and 2:118, where the مثل and the kāf belong to different
+// clauses and no comparison is drawn. The part-of-speech rule rejects both. That is the
+// argument for testing a rule against its own false positives rather than its hits.
+//
+// What stays out: تشبيه بليغ, where the particle is dropped precisely because the
+// comparison is strong enough without it. Undetectable by construction, and 77 marked
+// similes are worth having without it.
+{
+  /**
+   * The comparison kāf, told apart from the pronoun suffix that shares its letter.
+   *
+   * Both are كَ. The corpus distinguishes them by tag and position: the comparison kāf is a
+   * PREFIX tagged P (295 segments), while the "your / you" suffix is tagged PRON (1,062 as
+   * a suffix, 80 as a stem). A prefix carries no POS field of its own, which is why the
+   * stem is looked up separately below.
+   */
+  const isComparisonKaf = (seg) => seg.tag === 'P' && seg.form === 'ka' && seg.seg === 1;
+
+  const NOUNISH = new Set(['N', 'PN', 'ADJ']);
+  /**
+   * Thirty words, where jinas stops at twenty. The cap is set by what each kind can afford.
+   *
+   * jinas has 2,009 candidate pairs, so the tighter limit costs it nothing it needs and
+   * keeps whole paragraphs off the screen. Marked similes number 77 in the entire Quran, and
+   * at twenty words 32 of them — two fifths — are lost to length alone. The task also
+   * differs: finding the كـ is a visual scan for one particle, not a parse of the sentence.
+   */
+  const MAX_AYAH_WORDS = 30;
+  let emitted = 0;
+  const dropped = { notNoun: 0, foils: 0, length: 0 };
+
+  /** Segments grouped per word, so the prefix and its stem can be read together. */
+  const wordSegs = new Map();
+  for (const s of segments) {
+    const k = `${s.surah}:${s.ayah}:${s.word}`;
+    if (!wordSegs.has(k)) wordSegs.set(k, []);
+    wordSegs.get(k).push(s);
+  }
+
+  for (const [k, segs] of wordSegs) {
+    const sorted = [...segs].sort((a, b) => a.seg - b.seg);
+    // The comparison kāf is a PREFIX tagged P. A كَ that is a pronoun suffix is a
+    // different morpheme entirely and is excluded by requiring the prefix position.
+    if (!isComparisonKaf(sorted[0])) continue;
+    const stem = sorted.find((s) => s.pos);
+    if (!stem || !NOUNISH.has(stem.pos)) {
+      dropped.notNoun += 1;
+      continue;
+    }
+    const [surah, ayah, word] = k.split(':').map(Number);
+    const raw = ayahText.get(`${surah}:${ayah}`);
+    if (!raw) continue;
+    const words = raw.split(/\s+/);
+    if (words.length > MAX_AYAH_WORDS) {
+      dropped.length += 1;
+      continue;
+    }
+    const answer = words[word - 1];
+    if (!answer) continue;
+
+    // A distractor must not itself carry a comparison kāf, or the question has two
+    // right answers.
+    const seenForm = new Set([answer]);
+    const foils = [];
+    for (let i = 0; i < words.length; i += 1) {
+      const wi = i + 1;
+      if (wi === word) continue;
+      const other = wordSegs.get(`${surah}:${ayah}:${wi}`) ?? [];
+      const otherFirst = [...other].sort((a, b) => a.seg - b.seg)[0];
+      if (otherFirst && isComparisonKaf(otherFirst)) continue;
+      if (seenForm.has(words[i])) continue;
+      seenForm.add(words[i]);
+      foils.push(words[i]);
+    }
+    if (foils.length < 3) {
+      dropped.foils += 1;
+      continue;
+    }
+    const picks = seededShuffle(foils, `smf${k}`).slice(0, 3);
+    const key = `simile|${k}`;
+    if (seenKey.has(key)) continue;
+    seenKey.add(key);
+    emitted += 1;
+    exercises.push({
+      id: `simile-${surah}-${ayah}-${word}`,
+      kind: 'simile',
+      level: levelFromForm(stem.form),
+      wordArabic: raw,
+      wordBuckwalter: '',
+      prompt: `One word in ${surah}:${ayah} opens a comparison. Which?`,
+      answer,
+      options: seededShuffle([answer, ...picks], `smo${k}`),
+      explanation:
+        `${answer} carries the كـ of comparison — the corpus tags it as a prefixed ` +
+        `preposition on ${toArabic(stem.form)}. Comparing one thing to another with an ` +
+        'explicit particle is the device the Encyclopedia of Arabic Rhetoric lists as ' +
+        'B-1, Simile (al-tashbīh). Where the particle is dropped the comparison is still ' +
+        'there, but nothing in the text marks it.',
+      surah,
+      ayah,
+      word,
+      seg: 0,
+      root: stem.root,
+    });
+  }
+  log(
+    `simile: ${emitted} items — dropped ${dropped.notNoun} where the kāf sits on a ` +
+      `non-noun (كما, كذلك — manner and deixis, not comparison), ${dropped.length} long ` +
+      `ayat, ${dropped.foils} with too few distractors`
+  );
+}
+
 const PER_BUCKET = Number(process.env.PER_BUCKET ?? 150);
 
 /**
@@ -990,9 +1299,14 @@ for (const e of chosen) {
   // 125 candidates instead of 150. Selection below prefers four where it exists.
   // mood joins them: indicative, subjunctive and jussive are all there is, so a fourth
   // option would have to be invented — the same objection that keeps verb_form at three.
+  //
+  // jinas is three-way for a different reason: the ayah, not the category, runs out. Both
+  // words of the pair are excluded as distractors, so a four-word ayah leaves two — and
+  // 1:1 بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ is a four-word ayah carrying the most cited instance of
+  // the device in the Quran. Requiring four options dropped it.
   const minOptions =
     e.kind === 'aspect' || e.kind === 'case_ending' || e.kind === 'verb_form' ||
-    e.kind === 'mood'
+    e.kind === 'mood' || e.kind === 'jinas'
       ? 3
       : 4;
   if (e.options.length < minOptions) {
@@ -1020,7 +1334,11 @@ const kinds = new Set(chosen.map((e) => e.kind));
  * exists at every level" — so an empty bucket is honest rather than broken. Noted in the
  * output regardless, because silence would make a real gap look intended.
  */
-const PARTIAL_LEVELS = new Set(['negation', 'voice']);
+// simile joins them, and for a reason that is a fact about the device rather than about
+// the data: level comes from how common the word is, and a simile compares something to a
+// SPECIFIC thing — stones, a rainstorm, a grain of seed. Specific nouns are not the
+// commonest words in the Quran, so level 1 is empty by construction.
+const PARTIAL_LEVELS = new Set(['negation', 'voice', 'simile']);
 for (const kind of kinds) {
   for (let lv = 1; lv <= 5; lv += 1) {
     if (!liveBuckets.has(`${kind}|${lv}`)) {

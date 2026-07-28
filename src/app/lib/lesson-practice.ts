@@ -4,7 +4,7 @@
  * ── Why this is a map and not a rule ────────────────────────────────────────
  *
  * The ten authored lessons carry 21 exercises between them — 2.1 each, against a gate
- * floor of 2. The derived bank next to them is a 37,230-item graded bank, every one
+ * floor of 2. The derived bank next to them is a 38,995-item graded bank, every one
  * traceable to a corpus row. Connecting the two multiplies the practice available without
  * adding a line of hand-authored Arabic, which matters because hand-authored Arabic is how
  * a moon letter ended up in the sun-letter list.
@@ -54,7 +54,9 @@ export type PracticeKind =
   | 'object'
   | 'idafa'
   | 'derived_noun'
-  | 'fronting';
+  | 'fronting'
+  | 'jinas'
+  | 'simile';
 
 export interface LessonPractice {
   kind: PracticeKind;

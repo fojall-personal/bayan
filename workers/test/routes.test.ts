@@ -802,7 +802,7 @@ describe('the exercise bank exposes all twenty-three kinds', () => {
     'find_word', 'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
     'word_role', 'relative_pronoun', 'demonstrative', 'conditional', 'sentence_type',
     // From the treebank's syntax layer.
-    'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting',
+    'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting', 'jinas', 'simile',
   ];
 
   it('accepts every kind the generator emits', async () => {

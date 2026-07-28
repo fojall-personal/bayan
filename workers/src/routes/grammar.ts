@@ -292,6 +292,8 @@ grammarRoutes.get('/exercises', async (c) => {
       // From the treebank's syntax layer, each emitted only where a relation and the
       // hand-verified case concur — see scripts/gen-syntax-exercises.mjs.
       'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting',
+      // Paronomasia — ARDT device CA-1. From roots, so hand-verified.
+      'jinas', 'simile',
     ];
     if (!allowed.includes(kind)) {
       return c.json({ error: `kind must be one of ${allowed.join(', ')}` }, 400);

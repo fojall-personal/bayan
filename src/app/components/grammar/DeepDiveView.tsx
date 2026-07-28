@@ -41,12 +41,18 @@ const CATEGORY_INFO: Record<string, { name: string; icon: React.ElementType }> =
 const EMPTY_REASON: Record<string, string> = {
   nahw: 'No syntax lessons are loaded. Run the lesson seed.',
   sarf: 'No morphology lessons are loaded. Run the lesson seed.',
+  // Rewritten once the derivable set grew. It previously said simile "awaits a source that
+  // can be checked", which stopped being true: a simile with an explicit كـ is marked in the
+  // text, and the corpus tags the particle. Metaphor is the honest remaining gap — nothing
+  // on the surface marks it.
   balagha:
-    'Every lesson here is checked against annotated data, and no available source ' +
-    'records what an ayah does rhetorically — the published Quranic rhetoric corpus ' +
-    'covers two verses. Word order is the exception a treebank can see, so fronting ' +
-    '(تقديم) has drills in the exercise bank while simile and metaphor await a source ' +
-    'that can be checked.',
+    'Every lesson here is checked against annotated data, and no available source records ' +
+    'what an ayah does rhetorically — the published Quranic rhetoric corpus covers two ' +
+    'verses. Three devices are the exception, because each leaves a mark in the text the ' +
+    'corpus already records: fronting (al-taqdīm), two words from one root (al-jinās), and ' +
+    'a comparison opened by كـ (al-tashbīh). All three have drills in the exercise bank. ' +
+    'Metaphor and metonymy have none, and will not until a source annotates them — nothing ' +
+    'on the surface of an ayah marks a metaphor.',
 };
 
 export function DeepDiveView({ category }: DeepDiveViewProps) {

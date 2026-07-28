@@ -329,7 +329,7 @@ notes.push(
     'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
     'word_role', 'relative_pronoun', 'demonstrative', 'conditional',
     'sentence_type',
-    'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting',
+    'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting', 'jinas', 'simile',
   ]);
 
   const mapped = new Map();
