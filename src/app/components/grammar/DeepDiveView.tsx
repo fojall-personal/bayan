@@ -184,7 +184,22 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
       {/* Selected lesson content */}
       {selectedLesson && (
         <Card>
-          <h2 className="text-xl font-bold mb-4">{selectedLesson.title}</h2>
+          {/* This view reads the lesson for reference only — no exercises render here,
+              which read as a dead click ("None of the grammar exercises work when I
+              click on them"). The graded exercises are real, they just live in the
+              Learning flow. Reuse the exact deep-link (`?lesson=<id>`) the tutor's
+              suggestion chips already use rather than rebuild a second exercise runner. */}
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <h2 className="text-xl font-bold">{selectedLesson.title}</h2>
+            {/* Styled like Button's primary/md variant directly — Button renders a
+                <button>, and nesting one inside this Link's <a> is invalid HTML. */}
+            <Link
+              href={`/learning?lesson=${encodeURIComponent(selectedLesson.id)}`}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md min-h-11 px-4 py-2 text-sm font-semibold bg-gold-500 text-ground-950 hover:bg-gold-400 active:bg-gold-600 transition-colors duration-200"
+            >
+              Practice this lesson
+            </Link>
+          </div>
 
           {/* Explanation */}
           {selectedLesson.content.explanation && (
