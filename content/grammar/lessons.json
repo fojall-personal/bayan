@@ -634,5 +634,73 @@
       }
     ],
     "category": "nahw"
+  },
+  {
+    "id": "grammar-11",
+    "title": "Balagha — Rhetorical Devices (البلاغة)",
+    "module": "grammar",
+    "level": 3,
+    "prerequisites": [
+      "grammar-05"
+    ],
+    "estimated_minutes": 20,
+    "content": {
+      "explanation": "Nahw and sarf describe what a sentence IS — its case endings, its verb forms. Balagha (البلاغة) describes what a sentence DOES: how word choice and word order create effect. Three devices from the Encyclopedia of Arabic Rhetoric: al-tashbīh (simile, comparing one thing to another, usually with كـ or كَمَثَلِ), al-jinās (paronomasia, two words from the same root appearing close together, so sound echoes sense), and taqdīm (fronting, moving a word earlier than its expected position for emphasis — recognisable because i'ʿrab still marks its real grammatical role no matter where it sits, which is why case endings from the previous lesson matter here).",
+      "examples": [
+        {
+          "arabic": "مَثَلُهُمْ كَمَثَلِ ٱلَّذِى ٱسْتَوْقَدَ نَارًا فَلَمَّآ أَضَآءَتْ مَا حَوْلَهُۥ ذَهَبَ ٱللَّهُ بِنُورِهِمْ وَتَرَكَهُمْ فِى ظُلُمَٰتٍ لَّا يُبْصِرُونَ",
+          "transliteration": "",
+          "meaning": "Their example is that of one who kindled a fire, but when it lit up what was around him, Allah took away their light and left them in darkness [so] they could not see.",
+          "case": "al-tashbīh (2:17) — كَمَثَلِ carries the كـ of comparison",
+          "quranic": true
+        },
+        {
+          "arabic": "وَإِذَا قِيلَ لَهُمْ ءَامِنُوا۟ كَمَآ ءَامَنَ ٱلنَّاسُ قَالُوٓا۟ أَنُؤْمِنُ كَمَآ ءَامَنَ ٱلسُّفَهَآءُ أَلَآ إِنَّهُمْ هُمُ ٱلسُّفَهَآءُ وَلَٰكِن لَّا يَعْلَمُونَ",
+          "transliteration": "",
+          "meaning": "And when it is said to them, \"Believe as the people have believed,\" they say, \"Should we believe as the foolish have believed?\" Unquestionably, it is they who are the foolish, but they know not.",
+          "case": "al-jinās (2:13) — قِيلَ and قَالُوٓا۟ share the root ق و ل",
+          "quranic": true
+        }
+      ]
+    },
+    "exercises": [
+      {
+        "type": "multiple_choice",
+        "question": "Nahw studies sentence structure and sarf studies verb/noun forms. What does balagha study?",
+        "options": [
+          "How word choice and word order create rhetorical effect",
+          "The meaning of individual vocabulary words",
+          "The correct pronunciation of letters (tajweed)",
+          "How to conjugate irregular verbs"
+        ],
+        "correct": 0,
+        "explanation": "Balagha (rhetoric) is the third discipline alongside nahw (syntax) and sarf (morphology) — it asks not what a sentence IS but what it DOES."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "In 2:17, one word marks the comparison \"their example is like the example of one who kindled a fire.\" Which word carries the comparison?",
+        "options": [
+          "The كـ prefix (comparison)",
+          "The م in the middle",
+          "The final ِ vowel",
+          "There is no marker — context alone signals it"
+        ],
+        "correct": 0,
+        "explanation": "كَمَثَلِ carries the كـ of comparison — the corpus tags it as a prefixed preposition on مَثَلِ. An explicit comparison particle is what makes this al-tashbīh rather than a plain description."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "In 2:13, قِيلَ shares its root with one other word. Which word?",
+        "options": [
+          "ق و م",
+          "ق و ل",
+          "ق ب ل",
+          "ق ت ل"
+        ],
+        "correct": 1,
+        "explanation": "Both are built on ق و ل (to say). Two words from one root appearing close together is al-jinās (paronomasia) — sound echoing sense."
+      }
+    ],
+    "category": "balagha"
   }
 ]

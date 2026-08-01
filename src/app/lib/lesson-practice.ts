@@ -161,6 +161,17 @@ export const LESSON_PRACTICE: Record<string, LessonPractice | null> = {
       'POS:NEG marks the particle, which is what the lesson teaches. The sentence-level ' +
       'reading is not annotated, so the drill asks about the particle only.',
   },
+
+  // jinas has 2,009 candidate root-pairs (Encyclopedia CA-1) against simile's 77 marked
+  // instances in the whole Quran, so it is the one with enough volume to actually sustain
+  // practice after the lesson introduces all three balagha devices.
+  'grammar-11': {
+    kind: 'jinas',
+    label: 'Find the shared root',
+    because:
+      'The lesson teaches al-jinas alongside simile and fronting; jinas is the device ' +
+      'with enough corpus volume (2,009 root-pairs) to practise past a handful of items.',
+  },
 };
 
 /** The practice link target for a lesson, or null when there is nothing honest to offer. */
