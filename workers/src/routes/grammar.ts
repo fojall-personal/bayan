@@ -32,7 +32,7 @@ grammarRoutes.get('/deepdive/:category', async (c) => {
 
   // Validated rather than interpolated hopefully. An unknown category previously returned
   // the full lesson list, so a typo in a link looked like a working page.
-  const CATEGORIES = ['nahw', 'sarf', 'balagha'];
+  const CATEGORIES = ['nahw', 'sarf', 'balagha', 'vocabulary'];
   if (!CATEGORIES.includes(category)) {
     return c.json({ error: `category must be one of ${CATEGORIES.join(', ')}` }, 400);
   }

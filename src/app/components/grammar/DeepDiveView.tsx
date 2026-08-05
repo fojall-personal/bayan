@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Layout, Beaker, Feather } from 'lucide-react';
+import { Layout, Beaker, Feather, BookOpen } from 'lucide-react';
 import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
 
 interface Lesson {
@@ -20,13 +20,14 @@ interface Lesson {
 }
 
 interface DeepDiveViewProps {
-  category: 'nahw' | 'sarf' | 'balagha';
+  category: 'nahw' | 'sarf' | 'balagha' | 'vocabulary';
 }
 
 const CATEGORY_INFO: Record<string, { name: string; icon: React.ElementType }> = {
   nahw: { name: 'Syntax (النَّحْو)', icon: Layout },
   sarf: { name: 'Morphology (الصَّرْف)', icon: Beaker },
   balagha: { name: 'Rhetoric (البَلَاغَة)', icon: Feather },
+  vocabulary: { name: 'Vocabulary (الجُذُور)', icon: BookOpen },
 };
 
 /**
