@@ -804,3 +804,83 @@ learningRoutes.post('/flashcards/review', async (c) => {
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
+
+// GET /api/learning/vocabulary — All rooted vocabulary items, grouped by root,
+// with each learner's mastery status.
+//
+// This is the vocabulary tab's data feed. The 103-entry curated word list is
+// split by root (most words share a root with at least one other) and ordered
+// by global frequency, because frequency is what makes a root worth learning
+// before another. Root families with only one member still appear — they are
+// still real roots the corpus attests.
+//
+// Mastery comes from `vocabulary_mastery`. A word the learner has never seen
+// returns meaning_known: 0, reading_known: 0, reviews: 0. One that has been
+// reviewed once with "good" or "easy" flips meaning_known to 1. Five correct
+// reviews flips mastery to "mastered". The frontend uses this for the progress
+// bar: green up to mastery, gray the rest.
+learningRoutes.get('/vocabulary', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  try {
+    const rows = await db.query<{
+      root: string | null;
+      meaning: string;
+      word: string;
+      transliteration: string | null;
+      frequency_rank: number;
+      part_of_speech: string | null;
+      // Mastery columns — NULL for unmastered words.
+      meaning_known: number | null;
+      reading_known: number | null;
+      reviews: number | null;
+    }>(
+      `SELECT v.root,
+              v.meaning,
+              v.word,
+              v.transliteration,
+              v.frequency_rank,
+              v.part_of_speech,
+              vm.meaning_known,
+              vm.reading_known,
+              vm.reviews
+         FROM vocabulary v
+         LEFT JOIN vocabulary_mastery vm
+           ON vm.word = v.word AND vm.user_id = ?
+        WHERE v.root IS NOT NULL
+        ORDER BY v.frequency_rank ASC`,
+      [userId]
+    );
+
+    // Group by root, keeping frequency order. Each root carries the words the
+    // learner already knows about (from any of the root-family entries).
+    const byRoot = new Map<string, typeof rows>();
+    for (const row of rows) {
+      if (!row.root) continue;
+      const existing = byRoot.get(row.root) || [];
+      existing.push(row);
+      byRoot.set(row.root, existing);
+    }
+
+    const roots = Array.from(byRoot.entries()).map(([root, words]) => ({
+      root,
+      meaning: words[0].meaning,
+      words: words.map((w) => ({
+        word: w.word,
+        meaning: w.meaning,
+        transliteration: w.transliteration ?? '',
+        frequency_rank: w.frequency_rank,
+        part_of_speech: w.part_of_speech ?? '',
+        meaning_known: w.meaning_known ?? 0,
+        reading_known: w.reading_known ?? 0,
+        reviews: w.reviews ?? 0,
+      })),
+    }));
+
+    return c.json({ data: { roots } });
+  } catch (error) {
+    console.error('Vocabulary list error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});

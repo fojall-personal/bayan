@@ -54,6 +54,14 @@ const EMPTY_REASON: Record<string, string> = {
     'a comparison opened by كـ (al-tashbīh). All three have drills in the exercise bank. ' +
     'Metaphor and metonymy have none, and will not until a source annotates them — nothing ' +
     'on the surface of an ayah marks a metaphor.',
+  // Vocabulary lives in its own tab now. The deep-dive never had vocabulary lessons
+  // because the curated word list (103 entries, grouped by root) is not a lesson format.
+  // The Vocabulary tab in the grammar nav shows the full list with search and family
+  // detail — it is the correct home for vocabulary exploration, not deep-dive.
+  'vocabulary':
+    'Vocabulary is explored from the Vocabulary tab in the grammar nav. The 103-word ' +
+    'curated list is organized by root, with family detail and mastery tracking — it is ' +
+    'a different format than the deep-dive lessons, so it has its own home.',
 };
 
 export function DeepDiveView({ category }: DeepDiveViewProps) {

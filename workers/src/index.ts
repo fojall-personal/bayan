@@ -14,6 +14,7 @@ import { tajweedRoutes } from './routes/tajweed';
 import { grammarRoutes } from './routes/grammar';
 import { tutorRoutes } from './routes/tutor';
 import { certificateRoutes } from './routes/certificate';
+import { vocabularyRoutes } from './routes/vocabulary';
 
 const app = new Hono<AppEnv>();
 
@@ -156,5 +157,6 @@ app.route('/api/tajweed', tajweedRoutes);
 app.route('/api/grammar', grammarRoutes);
 app.route('/api/tutor', tutorRoutes);
 app.route('/api/certificate', certificateRoutes);
+app.route('/api/vocabulary', vocabularyRoutes);
 
 export default app;

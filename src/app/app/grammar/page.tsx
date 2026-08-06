@@ -6,9 +6,10 @@ import { DeepDiveView } from '@/components/grammar/DeepDiveView';
 import { ExerciseRunner } from '@/components/grammar/ExerciseRunner';
 import { RootExplorer } from '@/components/grammar/RootExplorer';
 import { Tabs } from '@/components/ui/Tabs';
+import { VocabularyView } from '@/components/vocabulary/VocabularyView';
 
-type View = 'exercises' | 'roots' | 'deepdive';
-type GrammarCategory = 'nahw' | 'sarf' | 'balagha';
+type View = 'exercises' | 'roots' | 'deepdive' | 'vocabulary';
+type GrammarCategory = 'nahw' | 'sarf' | 'balagha' | 'vocabulary';
 
 const CATEGORIES: { id: GrammarCategory; name: string; arabic: string }[] = [
   // Emoji icons removed: DESIGN.md anti-slop tell 7 is an icon above every
@@ -16,6 +17,7 @@ const CATEGORIES: { id: GrammarCategory; name: string; arabic: string }[] = [
   { id: 'nahw', name: 'Syntax', arabic: 'النَّحْو' },
   { id: 'sarf', name: 'Morphology', arabic: 'الصَّرْف' },
   { id: 'balagha', name: 'Rhetoric', arabic: 'البَلَاغَة' },
+  { id: 'vocabulary', name: 'Vocabulary', arabic: 'الجُذُور' },
 ];
 
 export default function GrammarPage() {
@@ -38,6 +40,7 @@ export default function GrammarPage() {
               { id: 'exercises', label: 'Exercises' },
               { id: 'roots', label: 'Roots' },
               { id: 'deepdive', label: 'Deep-dive' },
+              { id: 'vocabulary', label: 'Vocabulary' },
             ]}
           />
         }
@@ -73,6 +76,8 @@ export default function GrammarPage() {
           <DeepDiveView category={category} />
         </div>
       )}
+
+      {view === 'vocabulary' && <VocabularyView />}
     </div>
   );
 }
