@@ -82,9 +82,9 @@ export function VocabularyView() {
 
   if (loading) return <div className="py-12 text-center text-ground-400">Loading vocabulary...</div>;
   if (error) return <div className="py-12 text-center"><p className="text-error text-sm">{error}</p></div>;
-  if (words.length === 0) return <div className="py-12 text-center"><p className="text-ground-400 text-sm">Vocabulary content hasn't been seeded yet. Contact the administrator.</p></div>;
+  if (words.length === 0) return <div className="py-12 text-center"><p className="text-ground-400 text-sm">Vocabulary content has not been seeded yet. Contact the administrator.</p></div>;
   if (search && filtered.roots.length === 0 && filtered.functionWords.length === 0) {
-    return <div className="py-12 text-center"><p className="text-ground-400 text-sm">No roots match "{search}". Try a different term.</p></div>;
+    return <div className="py-12 text-center"><p className="text-ground-400 text-sm">No roots match &quot;{search}&quot;. Try a different term.</p></div>;
   }
 
   if (selectedRoot) {
