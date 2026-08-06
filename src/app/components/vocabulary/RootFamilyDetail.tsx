@@ -32,7 +32,7 @@ function MemberRow({ member }: { member: FamilyMember }) {
     <div className="border-b border-ground-800 pb-3 last:border-0">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-xl font-arabic text-ground-100" dir="rtl" style={{ fontFamily: 'var(--font-arabic)', lineHeight: 'var(--leading-arabic)' }}>
+          <span className="text-xl font-arabic text-ground-100" dir="rtl" style={{ fontFamily: 'var(--font-arabic)', lineHeight: 'var(--leading-arabic)', fontFeatureSettings: 'liga 1, calt 1' }}>
             {member.lemmaArabic}
           </span>
           <span className="text-ground-300 text-sm">{posLabels[member.pos ?? ''] || member.pos || ''}</span>
@@ -106,7 +106,7 @@ export function RootFamilyDetail({ root, onBack, onPracticeRoot }: RootFamilyDet
 
       {/* Root header */}
       <div className="rounded-lg border border-ground-800 p-6 bg-ground-900 text-center space-y-2">
-        <div className="text-5xl font-arabic text-gold-400" dir="rtl" style={{ fontFamily: 'var(--font-arabic)', lineHeight: 'var(--leading-arabic)' }}>
+        <div className="text-5xl font-arabic text-gold-400" dir="rtl" style={{ fontFamily: 'var(--font-arabic)', lineHeight: 'var(--leading-arabic)', fontFeatureSettings: 'liga 1, calt 1' }}>
           {rootArabic}
         </div>
         <p className="text-ground-300 text-lg" style={{ fontFamily: 'var(--font-naskh)' }}>
