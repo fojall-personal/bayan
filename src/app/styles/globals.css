@@ -150,6 +150,12 @@
     font-feature-settings: 'liga' 1, 'calt' 1;
   }
 
+  /* Ensure Arabic shaping is enabled for all dir="rtl" elements,
+   * regardless of whether they carry the .arabic-text class or lang="ar". */
+  [dir="rtl"] {
+    font-feature-settings: 'liga' 1, 'calt' 1;
+  }
+
   code,
   pre,
   .mono {
@@ -208,12 +214,6 @@
   .text-naskh {
     font-family: var(--font-naskh), var(--font-arabic), var(--font-fallback-arabic);
     line-height: var(--leading-arabic);
-  }
-
-  /* Ensure Arabic shaping is enabled for all Arabic text,
-   * regardless of how the font is specified (class or inline). */
-  [dir="rtl"] {
-    font-feature-settings: 'liga' 1, 'calt' 1;
   }
 
   /* Tajweed colours as text utilities. Tailwind also generates
