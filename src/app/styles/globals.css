@@ -210,6 +210,12 @@
     line-height: var(--leading-arabic);
   }
 
+  /* Ensure Arabic shaping is enabled for all Arabic text,
+   * regardless of how the font is specified (class or inline). */
+  [dir="rtl"] {
+    font-feature-settings: 'liga' 1, 'calt' 1;
+  }
+
   /* Tajweed colours as text utilities. Tailwind also generates
    * text-tajweed-* from the palette; these are the CSS-var equivalents for
    * cases where the rule name arrives at runtime. */
