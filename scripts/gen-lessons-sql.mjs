@@ -83,10 +83,9 @@ for (const l of lessons) {
     );
     process.exit(1);
   }
-  if (!isAuthored && l.category !== undefined) {
+  if (!isAuthored && l.category !== undefined && l.category !== 'vocabulary') {
     process.stderr.write(
-      `✘ generated lesson ${l.id} carries category "${l.category}" — root lessons teach ` +
-        'vocabulary, not one of the three grammar disciplines\n'
+      `✘ generated lesson ${l.id} carries category "${l.category}" — root lessons may only carry \"vocabulary\"\n`
     );
     process.exit(1);
   }
