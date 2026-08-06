@@ -271,14 +271,16 @@ notes.push(
     }
     counts.set(lesson.category, (counts.get(lesson.category) ?? 0) + 1);
   }
-  // Generated root lessons must NOT claim one. They teach vocabulary in a root family,
-  // and 408 of them under a Syntax heading is what made the payload 823 KB.
-  const miscategorised = generatedLessons.filter((l) => l.category !== undefined);
+  // Generated root lessons may carry "vocabulary" only — they teach vocabulary in a root
+  // family, and 408 of them under a Syntax heading is what made the payload 823 KB.
+  const miscategorised = generatedLessons.filter(
+    (l) => l.category !== undefined && l.category !== 'vocabulary'
+  );
   if (miscategorised.length > 0) {
     fail(
       'category',
-      `${miscategorised.length} generated root lesson(s) carry a grammar category — they ` +
-        'teach vocabulary, not nahw, sarf or balagha'
+      `${miscategorised.length} generated root lesson(s) carry an invalid category — ` +
+        'only nahw, sarf, balagha or vocabulary are allowed'
     );
   }
   notes.push(
