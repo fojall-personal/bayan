@@ -411,7 +411,6 @@ POST   /api/learning/flashcards/review
 GET    /api/learning/lessons/:id
 POST   /api/learning/lessons/:id/submit
 GET    /api/learning/next
-GET    /api/learning/vocabulary
 POST   /api/learning/vocabulary/start
 POST   /api/memorization/:id/recall
 POST   /api/memorization/:id/review
@@ -434,8 +433,6 @@ POST   /api/tutor/chat
 GET    /api/tutor/history             (last 50 turns; the chat restores the most recent three)
 GET    /api/tutor/suggested-exercises (weak lessons by accuracy over answered questions)
 GET    /api/vocabulary
-GET    /api/vocabulary/grouped
-POST   /api/vocabulary/mastery
 GET    /api/vocabulary/root/:root
 GET    /health
 ```
