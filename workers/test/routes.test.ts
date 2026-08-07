@@ -1068,7 +1068,32 @@ describe('vocabulary API', () => {
     }
   });
 
+  it('GET /api/vocabulary/word/:word returns detail for a known function word', async () => {
+    const t = H();
+    seedVocabulary(t);
 
+    // مِن (min, "from/of") is one of the four root-less function words in core-100.json
+    const { status, body } = await t.json<unknown>(
+      '/api/vocabulary/word/%D9%85%D9%90%D9%86'  // مِن URL-encoded
+    );
+    expect(status).toBe(200);
+    expect(body).toHaveProperty('data');
+    const data = body.data as { word: string; root: string | null; mastery: { masteryLevel: number } };
+    expect(data.word).toBe('مِن');
+    expect(data.root).toBeNull();
+    expect(data.mastery).toHaveProperty('masteryLevel');
+  });
+
+  it('GET /api/vocabulary/word/:word returns 404 for a word not in vocabulary', async () => {
+    const t = H();
+    seedVocabulary(t);
+
+    const { status, body } = await t.json<unknown>(
+      '/api/vocabulary/word/%D9%84%D8%A7-%D9%85%D9%88%D8%AC%D9%88%D8%AF'  // not a real entry
+    );
+    expect(status).toBe(404);
+    expect(body).toHaveProperty('error');
+  });
 
 
 

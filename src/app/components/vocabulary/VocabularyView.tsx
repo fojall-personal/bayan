@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { RootCard } from './RootCard';
 import { RootFamilyDetail } from './RootFamilyDetail';
 import { FunctionWordCard } from './FunctionWordCard';
+import { WordDetail } from './WordDetail';
 import { apiFetch } from '@/lib/api';
 
 interface VocabularyWord {
@@ -25,7 +26,8 @@ interface RootGroup {
  * Main vocabulary tab view.
  *
  * Shows all rooted vocabulary items in a grid, ordered by frequency rank.
- * Search filters by root name or meaning. Clicking a root opens family detail.
+ * Search filters by root name or meaning. Clicking a root opens family detail;
+ * clicking a function word (no root) opens its own word detail.
  * Words without roots (function words) are shown separately at the bottom.
  *
  * UX: explore first, drill second. Family detail shows corpus evidence.
@@ -37,6 +39,7 @@ export function VocabularyView() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedRoot, setSelectedRoot] = useState<string | null>(null);
+  const [selectedWord, setSelectedWord] = useState<string | null>(null);
 
   const fetchVocabulary = useCallback(async () => {
     setLoading(true);
@@ -91,6 +94,10 @@ export function VocabularyView() {
     return <RootFamilyDetail root={selectedRoot} onBack={() => setSelectedRoot(null)} />;
   }
 
+  if (selectedWord) {
+    return <WordDetail word={selectedWord} onBack={() => setSelectedWord(null)} />;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-6">
@@ -118,7 +125,7 @@ export function VocabularyView() {
           <h3 className="text-ground-50 font-semibold text-sm">Function Words ({filtered.functionWords.length})</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {filtered.functionWords.map(w => (
-              <FunctionWordCard key={w.word} word={w.word} meaning={w.meaning} transliteration={w.transliteration} onClick={() => {}} />
+              <FunctionWordCard key={w.word} word={w.word} meaning={w.meaning} transliteration={w.transliteration} onClick={() => setSelectedWord(w.word)} />
             ))}
           </div>
         </div>

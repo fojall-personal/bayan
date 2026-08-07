@@ -157,3 +157,64 @@ vocabularyRoutes.get('/root/:root', async (c) => {
   }
 });
 
+
+// ── GET /api/vocabulary/word/:word — detail for a single unrooted word ────
+//
+// Function words (مِن, فِي, عَلَى, ...) have no root, so /root/:root has nothing
+// to key off of for them. RootCard opens RootFamilyDetail on click; this is the
+// equivalent destination for FunctionWordCard, which previously had no detail
+// view to open and no-op'd on click.
+
+vocabularyRoutes.get('/word/:word', async (c) => {
+  const { word } = c.req.param();
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  try {
+    const row = await db.get<
+      Pick<VocabularyRow, 'word' | 'transliteration' | 'meaning' | 'root' | 'part_of_speech' | 'frequency_rank'>
+    >(
+      `SELECT word, transliteration, meaning, root, part_of_speech, frequency_rank
+         FROM vocabulary
+        WHERE word = ?`,
+      [word]
+    );
+
+    if (!row) {
+      return c.json({ error: `No vocabulary entry for "${word}"` }, 404);
+    }
+
+    const masteryRow = await db.get<
+      Pick<VocabularyMasteryRow, 'meaning_known' | 'reading_known' | 'reviews'>
+    >(
+      `SELECT COALESCE(meaning_known, 0) AS meaning_known,
+              COALESCE(reading_known, 0) AS reading_known,
+              COALESCE(reviews, 0) AS reviews
+         FROM vocabulary_mastery
+        WHERE user_id = ? AND word = ?`,
+      [userId, word]
+    );
+
+    const correct = masteryRow?.meaning_known ?? 0;
+    const total = masteryRow?.reviews ?? 0;
+
+    return c.json({
+      data: {
+        word: row.word,
+        transliteration: row.transliteration,
+        meaning: row.meaning,
+        root: row.root,
+        partOfSpeech: row.part_of_speech,
+        frequencyRank: row.frequency_rank,
+        mastery: {
+          correctAttempts: correct,
+          totalAttempts: total,
+          masteryLevel: masteryLevel(correct, total),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Vocabulary word detail error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});

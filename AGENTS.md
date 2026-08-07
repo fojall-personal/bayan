@@ -434,6 +434,7 @@ GET    /api/tutor/history             (last 50 turns; the chat restores the most
 GET    /api/tutor/suggested-exercises (weak lessons by accuracy over answered questions)
 GET    /api/vocabulary
 GET    /api/vocabulary/root/:root
+GET    /api/vocabulary/word/:word
 GET    /health
 ```
 
