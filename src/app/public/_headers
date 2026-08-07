@@ -1,0 +1,18 @@
+# Cloudflare Pages header rules. Copied into out/ verbatim by `next export`
+# (files under public/ land at the export root), so this ships with every
+# deploy without extra build steps.
+#
+# Why this exists: iOS "Add to Home Screen" apps run in a standalone
+# WKWebView with no reload button and no pull-to-refresh, and this app has
+# no service worker to bust. Without an explicit Cache-Control, index.html
+# (and every other page) fell back to default/heuristic caching, so a fix
+# already deployed to production stayed invisible in the home-screen app
+# until the icon was deleted and re-added. The pages themselves are cheap to
+# refetch — the actual weight is in /_next/static, which is content-hashed
+# and safe to cache forever.
+
+/*
+  Cache-Control: no-cache
+
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
