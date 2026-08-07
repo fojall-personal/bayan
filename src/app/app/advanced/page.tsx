@@ -9,6 +9,8 @@ export default function AdvancedMemorizationPage() {
       <PageHeader
         title="Advanced Memorization Tools"
         subtitle="Audio testing, cross-references, and certificate export"
+        backHref="/memorization"
+        backLabel="Back to Memorization"
       />
       <AdvancedMemorizationTools />
     </div>

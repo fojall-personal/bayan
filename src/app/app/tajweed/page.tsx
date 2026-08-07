@@ -121,6 +121,8 @@ export default function TajweedPage() {
       <PageHeader
         title="Tajweed"
         subtitle="A whole surah, colour-coded — for reciting through. For one ayah in depth, use Read."
+        backHref="/read"
+        backLabel="Back to Read"
         actions={
           <Tabs
             label="Tajweed views"

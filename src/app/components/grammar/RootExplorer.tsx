@@ -135,10 +135,21 @@ export function RootExplorer() {
             <h3 className="text-3xl text-naskh" dir="rtl">
               {family.rootArabic}
             </h3>
-            <p className="text-sm text-gray-400">
-              {family.totalOccurrences} occurrence
-              {family.totalOccurrences === 1 ? '' : 's'} in the Quran
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-gray-400">
+                {family.totalOccurrences} occurrence
+                {family.totalOccurrences === 1 ? '' : 's'} in the Quran
+              </p>
+              {/* The lookup form above stays visible, so this is a dismiss rather
+                  than a navigation — clears the result without picking a new root. */}
+              <button
+                type="button"
+                onClick={() => { setFamily(null); setQuery(''); }}
+                className="text-sm text-gray-400 underline-offset-4 hover:text-gold-400 hover:underline"
+              >
+                Clear
+              </button>
+            </div>
           </div>
 
           {family.formsAttested.length > 0 && (

@@ -114,6 +114,17 @@ export default function MemorizationPage() {
   if (currentEntry && view === 'review') {
     return (
       <div>
+        {/* Skip and Complete both exit back to the list, but each carries an SRS
+            side effect (skip still advances scheduling). This is the neutral
+            third option: changed your mind about which entry to review, no
+            scheduling consequence, no need to type through Skip to get it. */}
+        <button
+          type="button"
+          onClick={() => setCurrentEntry(null)}
+          className="mb-6 inline-flex items-center gap-1 text-sm text-ground-400 transition-colors hover:text-gold-400"
+        >
+          ← Back to Due Today
+        </button>
         <PageHeader title="Memorization Review" subtitle="Review your memorized ayahs" />
         <ReviewSession
           entry={currentEntry}

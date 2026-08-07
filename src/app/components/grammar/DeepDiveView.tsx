@@ -200,14 +200,26 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
               suggestion chips already use rather than rebuild a second exercise runner. */}
           <div className="flex items-start justify-between gap-4 mb-4">
             <h2 className="text-xl font-bold">{selectedLesson.title}</h2>
-            {/* Styled like Button's primary/md variant directly — Button renders a
-                <button>, and nesting one inside this Link's <a> is invalid HTML. */}
-            <Link
-              href={`/learning?lesson=${encodeURIComponent(selectedLesson.id)}`}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md min-h-11 px-4 py-2 text-sm font-semibold bg-gold-500 text-ground-950 hover:bg-gold-400 active:bg-gold-600 transition-colors duration-200"
-            >
-              Practice this lesson
-            </Link>
+            <div className="flex shrink-0 items-center gap-3">
+              {/* Styled like Button's primary/md variant directly — Button renders a
+                  <button>, and nesting one inside this Link's <a> is invalid HTML. */}
+              <Link
+                href={`/learning?lesson=${encodeURIComponent(selectedLesson.id)}`}
+                className="inline-flex items-center justify-center gap-2 rounded-md min-h-11 px-4 py-2 text-sm font-semibold bg-gold-500 text-ground-950 hover:bg-gold-400 active:bg-gold-600 transition-colors duration-200"
+              >
+                Practice this lesson
+              </Link>
+              {/* The lesson list above stays visible while this is open, so this
+                  is a collapse rather than a navigation — no route to go back to. */}
+              <button
+                type="button"
+                onClick={() => setSelectedLesson(null)}
+                aria-label="Close lesson detail"
+                className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-md text-ground-400 transition-colors hover:bg-gray-700 hover:text-ground-50"
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
           {/* Explanation */}
