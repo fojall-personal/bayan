@@ -97,6 +97,47 @@ const TO_ARABIC: Record<string, string> = {
   ';': 'ۣ', // U+06E3 small low seen                           (1)
 };
 
+/**
+ * Arabic script → Buckwalter, the reverse of TO_ARABIC.
+ *
+ * TO_ARABIC is a strict one-to-one mapping (see module docstring), so the
+ * base table is built once from it rather than a second hand-maintained
+ * list, so the two directions cannot drift apart.
+ *
+ * Needed because callers occasionally hold Arabic-script text (e.g. a root
+ * value already rendered for display, as vocabulary.root stores it) but the
+ * corpus tables (quran_word_morphology) are keyed on Buckwalter ASCII, not
+ * Arabic script — a lookup against them has to convert first.
+ */
+const FROM_ARABIC: Record<string, string> = Object.fromEntries(
+  Object.entries(TO_ARABIC).map(([bw, ar]) => [ar, bw])
+);
+
+/**
+ * Root-initial hamza is cited two different ways across this app's own data:
+ * content/vocabulary/core-100.json spells the root for الله as 'أله' (hamza
+ * on alef, the traditional lexicographic citation), but the Quranic Arabic
+ * Corpus's own root column normalizes every hamza-bearing alef to plain
+ * alef regardless — confirmed empirically against the live corpus: 'Alh',
+ * 'Amn', 'Ans', 'ArD' (2851/879/97/461 rows) all exist, their hamza-alef
+ * equivalents ('>lh', '>mn', '>ns', '>rD') do not exist at all. A root
+ * lookup against that table has to normalize the same way or it 404s on a
+ * root that is genuinely in the corpus. This makes arabicToBuckwalter lossy
+ * for these four characters specifically — the exact tradeoff the corpus
+ * itself already makes for root citation, not an extra one introduced here.
+ */
+const HAMZA_TO_ALEF = new Set(['>', '<', '|', '&', '}', "'"]);
+
+export function arabicToBuckwalter(input: string | null | undefined): string {
+  if (!input) return '';
+  return [...input]
+    .map((c) => {
+      const bw = FROM_ARABIC[c] ?? c;
+      return HAMZA_TO_ALEF.has(bw) ? 'A' : bw;
+    })
+    .join('');
+}
+
 /** Diacritics, for the unvocalised variant. */
 const DIACRITICS = new Set(['F', 'N', 'K', 'a', 'u', 'i', '~', 'o']);
 

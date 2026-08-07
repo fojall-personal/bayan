@@ -3,6 +3,7 @@ import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 
 import { buildFamily } from '../lib/root-families';
+import { arabicToBuckwalter } from '../lib/buckwalter';
 import type {
   VocabularyRow,
   VocabularyMasteryRow,
@@ -89,6 +90,12 @@ vocabularyRoutes.get('/root/:root', async (c) => {
   const userId = c.get('userId');
   const db = getDb(c);
 
+  // vocabulary.root is Arabic script (what the Vocabulary tab links from);
+  // quran_word_morphology.root is Buckwalter ASCII (what the corpus stores).
+  // Convert before querying it, or every lookup 404s regardless of whether
+  // the root actually occurs in the corpus.
+  const buckwalterRoot = arabicToBuckwalter(root);
+
   try {
     const morphRows = await db.query<
       Pick<VocabularyRow, 'root'> & {
@@ -106,7 +113,7 @@ vocabularyRoutes.get('/root/:root', async (c) => {
       `SELECT lemma, root, pos, verb_form, aspect, voice, case_case, gender, number, person
          FROM quran_word_morphology
         WHERE root = ?`,
-      [root]
+      [buckwalterRoot]
     );
 
     if (morphRows.length === 0) {
@@ -116,7 +123,7 @@ vocabularyRoutes.get('/root/:root', async (c) => {
       );
     }
 
-    const family = buildFamily(root, morphRows);
+    const family = buildFamily(buckwalterRoot, morphRows);
 
     // User mastery for this root: aggregated across every word that
     // belongs to it. A root with no word-level attempts returns the

@@ -1034,12 +1034,15 @@ describe('vocabulary API', () => {
   it('GET /api/vocabulary/root/:root returns family data for a known root', async () => {
     const t = H();
     seedVocabulary(t);
-    // اللَّه has root 'أله' in core-100.json
-    seedMorphologyForRoots(t, ['أله']);
+    // اللَّه has root 'أله' in core-100.json (Arabic script - what vocabulary.root
+    // stores), which is 'Alh' in Buckwalter - what quran_word_morphology.root
+    // actually stores in the real corpus. Seed with the real format so this test
+    // catches a route querying the wrong one, which it previously did not.
+    seedMorphologyForRoots(t, ['Alh']);
 
     // اللَّه (Allah) is root #2 in core-100.json, should exist in morphology
     const { status, body } = await t.json<unknown>(
-      '/api/vocabulary/root/%D8%A3%D9%84%D9%87'  // أله URL-encoded
+      '/api/vocabulary/root/%D8%A3%D9%84%D9%87'  // أله URL-encoded, as the real frontend sends it
     );
     expect(status).toBe(200);
     expect(body).toHaveProperty('data');
