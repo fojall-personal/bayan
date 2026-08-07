@@ -66,8 +66,6 @@ export function WordDetail({ word, onBack }: WordDetailProps) {
           style={{
             fontFamily: 'var(--font-arabic)',
             lineHeight: 'var(--leading-arabic)',
-            fontFeatureSettings: 'liga 1, calt 1',
-            fontVariantLigatures: 'contextual',
           }}
         >
           {data.word}

@@ -32,7 +32,7 @@ function MemberRow({ member }: { member: FamilyMember }) {
     <div className="border-b border-ground-800 pb-3 last:border-0">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-xl font-arabic text-ground-100" dir="rtl" style={{ fontFamily: 'var(--font-arabic)', lineHeight: 'var(--leading-arabic)', fontFeatureSettings: 'liga 1, calt 1' }}>
+          <span className="text-xl font-arabic text-ground-100" dir="rtl" style={{ fontFamily: 'var(--font-arabic)', lineHeight: 'var(--leading-arabic)' }}>
             {member.lemmaArabic}
           </span>
           <span className="text-ground-300 text-sm">{posLabels[member.pos ?? ''] || member.pos || ''}</span>

@@ -147,16 +147,6 @@
     font-family: var(--font-arabic), var(--font-fallback-arabic);
     line-height: var(--leading-arabic);
     direction: rtl;
-    font-feature-settings: 'liga' 1, 'calt' 1;
-  }
-
-  /* Ensure Arabic shaping is enabled for all dir="rtl" elements,
-   * regardless of whether they carry the .arabic-text class or lang="ar".
-   * font-variant-ligatures: contextual enables contextual forms;
-   * font-feature-settings calt/liga are fallbacks for older browsers. */
-  [dir="rtl"] {
-    font-feature-settings: 'liga' 1, 'calt' 1;
-    font-variant-ligatures: contextual;
   }
 
   code,

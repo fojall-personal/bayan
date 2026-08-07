@@ -27,7 +27,7 @@ export function FunctionWordCard({ word, meaning, transliteration, onClick }: Fu
           <div
             className="text-xl font-arabic text-ground-200"
             dir="rtl"
-            style={{ fontFamily: 'var(--font-arabic)', lineHeight: 'var(--leading-arabic)', fontFeatureSettings: 'liga 1, calt 1' }}
+            style={{ fontFamily: 'var(--font-arabic)', lineHeight: 'var(--leading-arabic)' }}
           >
             {word}
           </div>
