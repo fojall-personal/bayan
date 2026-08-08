@@ -48,7 +48,7 @@ backend gaps and test coverage, then content depth.
   or `cd src/app && npm run dev` and manually clicking through onboarding without
   selecting a goal card — Next must stay disabled).
 
-- [ ] 3. Fix unreachable path-assignment branch in scoring.ts
+- [x] 3. Fix unreachable path-assignment branch in scoring.ts
   `workers/src/lib/scoring.ts:74-91` — the comment at line 76 says "if literacy
   is moderate (40-70) but comprehension/grammar are lower, Path 2", but the
   branch at line 83 only runs when `weakestArea === 'literacy'`, which by

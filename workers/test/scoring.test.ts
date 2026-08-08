@@ -56,6 +56,33 @@ describe('path assignment', () => {
     expect(assignLearningPath(scores(90, 85, 80, 75))).toBe('path3');
   });
 
+  it('routes a catastrophically weak module below 40 to path1 even when literacy is not the weakest', () => {
+    // { literacy: 45, comprehension: 95, grammar: 10, memorization: 95 }
+    // grammar is 10, far below the 40 threshold, but literacy is not the weakest area.
+    // The old branch only checked `weakestArea === 'literacy'`, so this case silently
+    // returned `path2` — a learner with a broken grammar module would not see any
+    // remediation (plan task 3, 2026-08-08).
+    expect(assignLearningPath(scores(45, 95, 10, 95))).toBe('path1');
+  });
+
+  it('routes comprehension below 40 to path1 even when literacy is high', () => {
+    // literacy=80, comprehension=15, grammar=80, memorization=80
+    // comprehension is the weakest and well below 40, regardless of literacy.
+    expect(assignLearningPath(scores(80, 15, 80, 80))).toBe('path1');
+  });
+
+  it('routes memorization below 40 to path1 regardless of other strengths', () => {
+    // literacy=85, comprehension=85, grammar=85, memorization=20
+    // memorization is catastrophically low.
+    expect(assignLearningPath(scores(85, 85, 85, 20))).toBe('path1');
+  });
+
+  it('returns path3 when composite is high and every module is >= 60', () => {
+    // literacy=70, comprehension=70, grammar=65, memorization=60
+    // All >= 60, composite = 68.25, so not path3 — falls to path2.
+    expect(assignLearningPath(scores(70, 70, 65, 60))).toBe('path2');
+  });
+
   it('returns one of the three known paths for any input', () => {
     for (const s of [
       scores(0, 0, 0, 0),

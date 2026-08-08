@@ -72,16 +72,15 @@ export function assignLearningPath(scores: ModuleScores): string {
   const [weakestArea, weakestScore] = weakest;
 
   // Path assignment logic:
-  // - If literacy is very low (<40), Path 1 (beginner)
-  // - If literacy is moderate (40-70) but comprehension/grammar are lower, Path 2
-  // - If literacy is high (>70) and other scores are balanced, Path 3
+  // - If ANY module is very low (<40), Path 1 (beginner) — a
+  //   single catastrophically weak module cannot be masked by strength
+  //   elsewhere (plan task 3, 2026-08-08).
+  // - If composite is high enough and every module is >= 60, Path 3
+  //   (advanced reader) — no module is a real weak point.
+  // - Otherwise Path 2 (conversational speaker).
 
-  if (weakestArea === 'literacy' && weakestScore < 40) {
+  if (weakestScore < 40) {
     return 'path1';
-  }
-
-  if (weakestArea === 'literacy' && weakestScore < 70) {
-    return composite < 50 ? 'path1' : 'path2';
   }
 
   if (composite >= 70 && weakestScore >= 60) {
