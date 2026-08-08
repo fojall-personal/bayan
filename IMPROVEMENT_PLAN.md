@@ -100,7 +100,7 @@ backend gaps and test coverage, then content depth.
   Verify: add a test to `workers/test/routes.test.ts` posting `{}` to
   `/api/grammar/parse` and asserting 400, not 500; `cd workers && npx vitest run routes` passes.
 
-- [ ] 7. Stop leaking internal error text on /api/auth/profile
+- [x] 7. Stop leaking internal error text on /api/auth/profile
   `workers/src/routes/auth.ts:48` and `:52` — the two catch blocks in the
   `GET /api/auth/profile` handler include `details: (error as Error).message`
   in the JSON response body. Every other route in `workers/src/routes/` returns
