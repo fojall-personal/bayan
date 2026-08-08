@@ -342,7 +342,7 @@ backend gaps and test coverage, then content depth.
   Verify: `cd workers && npx vitest run grammar-parser` passes with the new
   test file present and containing real assertions (not just "doesn't throw").
 
-- [ ] 28. Add particle/pronoun/conjunction vocabulary to core-100
+- [x] 28. Add particle/pronoun/conjunction vocabulary to core-100
   `content/vocabulary/core-100.json` has 103 entries with 0 classified as
   particles, conjunctions, pronouns, or demonstratives (71 nouns, 6 verbs, 13
   adjectives, 5 participles, 7 prepositions, 1 proper noun) despite these word
