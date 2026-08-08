@@ -137,7 +137,7 @@ backend gaps and test coverage, then content depth.
   runs ESLint successfully (no "must be installed" error) and exits 0 or with
   only pre-existing warnings, not the installation error.
 
-- [ ] 10. Surface tutor chat send failures instead of failing silently
+- [x] 10. Surface tutor chat send failures instead of failing silently
   `src/app/components/tutor/TutorChat.tsx` — a failed chat request only logs
   to `console.error`; the UI shows nothing, so the learner sees their message
   vanish with no feedback. Add a visible error state (an inline error bubble

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { apiFetch, apiPost } from '@/lib/api';
+import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
 import { Input } from '@/components/ui/Input';
 
 interface Message {
@@ -46,6 +46,7 @@ export function TutorChat() {
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [restoredCount, setRestoredCount] = useState(0);
+  const [sendError, setSendError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -137,11 +138,19 @@ export function TutorChat() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Chat error:', error);
+      const message = apiErrorMessage(error);
+      setMessages((prev) => [...prev, {
+        id: `err-${Date.now()}`,
+        role: 'assistant',
+        content: message,
+      }]);
+      setSendError(message);
     } finally {
       setLoading(false);
     }
   };
+
+  const dismissError = () => setSendError(null);
 
   // The empty state for someone with no exercise history. Kept generic on purpose:
   // a learner who has finished nothing has no measured weakness, and inventing one
@@ -273,6 +282,27 @@ export function TutorChat() {
             </div>
           </div>
         ))}
+
+        {sendError && (
+          <div className="rounded-lg border border-red-900/50 bg-red-950/40 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm text-red-300" role="alert">{sendError}</p>
+              <button
+                onClick={dismissError}
+                className="shrink-0 rounded-md p-1 text-red-400 transition-colors hover:bg-red-900/40 hover:text-red-200"
+                aria-label="Dismiss error"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <button
+              onClick={() => handleSend(input)}
+              className="mt-2 text-xs text-gold-400 hover:underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
 
         {loading && (
           <div className="flex justify-start">
