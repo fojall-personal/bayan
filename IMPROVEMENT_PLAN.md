@@ -177,7 +177,7 @@ backend gaps and test coverage, then content depth.
   export and the next-ayah lookup with the workers dev server stopped, and
   confirm both show a visible error instead of doing nothing.
 
-- [ ] 14. Add back navigation to /root, /learning, /assessment
+- [x] 14. Add back navigation to /root, /learning, /assessment
   Per the pattern documented on `PageHeader` ("for pages reached by exactly
   one in-app link and absent from the top nav"), three routes still lack a
   `backHref`: `src/app/components/read/RootStudy.tsx` has `Link href="/today"`
