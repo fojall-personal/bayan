@@ -276,7 +276,7 @@ backend gaps and test coverage, then content depth.
   Verify: `grep -n "getWeeklyProgress" workers/src/routes/progress.ts` returns
   nothing; `cd workers && npx tsc --noEmit && npx vitest run` both pass.
 
-- [ ] 23. Add index on quran_word_gloss.arabic
+- [x] 23. Add index on quran_word_gloss.arabic
   `workers/src/db/migrations/0014_word_glosses.sql` indexes `(surah_id,
   ayah_id)` and `english` but not `arabic`, even though `arabic` is queried
   with exact-match and prefix-`LIKE` in `workers/src/routes/tutor.ts` (hit on
