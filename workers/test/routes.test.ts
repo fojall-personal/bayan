@@ -79,6 +79,17 @@ describe('auth is enforced on every /api route', () => {
     const res = await H().request('/health', { auth: false });
     expect(res.status).toBe(200);
   });
+
+  it('auth: correct token succeeds, wrong token is 401', async () => {
+    const res = await H().request('/api/auth/profile');
+    expect(res.status).toBe(200);
+    // A wrong bearer token still has a header, but its bytes differ; the
+    // comparison must reject it without leaking which byte was wrong.
+    const wrong = await H().request('/api/auth/profile', {
+      headers: { Authorization: 'Bearer totally-wrong-token' },
+    });
+    expect(wrong.status).toBe(401);
+  });
 });
 
 /**

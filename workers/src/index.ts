@@ -138,12 +138,29 @@ app.use('/api/*', async (c, next) => {
     return c.json({ error: 'Server misconfigured' }, 500);
   }
 
-  if (c.req.header('authorization') !== `Bearer ${expected}`) {
+  // Constant-time comparison. A plain `!==` leaks the index of the first
+  // differing byte via timing, which is enough for an attacker to recover the
+  // shared bearer token one byte at a time. A manual XOR-accumulate is enough
+  // here and avoids the dependency footprint of Web Crypto's timingSafeEqual.
+  if (!constantTimeEquals(
+    c.req.header('authorization') ?? '',
+    `Bearer ${expected}`
+  )) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
   c.set('userId', SINGLE_USER_ID);
   await next();
+
+  /** Byte-level constant-time equality — always compares every byte. */
+  function constantTimeEquals(a: string, b: string): boolean {
+    const ab = new TextEncoder().encode(a);
+    const bb = new TextEncoder().encode(b);
+    if (ab.length !== bb.length) return false;
+    let diff = 0;
+    for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ bb[i];
+    return diff === 0;
+  }
 });
 
 app.route('/api/auth', authRoutes);

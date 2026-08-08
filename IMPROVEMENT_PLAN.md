@@ -109,7 +109,7 @@ backend gaps and test coverage, then content depth.
   logging the full error server-side via the existing `console.error` calls).
   Verify: `grep -n "details:" workers/src/routes/auth.ts` returns nothing; `cd workers && npx vitest run` still passes.
 
-- [ ] 8. Use constant-time comparison for the shared bearer token
+- [x] 8. Use constant-time comparison for the shared bearer token
   `workers/src/index.ts:141` — the token-mode auth check compares
   `c.req.header('authorization') !== \`Bearer ${expected}\`` with a plain
   string `!==`, which is not constant-time and is a timing side-channel on the
