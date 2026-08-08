@@ -150,7 +150,7 @@ Each module is built on the completed design system and component library from P
 - RESTful endpoints under `/api/` (no `/v1/` prefix)
 - Bearer token auth (single token, hardcoded for self-hosted)
 - JSON responses with consistent error format: `{ error: string }`
-- Rate limiting: 100 req/min per IP
+- Rate limiting: not implemented — no per-IP or per-token request limiting exists anywhere in workers/src/
 
 ### Database (D1)
 - Use parameterized queries (no string interpolation)
@@ -312,7 +312,7 @@ Set these secrets in your GitHub repository:
 - No PII collected beyond name/email
 - Audio recordings stored in R2 with time-limited signed URLs
 - D1 database queries parameterized (no SQL injection)
-- Rate limiting on API endpoints
+- No rate limiting on API endpoints (not yet implemented)
 
 ---
 

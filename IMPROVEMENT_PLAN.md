@@ -290,7 +290,7 @@ backend gaps and test coverage, then content depth.
   `cd workers && npx wrangler d1 migrations apply languagebuilder --local`
   applies cleanly.
 
-- [ ] 24. Correct AGENTS.md's false rate-limiting claim
+- [x] 24. Correct AGENTS.md's false rate-limiting claim
   `AGENTS.md:153` ("Rate limiting: 100 req/min per IP") and `:315` ("Rate
   limiting on API endpoints") describe a control that does not exist anywhere
   in `workers/src/` (confirmed: no rate-limiting code in the middleware chain
