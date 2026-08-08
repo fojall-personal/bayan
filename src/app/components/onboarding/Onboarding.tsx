@@ -51,7 +51,7 @@ export function Onboarding({ onComplete, initialGoal }: OnboardingProps) {
   // The root screen asks the goal question first, so skip step 1 when it already
   // has an answer rather than asking the same thing twice.
   const [step, setStep] = useState(preset ? 2 : 1);
-  const [goal, setGoal] = useState<Goal>(preset ?? 'all');
+  const [goal, setGoal] = useState<Goal | undefined>(preset);
   const [readingAbility, setReadingAbility] = useState<'no' | 'partial' | 'yes'>('no');
   const [memorizedSurahs, setMemorizedSurahs] = useState<'0' | '1-5' | '6-20' | '21+'>('0');
   const [challenge, setChallenge] = useState<'reading' | 'grammar' | 'memorization'>('reading');
@@ -254,7 +254,7 @@ export function Onboarding({ onComplete, initialGoal }: OnboardingProps) {
           <div className="bg-surface-2 rounded-lg p-4 mb-6 text-left">
             <h3 className="font-semibold mb-2">Your profile</h3>
             <ul className="text-sm text-ground-300 space-y-1">
-              <li>• Goal: {GOAL_LABEL[goal]}</li>
+              <li>• Goal: {goal ? GOAL_LABEL[goal] : 'Select a goal'}</li>
               <li>• Reading Arabic script: {READING_LABEL[readingAbility]}</li>
               <li>• Surahs memorized: {MEMORIZED_LABEL[memorizedSurahs]}</li>
               <li>• Biggest challenge: {CHALLENGE_LABEL[challenge]}</li>

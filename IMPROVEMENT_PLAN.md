@@ -35,7 +35,7 @@ backend gaps and test coverage, then content depth.
   Arabic consonant appears in exactly the group(s) tajweed sources place it in.
   Verify: `grep -n "جddf\|حhat\|همهمه\|ستلقلقل\|شفتل\|لسنل\|مخرجين" src/app/components/tajweed/MakharijDiagram.tsx` returns nothing, and the object keys are valid standalone Arabic makharij names.
 
-- [ ] 2. Fix Onboarding goal-selection gate that never blocks
+- [x] 2. Fix Onboarding goal-selection gate that never blocks
   `src/app/components/onboarding/Onboarding.tsx` (goal-selection step) — the
   "Next" button's `disabled={!goal}` check can never fire because `goal`'s
   `useState` default is already `'all'`, so a learner can advance without ever
