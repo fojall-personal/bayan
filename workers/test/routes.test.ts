@@ -160,6 +160,26 @@ describe('POSTs validate their inputs', () => {
     });
     expect(status).toBe(400);
   });
+
+  it('auth/onboarding rejects {} with a 400, not a 500', async () => {
+    const { status, body } = await H().json<{ error?: string }>(
+      '/api/auth/onboarding',
+      {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }
+    );
+    expect(status).toBe(400);
+    expect(body.error).toMatch(/goal/);
+  });
+
+  it('auth/onboarding rejects a numeric goal', async () => {
+    const { status } = await H().json('/api/auth/onboarding', {
+      method: 'POST',
+      body: JSON.stringify({ goal: 123, readingAbility: 'yes', memorizedSurahs: '0' }),
+    });
+    expect(status).toBe(400);
+  });
 });
 
 describe('the ayah endpoint', () => {

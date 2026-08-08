@@ -57,7 +57,25 @@ authRoutes.get('/profile', async (c) => {
 authRoutes.post('/onboarding', async (c) => {
   const userId = c.get('userId');
   const db = getDb(c);
-  const { goal, readingAbility, memorizedSurahs, challenge } = await c.req.json();
+
+  let body: Record<string, unknown>;
+  try {
+    body = await c.req.json();
+  } catch (error) {
+    console.error('Onboarding body parse error:', error);
+    return c.json({ error: 'Request body must be valid JSON' }, 400);
+  }
+
+  const { goal, readingAbility, memorizedSurahs, challenge } = body;
+
+  // Validate required fields — `goal` is NOT NULL in the schema, so sending
+  // {} produces a silent constraint violation that becomes an opaque 500.
+  if (typeof goal !== 'string' || goal.length === 0) {
+    return c.json(
+      { error: "Validation failed: 'goal' is required and must be a non-empty string" },
+      400
+    );
+  }
 
   try {
     // Determine initial learning path based on self-assessment

@@ -77,7 +77,7 @@ backend gaps and test coverage, then content depth.
   relevant file) seeding a `questions_answered = 0` attempt and asserting the
   computed rate/ordering has no `NaN`; `cd workers && npx vitest run` passes.
 
-- [ ] 5. Validate onboarding payload before writing to D1
+- [x] 5. Validate onboarding payload before writing to D1
   `workers/src/routes/auth.ts:55-84` (`POST /api/auth/onboarding`) — `goal`
   is destructured from the request body with no validation, but `users.goal`
   is `NOT NULL` in the schema. Posting `{}` runs an `UPDATE ... SET goal = NULL`
