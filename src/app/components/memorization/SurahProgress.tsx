@@ -146,14 +146,37 @@ export function SurahProgress({ surahId, surahName, totalAyahs }: SurahProgressP
             new: 'bg-gray-700 text-gray-400',
           };
 
+          // Color alone doesn't distinguish status for colorblind users or on
+          // low-quality screens, so each cell also carries a glyph + label
+          // that isn't color-dependent.
+          const statusGlyphs = {
+            mastered: '✓',
+            learning: '◐',
+            reviewing: '↻',
+            new: '',
+          };
+          const statusLabels = {
+            mastered: 'Mastered',
+            learning: 'Learning',
+            reviewing: 'Reviewing',
+            new: 'Not started',
+          };
+
           return (
             <div
               key={ayah}
               className={`p-2 rounded text-center text-sm font-medium transition-colors ${
                 statusColors[status] || statusColors.new
               }`}
+              aria-label={`Ayah ${ayah}: ${statusLabels[status] || statusLabels.new}`}
+              title={statusLabels[status] || statusLabels.new}
             >
               {ayah}
+              {statusGlyphs[status] && (
+                <span aria-hidden="true" className="ml-0.5">
+                  {statusGlyphs[status]}
+                </span>
+              )}
             </div>
           );
         })}

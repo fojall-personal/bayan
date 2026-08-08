@@ -226,7 +226,7 @@ backend gaps and test coverage, then content depth.
   each existing `dir="rtl"` in these four files.
   Verify: `grep -L "lang=\"ar\"" src/app/components/vocabulary/RootCard.tsx src/app/components/vocabulary/FunctionWordCard.tsx src/app/components/vocabulary/WordDetail.tsx src/app/components/vocabulary/RootFamilyDetail.tsx` prints nothing (i.e. every file now contains `lang="ar"`).
 
-- [ ] 18. Fix color-only status signaling in SurahProgress ayah grid
+- [x] 18. Fix color-only status signaling in SurahProgress ayah grid
   `src/app/components/memorization/SurahProgress.tsx` — the per-ayah grid
   distinguishes mastered/learning/reviewing/new states only by background
   color, which fails for colorblind users and anyone on a low-quality screen.
