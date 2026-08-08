@@ -319,7 +319,7 @@ backend gaps and test coverage, then content depth.
   Verify: `cd workers && npx vitest run` passes including the new test(s);
   `grep -rn "ACCESS_TEAM_DOMAIN" workers/test/` now returns matches.
 
-- [ ] 26. Add route test for GET /api/progress/reading-queue
+- [x] 26. Add route test for GET /api/progress/reading-queue
   `workers/src/routes/progress.ts` (`reading-queue` handler, ~line 209) has
   non-trivial SQL (three CTEs) and zero test coverage —
   `grep -rn "reading-queue" workers/test/` currently returns nothing. Add a

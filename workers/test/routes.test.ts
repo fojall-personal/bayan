@@ -657,6 +657,67 @@ describe('known roots and coverage', () => {
   });
 });
 
+describe('the reading queue', () => {
+  it('requires auth', async () => {
+    const { status } = await H().json('/api/progress/reading-queue', { auth: false });
+    expect(status).toBe(401);
+  });
+
+  it('surfaces an ayah with exactly one unknown root, closest-to-readable first', async () => {
+    const t = H();
+    // A 4-word ayah where 3 of the 4 roots are already known — the one unknown
+    // root (rootD) is what the queue should surface, per the handler's own
+    // filter (unknown_rooted = 1 AND total_rooted >= 3).
+    for (const [wordIndex, root] of [
+      [1, 'rootA'],
+      [2, 'rootB'],
+      [3, 'rootC'],
+      [4, 'rootD'],
+    ] as const) {
+      t.db
+        .prepare(
+          `INSERT INTO quran_word_morphology
+             (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos)
+           VALUES (2, 255, ?, 1, 'f', 'l', ?, 'N')`
+        )
+        .run(wordIndex, root);
+    }
+    t.db
+      .prepare(
+        `INSERT INTO quran_verses (surah, ayah, text_uthmani) VALUES (2, 255, 'test ayah text')`
+      )
+      .run();
+    for (const root of ['rootA', 'rootB', 'rootC']) {
+      t.db
+        .prepare(`INSERT INTO user_known_root (user_id, root) VALUES (?, ?)`)
+        .run(TEST_USER, root);
+    }
+
+    const { status, body } = await t.json<{
+      data: {
+        items: {
+          surah: number;
+          ayah: number;
+          blockingRoot: string;
+          knownWords: number;
+          totalWords: number;
+          coveragePct: number;
+        }[];
+        thresholdNote: string;
+      };
+    }>('/api/progress/reading-queue');
+
+    expect(status).toBe(200);
+    expect(body.data.thresholdNote).toBeTruthy();
+    const item = body.data.items.find((i) => i.surah === 2 && i.ayah === 255);
+    expect(item).toBeDefined();
+    expect(item!.blockingRoot).toBe('rootD');
+    expect(item!.knownWords).toBe(3);
+    expect(item!.totalWords).toBe(4);
+    expect(item!.coveragePct).toBe(75);
+  });
+});
+
 describe('the tutor', () => {
   it('stores each exchange and returns it as history', async () => {
     const t = H();
