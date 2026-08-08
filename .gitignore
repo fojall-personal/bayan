@@ -40,3 +40,7 @@ languagebuilder.env
 # workers/.wrangler was already covered; the repo root one appeared when
 # `wrangler pages dev` ran from here for the UI audit.
 .wrangler/
+
+# Raw transcripts from the automated improvement-loop runner (83MB, no reason
+# to live in git history) — removed from main 2026-08-08.
+.agent-loop-logs/
