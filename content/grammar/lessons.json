@@ -445,7 +445,8 @@
     "module": "grammar",
     "level": 3,
     "prerequisites": [
-      "grammar-04"
+      "grammar-04",
+      "grammar-05"
     ],
     "estimated_minutes": 25,
     "content": {

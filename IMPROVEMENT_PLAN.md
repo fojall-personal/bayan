@@ -355,7 +355,7 @@ backend gaps and test coverage, then content depth.
   sourced from the licensed corpora).
   Verify: `node scripts/check-content.mjs` passes; `node scripts/check-vocab-imports.mjs` (if applicable) passes; a quick count shows particles/pronouns/conjunctions now present and non-zero in `content/vocabulary/core-100.json`.
 
-- [ ] 29. Fix grammar lesson prerequisite sequencing
+- [x] 29. Fix grammar lesson prerequisite sequencing
   `content/grammar/lessons.json` — `grammar-08` (Derived Verb Forms, level 3)
   currently only requires `grammar-04` (Present Tense), letting a learner reach
   verb forms via 01→02→04→08 without ever taking `grammar-05` (Case Endings),
