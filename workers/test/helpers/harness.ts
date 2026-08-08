@@ -36,6 +36,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SignJWT, exportJWK, generateKeyPair } from 'jose';
 import app from '../../src/index';
 import { SINGLE_USER_ID } from '../../src/lib/context';
 
@@ -160,6 +161,115 @@ export function harness(): Harness {
     },
     close() {
       db.close();
+    },
+  };
+}
+
+/**
+ * Production auth mode (plan §4): ACCESS_TEAM_DOMAIN + ACCESS_AUD set, every
+ * request carries a signed Cloudflare Access JWT instead of the shared bearer
+ * token. verifyAccessJwt() has zero coverage from the token-mode harness()
+ * above, since ACCESS_TEAM_DOMAIN/ACCESS_AUD are never set there.
+ *
+ * verifyAccessJwt() fetches its signing keys from
+ * `https://{teamDomain}/cdn-cgi/access/certs` (createRemoteJWKSet). Rather
+ * than mock that function, this generates a real RSA keypair and stubs
+ * global fetch to serve the public half from that exact URL — jwtVerify runs
+ * unmodified, so a signature/audience/issuer bug in identity.ts would still
+ * fail the test the same way a real bad Access token would.
+ *
+ * identity.ts caches the created JWKS fetcher in a module-level Map keyed
+ * only by teamDomain, which outlives any single test. Each call here mints a
+ * fresh, unique team domain (and therefore a fresh cache entry and a fresh
+ * keypair) so one test's stub keys can never be read against another test's
+ * token.
+ */
+export const TEST_ACCESS_AUD = 'test-aud-not-a-real-one';
+
+export interface AccessHarness extends Omit<Harness, 'request' | 'json'> {
+  request(path: string, init?: RequestInit): Promise<Response>;
+  json<T = unknown>(path: string, init?: RequestInit): Promise<{ status: number; body: T }>;
+  /** A JWT signed by the mocked Access keypair, honoured by the stubbed JWKS endpoint. */
+  signToken(
+    email: string,
+    overrides?: { aud?: string; issuer?: string; expiresIn?: string }
+  ): Promise<string>;
+}
+
+export async function accessHarness(): Promise<AccessHarness> {
+  const db = new DatabaseSync(':memory:');
+  applyMigrations(db);
+
+  const teamDomain = `test-team-${crypto.randomUUID()}.cloudflareaccess.com`;
+
+  const { publicKey, privateKey } = await generateKeyPair('RS256');
+  const kid = 'test-key-1';
+  const jwk = await exportJWK(publicKey);
+  jwk.kid = kid;
+  jwk.alg = 'RS256';
+  jwk.use = 'sig';
+
+  const jwksUrl = `https://${teamDomain}/cdn-cgi/access/certs`;
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url =
+      typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    if (url === jwksUrl) {
+      return new Response(JSON.stringify({ keys: [jwk] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return realFetch(input as never, init);
+  }) as typeof fetch;
+
+  const env = {
+    DB: d1(db),
+    ACCESS_TEAM_DOMAIN: teamDomain,
+    ACCESS_AUD: TEST_ACCESS_AUD,
+  };
+
+  const request: AccessHarness['request'] = (path, init = {}) => {
+    const { headers, ...rest } = init;
+    return app.request(
+      `http://localhost${path}`,
+      {
+        ...rest,
+        headers: {
+          ...(rest.body ? { 'Content-Type': 'application/json' } : {}),
+          ...(headers as Record<string, string>),
+        },
+      },
+      env as never
+    );
+  };
+
+  return {
+    db,
+    request,
+    async json(path, init) {
+      const res = await request(path, init);
+      const text = await res.text();
+      let body: unknown;
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = { __nonJson: text };
+      }
+      return { status: res.status, body: body as never };
+    },
+    close() {
+      db.close();
+      globalThis.fetch = realFetch;
+    },
+    async signToken(email, overrides = {}) {
+      return new SignJWT({ email })
+        .setProtectedHeader({ alg: 'RS256', kid })
+        .setIssuedAt()
+        .setIssuer(overrides.issuer ?? `https://${teamDomain}`)
+        .setAudience(overrides.aud ?? TEST_ACCESS_AUD)
+        .setExpirationTime(overrides.expiresIn ?? '10m')
+        .sign(privateKey);
     },
   };
 }

@@ -306,7 +306,7 @@ backend gaps and test coverage, then content depth.
   matching real code you added), not the old false "100 req/min" claim without
   backing.
 
-- [ ] 25. Add test coverage for Access-JWT auth mode
+- [x] 25. Add test coverage for Access-JWT auth mode
   `workers/src/lib/identity.ts`'s `verifyAccessJwt` (lines ~51-71) has zero
   test coverage, and every one of the 290 existing tests runs exclusively in
   shared-bearer-token mode (`workers/test/helpers/harness.ts` hardcodes
