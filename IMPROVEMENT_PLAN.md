@@ -89,7 +89,7 @@ backend gaps and test coverage, then content depth.
   `/api/auth/onboarding` and asserting a 400 response with a descriptive
   error, not a 500; `cd workers && npx vitest run routes` passes.
 
-- [ ] 6. Validate sentence body on /api/grammar/parse
+- [x] 6. Validate sentence body on /api/grammar/parse
   `workers/src/routes/grammar.ts:75-82` (`POST /api/grammar/parse`) —
   `sentence` is never validated; posting a valid-but-empty JSON body (`{}`)
   leaves `sentence` as `undefined`, and `parseArabicSentence(undefined)` throws

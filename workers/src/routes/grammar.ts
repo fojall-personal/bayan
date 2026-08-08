@@ -75,7 +75,20 @@ grammarRoutes.get('/deepdive/:category', async (c) => {
 // POST /api/grammar/parse — Parse an Arabic sentence
 grammarRoutes.post('/parse', async (c) => {
   const userId = c.get('userId');
-  const { sentence } = await c.req.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'Request body must be valid JSON' }, 400);
+  }
+  const { sentence } = body as { sentence?: unknown };
+
+  if (typeof sentence !== 'string' || sentence.trim().length === 0) {
+    return c.json(
+      { error: "Validation failed: 'sentence' is required and must be a non-empty string" },
+      400
+    );
+  }
 
   try {
     const parsed = parseArabicSentence(sentence);

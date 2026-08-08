@@ -180,6 +180,39 @@ describe('POSTs validate their inputs', () => {
     });
     expect(status).toBe(400);
   });
+
+  it('grammar/parse rejects {} with a 400, not a 500', async () => {
+    const { status, body } = await H().json<{ error?: string }>(
+      '/api/grammar/parse',
+      {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }
+    );
+    expect(status).toBe(400);
+    expect(body.error).toMatch(/sentence/i);
+  });
+
+  it('grammar/parse rejects an empty sentence string with a 400', async () => {
+    const { status } = await H().json('/api/grammar/parse', {
+      method: 'POST',
+      body: JSON.stringify({ sentence: '   ' }),
+    });
+    expect(status).toBe(400);
+  });
+
+  it('grammar/parse accepts a non-empty sentence', async () => {
+    const { status, body } = await H().json<{ data: { parsed: unknown } }>(
+      '/api/grammar/parse',
+      {
+        method: 'POST',
+        body: JSON.stringify({ sentence: 'كَتَبَ ٱلْكِتَٰبَ' }),
+      }
+    );
+    expect(status).toBe(200);
+    expect(body.data).toHaveProperty('parsed');
+    expect(body.data.parsed).toHaveProperty('words');
+  });
 });
 
 describe('the ayah endpoint', () => {
