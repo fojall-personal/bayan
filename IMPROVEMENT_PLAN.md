@@ -329,7 +329,7 @@ backend gaps and test coverage, then content depth.
   Verify: `grep -rn "reading-queue" workers/test/routes.test.ts` finds the new
   test; `cd workers && npx vitest run routes` passes.
 
-- [ ] 27. Add correctness tests for grammar-parser.ts
+- [x] 27. Add correctness tests for grammar-parser.ts
   `workers/src/lib/grammar-parser.ts` backs the live `POST /api/grammar/parse`
   endpoint but has no dedicated unit test — it's only indirectly touched by
   auth/malformed-body checks in `workers/test/routes.test.ts`, never asserting
