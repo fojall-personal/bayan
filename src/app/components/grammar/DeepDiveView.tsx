@@ -132,7 +132,7 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
       <div className="flex items-center gap-3">
         <info.icon className="w-8 h-8 text-gold-400" />
         <div>
-          <h1 className="text-2xl font-bold">Grammar Deep-Dive</h1>
+          <h2 className="text-2xl font-bold">Grammar Deep-Dive</h2>
           <p className="text-muted">{info.name}</p>
         </div>
       </div>

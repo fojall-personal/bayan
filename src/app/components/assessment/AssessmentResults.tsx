@@ -69,7 +69,7 @@ export function AssessmentResults({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Assessment Results</h1>
+          <h2 className="text-3xl font-bold">Assessment Results</h2>
           <p className="text-gray-400 mt-2">
             Completed {new Date(result.completed_at).toLocaleDateString()}
           </p>

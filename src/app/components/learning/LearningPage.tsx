@@ -231,7 +231,7 @@ export function LearningPage({ userId }: LearningPageProps) {
       <div className="flex items-start justify-between">
         <div>
           <Badge variant="info">{lesson.module}</Badge>
-          <h1 className="text-3xl font-bold mt-2">{lesson.title}</h1>
+          <h2 className="text-3xl font-bold mt-2">{lesson.title}</h2>
           <p className="text-gray-400 mt-1">Level {lesson.level}</p>
         </div>
         {lesson.progress && (

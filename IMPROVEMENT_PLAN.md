@@ -193,7 +193,7 @@ backend gaps and test coverage, then content depth.
   `/tajweed`, and `/advanced` already do it.
   Verify: `grep -n "backHref" src/app/components/read/RootStudy.tsx src/app/components/learning/LearningPage.tsx src/app/app/assessment/page.tsx` shows a `backHref` on every page-level render path, not just error/success branches.
 
-- [ ] 15. Fix duplicate `<h1>` on /grammar, /learning, /assessment
+- [x] 15. Fix duplicate `<h1>` on /grammar, /learning, /assessment
   Three routes render two `<h1>` elements each: `PageHeader.tsx:39` already
   renders one `<h1>` for the page title, and the child view renders a second —
   `components/grammar/DeepDiveView.tsx:135`, `components/learning/LearningPage.tsx:225`,
