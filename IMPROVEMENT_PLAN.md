@@ -217,7 +217,7 @@ backend gaps and test coverage, then content depth.
   returns nothing; `grep -n "lang=\"ar\"" src/app/components/memorization/ReviewSession.tsx`
   finds it; `node scripts/gen-design-system.mjs --check` still passes.
 
-- [ ] 17. Add lang="ar" to Vocabulary tab components
+- [x] 17. Add lang="ar" to Vocabulary tab components
   `src/app/components/vocabulary/RootCard.tsx:40`,
   `FunctionWordCard.tsx:29`, `WordDetail.tsx:65`, and
   `RootFamilyDetail.tsx:35,109` all render Arabic-script text with `dir="rtl"`

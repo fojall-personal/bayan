@@ -38,6 +38,7 @@ export function RootCard({ root, meaning, wordCount, mastery, isFunctionWord = f
               isFunctionWord ? 'text-ground-200 text-xl' : 'text-gold-400 text-3xl'
             }`}
             dir="rtl"
+            lang="ar"
             style={{
               fontFamily: 'var(--font-arabic)',
               lineHeight: 'var(--leading-arabic)',

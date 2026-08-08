@@ -63,6 +63,7 @@ export function WordDetail({ word, onBack }: WordDetailProps) {
         <div
           className="text-5xl font-arabic text-gold-400"
           dir="rtl"
+          lang="ar"
           style={{
             fontFamily: 'var(--font-arabic)',
             lineHeight: 'var(--leading-arabic)',
