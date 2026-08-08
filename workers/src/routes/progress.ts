@@ -2,11 +2,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
-import type {
-  AssessmentResultsRow,
-  LessonProgressRow,
-  MemorizationRow,
-} from '../db/schema';
+import type { AssessmentResultsRow } from '../db/schema';
 
 export const progressRoutes = new Hono<AppEnv>();
 
@@ -38,41 +34,6 @@ progressRoutes.get('/scores', async (c) => {
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
-
-// The daily-streak helper lived here and was called only by
-// GET /api/progress/dashboard, which served the deleted /dashboard page. Both are
-// gone. Nothing in the app displays a daily streak today: /progress marks which
-// days had activity from assessment dates, which is a calendar rather than a
-// streak. Worth stating plainly instead of leaving a computation nothing reads.
-
-// Get weekly progress
-async function getWeeklyProgress(
-  db: Database,
-  userId: string
-): Promise<{ lessonsCompleted: number; reviewsCompleted: number; targetLessons: number; targetReviews: number }> {
-  const startOfWeek = new Date();
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  const lessons = await db.query<Pick<LessonProgressRow, 'lesson_id'>>(
-    `SELECT lesson_id FROM lesson_progress
-     WHERE user_id = ? AND last_practiced >= ?`,
-    [userId, startOfWeek.toISOString()]
-  );
-
-  const reviews = await db.query<Pick<MemorizationRow, 'id'>>(
-    `SELECT id FROM memorization
-     WHERE user_id = ? AND last_reviewed >= ?`,
-    [userId, startOfWeek.toISOString()]
-  );
-
-  return {
-    lessonsCompleted: lessons.length,
-    reviewsCompleted: reviews.length,
-    targetLessons: 5,
-    targetReviews: 10,
-  };
-}
 
 /**
  * GET /api/progress/coverage — how much of the Quran this learner can read.

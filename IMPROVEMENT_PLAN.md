@@ -269,7 +269,7 @@ backend gaps and test coverage, then content depth.
   Verify: `grep -rn "lib/quran'" workers/src/` (excluding the deleted file)
   returns nothing; `cd workers && npx tsc --noEmit && npx vitest run` both pass.
 
-- [ ] 22. Remove dead getWeeklyProgress function
+- [x] 22. Remove dead getWeeklyProgress function
   `workers/src/routes/progress.ts:49-75` defines `getWeeklyProgress`, which is
   never called anywhere (leftover from the deleted `/dashboard` route per the
   comment at lines 42-46). Delete the function.
