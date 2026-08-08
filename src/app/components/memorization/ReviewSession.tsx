@@ -81,7 +81,7 @@ export function ReviewSession({ entry, onComplete, onSkip }: ReviewSessionProps)
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Ayah display */}
       <Card className="text-center py-8">
-        <div className="text-3xl text-leaf-400 mb-4 arabic-text" dir="rtl">
+        <div className="text-3xl text-leaf-400 mb-4 text-naskh" dir="rtl" lang="ar">
           {entry.ayah_text || `Surah ${entry.surah_id}, Ayahs ${entry.ayah_from}-${entry.ayah_to}`}
         </div>
         <p className="text-gray-400">
