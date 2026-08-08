@@ -237,7 +237,7 @@ backend gaps and test coverage, then content depth.
   (e.g. `aria-label` or visible glyph), and that a screen reader / browser
   accessibility inspector announces the status per cell.
 
-- [ ] 19. Validate surahId route params consistently
+- [x] 19. Validate surahId route params consistently
   `workers/src/routes/tajweed.ts:14-25` and
   `workers/src/routes/memorization.ts:13-22` accept `surahId` path params
   without validating they're an integer in the valid 1-114 range — a
@@ -250,7 +250,7 @@ backend gaps and test coverage, then content depth.
   `GET /api/tajweed/verses/abc` and `GET /api/memorization/surah/9999`,
   asserting 400 responses; `cd workers && npx vitest run routes` passes.
 
-- [ ] 20. Validate recalledAyah on POST /api/memorization/:id/recall
+- [x] 20. Validate recalledAyah on POST /api/memorization/:id/recall
   `workers/src/routes/memorization.ts:175` — `recalledAyah` is used unchecked
   (`recalledAyah === nextAyah`), silently grading a missing/malformed value as
   `'again'` instead of rejecting it with 400, unlike the sibling

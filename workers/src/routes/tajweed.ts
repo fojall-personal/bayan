@@ -13,6 +13,15 @@ export const tajweedRoutes = new Hono<AppEnv>();
 // GET /api/tajweed/verses/:surahId — Get verses with tajweed tags for a surah
 tajweedRoutes.get('/verses/:surahId', async (c) => {
   const { surahId } = c.req.param();
+  const surahNum = Number(surahId);
+
+  // Reject out-of-range before querying, matching quran.ts's pattern for the
+  // same kind of input — otherwise an invalid surahId silently returns an
+  // empty `data` with 200 instead of surfacing the bad request.
+  if (!Number.isInteger(surahNum) || surahNum < 1 || surahNum > 114) {
+    return c.json({ error: 'Expected surahId 1–114' }, 400);
+  }
+
   const db = getDb(c);
 
   try {

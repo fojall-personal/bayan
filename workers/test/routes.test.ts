@@ -67,6 +67,28 @@ describe('every GET answers against the real schema', () => {
   }
 });
 
+describe('surahId route params are validated, not silently emptied', () => {
+  it('tajweed/verses/:surahId rejects a non-numeric surahId with 400', async () => {
+    const { status } = await H().json('/api/tajweed/verses/abc');
+    expect(status).toBe(400);
+  });
+
+  it('tajweed/verses/:surahId rejects an out-of-range surahId with 400', async () => {
+    const { status } = await H().json('/api/tajweed/verses/9999');
+    expect(status).toBe(400);
+  });
+
+  it('memorization/surah/:surahId rejects a non-numeric surahId with 400', async () => {
+    const { status } = await H().json('/api/memorization/surah/abc');
+    expect(status).toBe(400);
+  });
+
+  it('memorization/surah/:surahId rejects an out-of-range surahId with 400', async () => {
+    const { status } = await H().json('/api/memorization/surah/9999');
+    expect(status).toBe(400);
+  });
+});
+
 describe('auth is enforced on every /api route', () => {
   for (const [path] of GETS.filter(([p]) => p.startsWith('/api/'))) {
     it(`${path} refuses an unauthenticated caller`, async () => {
@@ -223,6 +245,22 @@ describe('POSTs validate their inputs', () => {
     expect(status).toBe(200);
     expect(body.data).toHaveProperty('parsed');
     expect(body.data.parsed).toHaveProperty('words');
+  });
+
+  it('memorization/:id/recall rejects a missing recalledAyah with 400', async () => {
+    const { status } = await H().json('/api/memorization/1/recall', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    expect(status).toBe(400);
+  });
+
+  it('memorization/:id/recall rejects a malformed recalledAyah with 400', async () => {
+    const { status } = await H().json('/api/memorization/1/recall', {
+      method: 'POST',
+      body: JSON.stringify({ recalledAyah: 'seven' }),
+    });
+    expect(status).toBe(400);
   });
 });
 

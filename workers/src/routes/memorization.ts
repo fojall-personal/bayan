@@ -12,6 +12,15 @@ export const memorizationRoutes = new Hono<AppEnv>();
 // GET /api/memorization/surah/:surahId — Get surah progress
 memorizationRoutes.get('/surah/:surahId', async (c) => {
   const { surahId } = c.req.param();
+  const surahNum = Number(surahId);
+
+  // Reject out-of-range before querying, matching quran.ts's pattern for the
+  // same kind of input — otherwise an invalid surahId silently returns an
+  // empty `data` with 200 instead of surfacing the bad request.
+  if (!Number.isInteger(surahNum) || surahNum < 1 || surahNum > 114) {
+    return c.json({ error: 'Expected surahId 1–114' }, 400);
+  }
+
   const userId = c.get('userId');
   const db = getDb(c);
 
@@ -173,6 +182,12 @@ memorizationRoutes.post('/:id/recall', async (c) => {
   const userId = c.get('userId');
   const db = getDb(c);
   const { recalledAyah } = await c.req.json();
+
+  // A missing/malformed recalledAyah must be rejected, not silently graded as
+  // 'again' — matching /review's strict validation of `grade` above.
+  if (typeof recalledAyah !== 'number' || !Number.isInteger(recalledAyah)) {
+    return c.json({ error: 'recalledAyah must be an integer' }, 400);
+  }
 
   try {
     const entry = await db.get<MemorizationRow>(
