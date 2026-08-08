@@ -367,7 +367,7 @@ backend gaps and test coverage, then content depth.
   in the JSON that `grammar-08`'s `prerequisites` array now includes
   `"grammar-05"`.
 
-- [ ] 30. Add estimated_minutes and richer rules to root lessons
+- [x] 30. Add estimated_minutes and richer rules to root lessons
   `content/grammar/root-lessons.json` — none of the 408 generated root lessons
   have an `estimated_minutes` field (all 11 authored lessons in
   `content/grammar/lessons.json` do), and each root lesson's `rules` field is

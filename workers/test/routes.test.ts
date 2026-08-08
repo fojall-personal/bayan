@@ -1159,7 +1159,7 @@ describe('vocabulary API', () => {
     }
   }
 
-  it('GET /api/vocabulary returns all 103 roots sorted by frequency', async () => {
+  it('GET /api/vocabulary returns all 132 roots sorted by frequency', async () => {
     const t = H();
     seedVocabulary(t);
 
@@ -1172,7 +1172,7 @@ describe('vocabulary API', () => {
     // The response should be an array of vocabulary items
     const data = body.data as Array<{ word: string; meaning: string }>;
     expect(Array.isArray(data)).toBe(true);
-    expect(data.length).toBe(103);
+    expect(data.length).toBe(132);
 
     // Should be sorted by frequency_rank (lowest first)
     for (let i = 1; i < data.length; i++) {

@@ -267,6 +267,52 @@ for (let i = 0; i < roots.length; i += 1) {
   const posList = [...new Set(shapes.map((s) => s.pos))].filter(Boolean);
   const forms = [...new Set(shapes.map((s) => s.verb_form))].filter(Boolean);
 
+  const exampleWords = picks.slice(0, 6);
+  const ruleWords = picks.slice(0, 8);
+  const distinctSurahs = [...new Set(distinct.map((w) => w.surah_id))];
+
+  // Corpus-grounded rule entries beyond the base word list — each states only
+  // what the morphology corpus already tagged for this root (parts of speech,
+  // verb forms, or, when no verb form is attested, where the words occur), not
+  // an authored grammar claim.
+  const extraRules = [];
+  if (posList.length > 0) {
+    extraRules.push({
+      name: `Parts of speech attested for ${arabic}`,
+      description:
+        `The morphology corpus tags words on this root as ${posList.join(', ')} — ` +
+        `${posList.length === 1 ? 'one part of speech' : `${posList.length} distinct parts of speech`} ` +
+        `across the ${distinct.length} glossed word${distinct.length === 1 ? '' : 's'} attested.`,
+      examples: exampleWords.map((w) => w.arabic),
+    });
+  }
+  if (forms.length > 0) {
+    extraRules.push({
+      name: `Verb forms attested for ${arabic}`,
+      description:
+        `Where this root is tagged as a verb, the corpus attests derived Form${forms.length === 1 ? '' : 's'} ` +
+        `${forms.join(', ')}.`,
+      examples: exampleWords.map((w) => w.arabic),
+    });
+  } else {
+    extraRules.push({
+      name: `Where ${arabic} occurs`,
+      description:
+        `The ${distinct.length} glossed word${distinct.length === 1 ? '' : 's'} on this root are attested ` +
+        `across ${distinctSurahs.length} distinct surah${distinctSurahs.length === 1 ? '' : 's'}.`,
+      examples: ruleWords.slice(0, 6).map((w) => `${w.arabic} (${w.surah_id}:${w.ayah_id})`),
+    });
+  }
+
+  // Content-proportional, not a flat constant — a root with a richer glossed
+  // vocabulary and a fuller rule list takes longer to work through than one
+  // that barely cleared the 4-word minimum. Coefficients are chosen so the
+  // range (~27-33min) sits alongside the authored lessons' own 15-30min spread
+  // rather than dwarfing it, since these are still single-topic root lessons.
+  const estimated_minutes = Math.round(
+    15 + exampleWords.length + ruleWords.length * 0.5 + 3 /* fixed exercise count */ * 2
+  );
+
   lessons.push({
     id: `root-${bw}`,
     // The Arabic is the title; the spelled-out letters help a beginner read it.
@@ -277,6 +323,7 @@ for (let i = 0; i < roots.length; i += 1) {
     // prerequisite; each later one follows the previous, which keeps the path linear
     // and means the pedagogy gate can walk it.
     prerequisites: lessons.length === 0 ? [] : [lessons[lessons.length - 1].id],
+    estimated_minutes,
     content: {
       // Every number and every word in this paragraph is read from the corpus.
       explanation:
@@ -303,8 +350,9 @@ for (let i = 0; i < roots.length; i += 1) {
           description:
             `Attested in the Quranic Arabic Corpus. Each is a real occurrence rather ` +
             `than a constructed example, and the reference is where to find it.`,
-          examples: picks.slice(0, 8).map((w) => w.arabic),
+          examples: ruleWords.map((w) => w.arabic),
         },
+        ...extraRules,
       ],
     },
     exercises: [

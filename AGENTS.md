@@ -227,7 +227,7 @@ rule or say in the code why it does not apply.
 - **Glosses:** 77,429 word-by-word, 96.2% agreement with five independent translators
 
 ### Vocabulary
-- `content/vocabulary/core-100.json` — 103 authored entries
+- `content/vocabulary/core-100.json` — 132 authored entries
 - The live flashcard queue is not that file: it is drawn from the ayahs the learner is
   memorising, content words first, commonest-in-the-Quran first, each card citing its source
 
