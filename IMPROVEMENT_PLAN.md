@@ -168,7 +168,7 @@ backend gaps and test coverage, then content depth.
   confirm SurahProgress shows an explicit error/retry state rather than a 0%
   bar; restart the dev server and confirm normal data still renders correctly.
 
-- [ ] 13. Surface silent failures in AdvancedMemorizationTools
+- [x] 13. Surface silent failures in AdvancedMemorizationTools
   `src/app/components/memorization/AdvancedMemorizationTools.tsx` — both the
   certificate-generation call and the "next ayah" fetch fail silently
   (console-only) with no visible feedback to the user. Add visible error

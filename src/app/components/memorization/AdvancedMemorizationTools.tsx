@@ -5,11 +5,14 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { gradeRecall, type RecallResult } from '@/lib/arabic-compare';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiErrorMessage } from '@/lib/api';
 
 export function AdvancedMemorizationTools() {
   const [audioTesting, setAudioTesting] = useState(false);
   const [currentAyah, setCurrentAyah] = useState<any>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const [nextAyahError, setNextAyahError] = useState<string | null>(null);
+  const [certificateError, setCertificateError] = useState<string | null>(null);
   // Real grading, at last. This tracked attempts only, because grading needs the
   // ayah text and quran_verses was empty. It now holds all 6,236 verses, and
   // /api/memorization/review/today already joins text_uthmani onto every due row —
@@ -27,6 +30,7 @@ export function AdvancedMemorizationTools() {
     setLoading(true);
     try {
       const data = await apiFetch<{ data: unknown[] }>('/api/memorization/review/today');
+      setAudioError(null);
       if (data.data?.length > 0) {
         setCurrentAyah(data.data[0]);
       } else {
@@ -34,9 +38,30 @@ export function AdvancedMemorizationTools() {
         setNotice('No ayahs are due for review today. Add some memorisation first.');
       }
     } catch (error) {
-      console.error('Audio test error:', error);
+      setAudioError(apiErrorMessage(error));
+      setNotice(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch the next due ayah. Split out from handleAnswer so the "Try again"
+  // button on a failed fetch retries just this step, not the whole session -
+  // handleAnswer requires a non-empty userAnswer to grade, which is gone by
+  // the time an error is showing (it's cleared before this ever runs).
+  const loadNextAyah = async () => {
+    try {
+      const data = await apiFetch<{ data: unknown[] }>('/api/memorization/review/today');
+      setNextAyahError(null);
+      if (data.data?.length > 0) {
+        setCurrentAyah(data.data[0]);
+      } else {
+        setCurrentAyah(null);
+        setAudioTesting(false);
+      }
+    } catch (error) {
+      setNextAyahError(apiErrorMessage(error));
+      setCurrentAyah(null);
     }
   };
 
@@ -65,18 +90,7 @@ export function AdvancedMemorizationTools() {
     if (result.correct) setCorrect((prev) => prev + 1);
     setUserAnswer('');
 
-    // Load next ayah
-    try {
-      const data = await apiFetch<{ data: unknown[] }>('/api/memorization/review/today');
-      if (data.data?.length > 0) {
-        setCurrentAyah(data.data[0]);
-      } else {
-        setCurrentAyah(null);
-        setAudioTesting(false);
-      }
-    } catch (error) {
-      console.error('Next ayah error:', error);
-    }
+    await loadNextAyah();
   };
 
   // Get cross-references for a surah
@@ -90,9 +104,10 @@ export function AdvancedMemorizationTools() {
       const data = await apiFetch<{ data: { certificate: unknown } }>(
         '/api/certificate/export'
       );
+      setCertificateError(null);
       setCertificate(data.data?.certificate);
     } catch (error) {
-      console.error('Certificate error:', error);
+      setCertificateError(apiErrorMessage(error));
     }
   };
 
@@ -108,6 +123,14 @@ export function AdvancedMemorizationTools() {
 
       {/* Audio testing */}
       <Card>
+        {audioError && (
+          <div className="mb-4 rounded-md border border-error/50 bg-error/10 p-3" role="alert">
+            <p className="text-sm text-error">{audioError}</p>
+            <Button variant="secondary" size="sm" onClick={startAudioTest} className="mt-2">
+              Try again
+            </Button>
+          </div>
+        )}
         <h2 className="text-lg font-bold mb-3">Recall without the text</h2>
         <p className="text-gray-400 text-sm mb-4">
           Test your memorization by recalling ayahs from audio only. No visual hints!
@@ -143,6 +166,14 @@ export function AdvancedMemorizationTools() {
                 {/* Show the ayah with the missed words marked, rather than a bare
                     verdict. "6 of 9 words" tells you how you did; seeing WHICH three
                     you dropped tells you what to practise. */}
+                {nextAyahError && (
+                  <div className="rounded-md border border-error/50 bg-error/10 p-3" role="alert">
+                    <p className="text-sm text-error">{nextAyahError}</p>
+                    <Button variant="secondary" size="sm" onClick={loadNextAyah} className="mt-2">
+                      Try again
+                    </Button>
+                  </div>
+                )}
                 {lastResult && (
                   <div
                     className={`rounded-lg border p-3 ${
@@ -225,6 +256,14 @@ export function AdvancedMemorizationTools() {
 
       {/* Certificate */}
       <Card>
+        {certificateError && (
+          <div className="mb-4 rounded-md border border-error/50 bg-error/10 p-3" role="alert">
+            <p className="text-sm text-error">{certificateError}</p>
+            <Button variant="secondary" size="sm" onClick={generateCertificate} className="mt-2">
+              Try again
+            </Button>
+          </div>
+        )}
         <h2 className="text-lg font-bold mb-3">Memorisation certificate</h2>
         <p className="text-gray-400 text-sm mb-4">
           Generate a certificate for your memorization milestones.
