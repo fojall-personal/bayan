@@ -31,15 +31,18 @@ export function SurahProgress({ surahId, surahName, totalAyahs }: SurahProgressP
   const surah = getSurah(surahId);
   const [entries, setEntries] = useState<MemorizationEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSurahProgress = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await apiFetch<{ data: MemorizationEntry[] }>(
         `/api/memorization/surah/${surahId}`
       );
       setEntries(data.data || []);
     } catch (error) {
+      setError('Failed to load surah progress. Please try again.');
       console.error('Failed to fetch surah progress:', error);
     } finally {
       setLoading(false);
@@ -54,6 +57,17 @@ export function SurahProgress({ surahId, surahName, totalAyahs }: SurahProgressP
     return (
       <Card>
         <div className="text-center py-8 text-gray-400">Loading surah progress...</div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <p className="mb-3 text-sm text-ground-300">{error}</p>
+        <Button variant="secondary" onClick={fetchSurahProgress}>
+          Try again
+        </Button>
       </Card>
     );
   }
