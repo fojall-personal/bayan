@@ -121,7 +121,7 @@ backend gaps and test coverage, then content depth.
   `workers/test/routes.test.ts` still confirms both a correct token succeeds
   and an incorrect one returns 401.
 
-- [ ] 9. Fix broken ESLint tooling in src/app
+- [x] 9. Fix broken ESLint tooling in src/app
   `src/app/package.json` declares `"eslint": "^8.57.1"` in devDependencies (and
   it's present in `package-lock.json`), but it is not actually present in
   `node_modules` — `npm run lint` (→ `next lint`) currently fails outright with
