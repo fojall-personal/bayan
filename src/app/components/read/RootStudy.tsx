@@ -141,6 +141,12 @@ export function RootStudy() {
 
   return (
     <div className="page-transition mx-auto max-w-2xl space-y-5">
+      <Link
+        href="/today"
+        className="inline-flex items-center gap-1 text-sm text-ground-400 transition-colors hover:text-gold-400"
+      >
+        ← Back to Today
+      </Link>
       <Card className={known && !marked ? '' : 'border-gold-500/40'}>
         <p className="text-xs uppercase tracking-label text-gold-400">
           {known && !marked ? 'Root — already known' : 'New root'}

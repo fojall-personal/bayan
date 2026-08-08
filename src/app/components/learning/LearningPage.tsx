@@ -208,8 +208,11 @@ export function LearningPage({ userId }: LearningPageProps) {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold mb-4">No Lessons Available</h2>
-        <p className="text-gray-400 mb-6">{error}</p>
-        <Button onClick={fetchNextLesson}>Refresh</Button>
+        <p className="text-gray-400 mb-4">{error}</p>
+        <div className="flex justify-center gap-3">
+          <Link href="/today"><Button variant="secondary">Back to Today</Button></Link>
+          <Button onClick={fetchNextLesson}>Refresh</Button>
+        </div>
       </div>
     );
   }
@@ -218,6 +221,12 @@ export function LearningPage({ userId }: LearningPageProps) {
 
   return (
     <div className="page-transition max-w-4xl mx-auto space-y-6">
+      <Link
+        href="/today"
+        className="inline-flex items-center gap-1 text-sm text-ground-400 transition-colors hover:text-gold-400"
+      >
+        ← Back to Today
+      </Link>
       {/* Lesson Header */}
       <div className="flex items-start justify-between">
         <div>

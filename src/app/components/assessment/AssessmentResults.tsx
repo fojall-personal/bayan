@@ -1,5 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
@@ -59,6 +60,12 @@ export function AssessmentResults({
 
   return (
     <div className="page-transition max-w-4xl mx-auto space-y-6">
+      <Link
+        href="/today"
+        className="inline-flex items-center gap-1 text-sm text-ground-400 transition-colors hover:text-gold-400"
+      >
+        ← Back to Today
+      </Link>
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

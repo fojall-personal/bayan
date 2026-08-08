@@ -41,6 +41,8 @@ export default function AssessmentPage() {
         <PageHeader
           title="Assessment"
           subtitle="Your diagnostic results and learning path"
+          backHref="/progress"
+          backLabel="Back to Progress"
         />
         <AssessmentResults result={result} onRetake={() => setRetaking(true)} />
       </div>
@@ -62,6 +64,8 @@ export default function AssessmentPage() {
         eyebrow="Diagnostic"
         title="Placement assessment"
         subtitle="18 questions across reading, comprehension, grammar and memorisation — about 15 minutes, no recording."
+        backHref="/today"
+        backLabel="Back to Today"
       />
       <AssessmentFlow
         onComplete={(r) => {
