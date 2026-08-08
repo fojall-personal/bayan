@@ -66,8 +66,9 @@ tutorRoutes.post('/chat', async (c) => {
 
     const moduleErrors: Record<string, number> = {};
     errors.forEach((attempt) => {
-      const rate = (attempt.questions_correct as number) /
-        (attempt.questions_answered as number);
+      const answered = attempt.questions_answered as number;
+      if (answered === 0) return; // No answers — not an error the weak-area sort should act on.
+      const rate = (attempt.questions_correct as number) / answered;
       moduleErrors[attempt.module as string] =
         (moduleErrors[attempt.module as string] || 0) + (1 - rate);
     });

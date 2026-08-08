@@ -1097,7 +1097,47 @@ describe('vocabulary API', () => {
     expect(status).toBe(404);
     expect(body).toHaveProperty('error');
   });
+});
 
+describe('tutor chat NaN safety', () => {
+  it('does not produce NaN when quiz_attempts has questions_answered = 0', async () => {
+    const t = H();
+    // Seed a lesson and an attempt that the submit handler could produce when
+    // the learner posts {answers: []} — 0 answered, 0 correct. This is the row
+    // that previously made the tutor's weak-areas sort emit NaN.
+    t.db
+      .prepare(
+        `INSERT INTO lessons
+           (id, title, module, level, content, exercises, prerequisites)
+         VALUES ('grammar-01', 'Articles and Nouns', 'grammar', 1, '{}', '[]', '[]')`
+      )
+      .run();
+    t.db
+      .prepare(
+        `INSERT INTO quiz_attempts
+           (id, user_id, lesson_id, module, questions_answered, questions_correct)
+         VALUES (?, ?, 'grammar-01', 'grammar', 0, 0)`
+      )
+      .run('qa-zero', TEST_USER);
 
+    const chat = await t.json('/api/tutor/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        message: 'explain madd',
+        conversationHistory: [],
+      }),
+    });
 
+    expect(chat.status).toBe(200);
+    // The body must round-trip as a JSON string — no NaN → "undefined" —
+    // rather than silently becoming a malformed response.
+    const text = JSON.stringify(chat.body);
+    expect(text).not.toContain('NaN');
+    expect(text).not.toContain('undefined');
+    // The response shape is preserved, just with an empty weak-areas list.
+    expect(chat.body).toHaveProperty('data');
+    if (chat.body && typeof chat.body === 'object' && 'data' in chat.body) {
+      expect((chat.body as { data: { topics?: unknown } }).data).toHaveProperty('response');
+    }
+  });
 });

@@ -65,7 +65,7 @@ backend gaps and test coverage, then content depth.
   asserting `{literacy:45, comprehension:95, grammar:10, memorization:95}`
   does not return `'path2'`.
 
-- [ ] 4. Fix division-by-zero in tutor weak-areas calculation
+- [x] 4. Fix division-by-zero in tutor weak-areas calculation
   `workers/src/routes/tutor.ts:69-70` — `attempt.questions_correct /
   attempt.questions_answered` has no zero-guard. `questions_answered` can be 0
   (e.g. `workers/src/routes/learning.ts` writes a `quiz_attempts` row with
