@@ -260,7 +260,7 @@ backend gaps and test coverage, then content depth.
   malformed `recalledAyah` to `/api/memorization/:id/recall` and asserting a
   400 response; `cd workers && npx vitest run routes` passes.
 
-- [ ] 21. Delete dead workers/src/lib/quran.ts module
+- [x] 21. Delete dead workers/src/lib/quran.ts module
   `workers/src/lib/quran.ts` is entirely dead code, self-documented as broken
   in its own header comment (nothing imports it), with a padding bug in
   `getAudioUrl`, a non-real Tanzil URL template, a wrong reciter code, and an
