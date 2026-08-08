@@ -148,7 +148,7 @@ backend gaps and test coverage, then content depth.
   message — confirm a visible error appears instead of a silently vanished
   message. `npx tsc --noEmit` in `src/app` still passes.
 
-- [ ] 11. Distinguish "flashcards fetch failed" from "nothing due today"
+- [x] 11. Distinguish "flashcards fetch failed" from "nothing due today"
   `src/app/components/learning/*Flashcard*` (grep `src/app/components/learning`
   for the flashcards component) — a failed fetch currently renders the same
   empty-state UI as "no cards due," which misleads the learner into thinking

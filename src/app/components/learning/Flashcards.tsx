@@ -48,6 +48,7 @@ export function Flashcards({ userId }: FlashcardsProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMeaning, setShowMeaning] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [startMessage, setStartMessage] = useState<string | null>(null);
@@ -58,11 +59,16 @@ export function Flashcards({ userId }: FlashcardsProps) {
 
   const fetchFlashcards = async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const data = await apiFetch<{ data: Flashcard[] }>('/api/learning/flashcards');
       setCards(data.data || []);
+      if (data.data && data.data.length === 0) {
+        setFetchError(null);
+      }
     } catch (error) {
       console.error('Failed to fetch flashcards:', error);
+      setFetchError(apiErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -137,6 +143,22 @@ export function Flashcards({ userId }: FlashcardsProps) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-ground-300">Loading flashcards…</div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    // The API failed — this is NOT the same as "nothing due". Distinguish them
+    // so the learner isn't misled into thinking they're caught up.
+    return (
+      <div className="text-center py-12">
+        <h2 className="mb-4 text-2xl font-bold text-red-400">Failed to load flashcards</h2>
+        <p className="mb-6 text-ground-300">{fetchError}</p>
+        <div className="flex items-center justify-center gap-3">
+          <Button variant="secondary" onClick={fetchFlashcards}>
+            Try again
+          </Button>
+        </div>
       </div>
     );
   }
