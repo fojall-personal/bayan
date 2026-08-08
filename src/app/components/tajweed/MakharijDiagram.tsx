@@ -3,27 +3,29 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 
-// Makharij (articulation points) for Arabic letters
+// Makharij (articulation points) for Arabic letters — the five classical
+// articulation points plus ghunnah, each with their correct letter groupings.
+// English glosses:
+//   الجوف (al-Jawf) - The Cavity
+//   أقصى الحلق (Aqsa al-Halq) - Furthest Throat
+//   وسط الحلق (Wasat al-Halq) - Middle Throat
+//   أدنى الحلق (Adna al-Halq) - Nearest Throat
+//   اللسان (al-Lisan) - The Tongue
+//   الشفتان (ash-Shafatan) - The Two Lips
+//   الخيشوم (al-Khaishum) - The Nasal Passage
 const LETTERS_BY_MAKHARIJ: Record<string, string[]> = {
-  'جddf': ['ج', 'ش', 'ي'],
-  'حhat': ['ح', 'ه', 'ع', 'غ', 'خ'],
-  'قqaf': ['ق'],
-  'كkaf': ['ك', 'ء', 'إ', 'أ'],
-  'ظzhah': ['ظ'],
-  'ضdad': ['ض'],
-  'طtaa': ['ط'],
-  'ذzal': ['ذ'],
-  'زzay': ['ز'],
-  'سseen': ['س', 'ش'],
-  'صsad': ['ص'],
-  'عain': ['ع', 'غ', 'خ', 'ح', 'ه'],
-  'غghain': ['غ', 'ع', 'خ', 'ح', 'ه'],
-  'خkha': ['خ', 'ح', 'ه', 'ع', 'غ'],
-  'همهمه': ['ء', 'ه', 'ع', 'غ', 'خ'],
-  'ستلقلقل': ['ل', 'ر'],
-  'شفتل': ['م', 'و', 'ب'],
-  'لسنل': ['ن', 'ت', 'د', 'ط', 'ظ', 'س', 'ز', 'ث', 'ذ', 'ض', 'ص', 'ش'],
-  'مخرجين': ['ي', 'و', 'ئ', 'ء'],
+  'الجوف': ['ا', 'و', 'ي'],
+  'أقصى الحلق': ['ء', 'ه'],
+  'وسط الحلق': ['ع', 'ح'],
+  'أدنى الحلق': ['غ', 'خ'],
+  'ق': ['ق'],
+  'ك': ['ك', 'إ', 'أ', 'ئ'],
+  'ج': ['ج', 'ش', 'ي'],
+  'ل': ['ل', 'ن', 'ر'],
+  'ط': ['ط', 'ظ', 'س', 'ز', 'ث', 'ذ', 'ض', 'ص'],
+  'د': ['د', 'ت', 'ذ'],
+  'الشفتان': ['ف', 'م', 'ب', 'و'],
+  'الخيشوم': ['ن', 'م'],
 };
 
 export function MakharijDiagram({

@@ -19,7 +19,7 @@ says otherwise. Ordered by priority: correctness bugs first, then security/
 tooling debt, then silent-failure UX, then accessibility/consistency, then
 backend gaps and test coverage, then content depth.
 
-- [ ] 1. Fix garbled Makharij articulation-point labels
+- [x] 1. Fix garbled Makharij articulation-point labels
   `src/app/components/tajweed/MakharijDiagram.tsx:7-27` — the `LETTERS_BY_MAKHARIJ`
   object keys are corrupted strings (`'جddf'`, `'حhat'`, `'همهمه'`, `'ستلقلقل'`,
   `'شفتل'`, `'لسنل'`, `'مخرجين'`, plus several mixed Arabic+English fragments) and
