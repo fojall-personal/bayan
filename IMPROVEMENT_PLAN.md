@@ -205,7 +205,7 @@ backend gaps and test coverage, then content depth.
   `grep -c "<h1"` across the rendered component tree that only one `<h1>`
   exists per page.
 
-- [ ] 16. Fix ReviewSession's inconsistent Arabic text markup
+- [x] 16. Fix ReviewSession's inconsistent Arabic text markup
   `src/app/components/memorization/ReviewSession.tsx:84` uses the deprecated
   `.arabic-text` CSS class and is missing `lang="ar"` (it only has `dir="rtl"`),
   unlike every other Arabic-script element in the app (Today, AyahReader,
