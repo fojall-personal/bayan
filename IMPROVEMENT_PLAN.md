@@ -159,7 +159,7 @@ backend gaps and test coverage, then content depth.
   error state distinguishable from the "all caught up" empty state; revert any
   temporary test edit before committing.
 
-- [ ] 12. Fix SurahProgress showing false 0% on fetch failure
+- [x] 12. Fix SurahProgress showing false 0% on fetch failure
   `src/app/components/memorization/SurahProgress.tsx` — a failed fetch
   currently renders as a 0% progress bar, which looks like real (bad) progress
   data rather than a failed request. Add an explicit error state that doesn't
