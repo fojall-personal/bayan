@@ -10,10 +10,13 @@ import {
   grammarFacts,
   type MorphRow,
 } from '../lib/root-families';
+import { stripFinalHarakat } from '../lib/tashkil';
 import type {
   GrammarExerciseBankRow,
   GrammarMasteryRow,
   LessonsRow,
+  QuranVersesRow,
+  QuranWordMorphologyRow,
 } from '../db/schema';
 
 export const grammarRoutes = new Hono<AppEnv>();
@@ -347,6 +350,67 @@ grammarRoutes.get('/exercises', async (c) => {
     });
   } catch (error) {
     console.error('Exercise bank error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// GET /api/grammar/tashkil?surah=&ayah= — case-ending production items.
+//
+// The final diacritic of each word IS the answer being asked for, so it never
+// rides along in this response — only the stripped prompt and the case_case
+// metadata a client-side explanation can cite. Compare against gen-exercise-bank
+// style endpoints above, which return `answer` directly: those are recognition
+// items where the options are already visible, so the answer riding along costs
+// nothing. This is a production item — handing over the answer here would let a
+// learner "solve" it by reading the response instead of restoring the ending.
+grammarRoutes.get('/tashkil', async (c) => {
+  const surah = Number(c.req.query('surah'));
+  const ayah = Number(c.req.query('ayah'));
+
+  if (!Number.isInteger(surah) || surah < 1 || surah > 114 || !Number.isInteger(ayah) || ayah < 1) {
+    return c.json({ error: 'Expected surah 1–114 and a positive ayah' }, 400);
+  }
+
+  const db = getDb(c);
+
+  try {
+    const verse = await db.get<Pick<QuranVersesRow, 'text_uthmani'>>(
+      `SELECT text_uthmani FROM quran_verses WHERE surah = ? AND ayah = ?`,
+      [surah, ayah]
+    );
+    if (!verse) {
+      return c.json({ error: 'No verse ingested for this surah/ayah' }, 404);
+    }
+
+    const words = verse.text_uthmani.trim().split(/\s+/).filter(Boolean);
+
+    // One case_case per word, from whichever segment carries it. A prefixed word
+    // (وَ, بِ, لِ...) splits into a particle segment with no case and a stem
+    // segment that has one; at most one segment per word_index is ever non-null.
+    const morphRows = await db.query<Pick<QuranWordMorphologyRow, 'word_index' | 'case_case'>>(
+      `SELECT word_index, case_case FROM quran_word_morphology
+       WHERE surah_id = ? AND ayah_id = ? AND case_case IS NOT NULL`,
+      [surah, ayah]
+    );
+    const caseByWord = new Map(morphRows.map((r) => [r.word_index, r.case_case]));
+
+    return c.json({
+      data: {
+        surah,
+        ayah,
+        words: words.map((w, i) => ({
+          index: i + 1,
+          // The stripped form to show and complete — never the original word.
+          prompt: stripFinalHarakat(w),
+          // null for a word with no case ending (particles, mabni words) — the
+          // UI shows the tap palette only where there is an ending to restore.
+          caseCase: caseByWord.get(i + 1) ?? null,
+        })),
+      },
+      attribution: CORPUS_ATTRIBUTION,
+    });
+  } catch (error) {
+    console.error('Tashkil error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

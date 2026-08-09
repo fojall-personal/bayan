@@ -1133,6 +1133,59 @@ describe('the exercise bank exposes all twenty-three kinds', () => {
   });
 });
 
+describe('tashkil production items', () => {
+  it('serves the stripped prompt without the answer key riding along', async () => {
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO quran_verses (surah, ayah, text_uthmani) VALUES (2, 500, 'الْحَمْدُ لِلَّهِ')`
+      )
+      .run();
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_morphology
+           (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos, case_case)
+         VALUES (2, 500, 1, 1, 'الحمد', 'حمد', 'حمد', 'N', 'NOM')`
+      )
+      .run();
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_morphology
+           (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos, case_case)
+         VALUES (2, 500, 2, 1, 'لله', 'الله', 'اله', 'PN', NULL)`
+      )
+      .run();
+
+    const { status, body } = await t.json<{
+      data: { words: { index: number; prompt: string; caseCase: string | null }[] };
+    }>('/api/grammar/tashkil?surah=2&ayah=500');
+
+    expect(status).toBe(200);
+    expect(body.data.words).toHaveLength(2);
+    // The prompt is the STRIPPED word — the final case ending is what the
+    // learner is being asked to restore, so it must not already be there.
+    expect(body.data.words[0].prompt).toBe('الْحَمْد');
+    expect(body.data.words[0].caseCase).toBe('NOM');
+    // A word with no case ending (here standing in for a mabni/particle word)
+    // gets no palette to fill in, signalled by a null caseCase.
+    expect(body.data.words[1].caseCase).toBeNull();
+
+    // The answer key — the original word with its case ending intact — must
+    // not appear anywhere in the payload under any field.
+    expect(JSON.stringify(body)).not.toContain('الْحَمْدُ');
+  });
+
+  it('rejects an out-of-range surah', async () => {
+    const { status } = await H().json('/api/grammar/tashkil?surah=9999&ayah=1');
+    expect(status).toBe(400);
+  });
+
+  it('404s for a surah/ayah with no ingested verse', async () => {
+    const { status } = await H().json('/api/grammar/tashkil?surah=1&ayah=999');
+    expect(status).toBe(404);
+  });
+});
+
 describe('the deep-dive categories are three different things', () => {
   // Before lessons.category existed, the endpoint took a category, used it for the
   // mastery lookup, and queried `module = 'grammar'` — so all three tabs returned every
