@@ -5,10 +5,11 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { DeepDiveView } from '@/components/grammar/DeepDiveView';
 import { ExerciseRunner } from '@/components/grammar/ExerciseRunner';
 import { RootExplorer } from '@/components/grammar/RootExplorer';
+import { TashkilDrill } from '@/components/grammar/TashkilDrill';
 import { Tabs } from '@/components/ui/Tabs';
 import { VocabularyView } from '@/components/vocabulary/VocabularyView';
 
-type View = 'exercises' | 'roots' | 'deepdive' | 'vocabulary';
+type View = 'exercises' | 'tashkil' | 'roots' | 'deepdive' | 'vocabulary';
 type GrammarCategory = 'nahw' | 'sarf' | 'balagha' | 'vocabulary';
 
 const CATEGORIES: { id: GrammarCategory; name: string; arabic: string }[] = [
@@ -38,6 +39,7 @@ export default function GrammarPage() {
             onChange={setView}
             items={[
               { id: 'exercises', label: 'Exercises' },
+              { id: 'tashkil', label: 'Case endings' },
               { id: 'roots', label: 'Roots' },
               { id: 'deepdive', label: 'Deep-dive' },
               { id: 'vocabulary', label: 'Vocabulary' },
@@ -47,6 +49,8 @@ export default function GrammarPage() {
       />
 
       {view === 'exercises' && <ExerciseRunner />}
+
+      {view === 'tashkil' && <TashkilDrill />}
 
       {view === 'roots' && <RootExplorer />}
 

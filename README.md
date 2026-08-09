@@ -51,7 +51,7 @@ What works today, honestly:
 | Database | Cloudflare D1, with `wrangler d1 migrations` |
 | Storage | Cloudflare R2 |
 | Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
-| Tests | Vitest (278 test blocks) + ESLint + `tsc`, all gated in CI |
+| Tests | Vitest (281 test blocks) + ESLint + `tsc`, all gated in CI |
 | CI/CD | GitHub Actions → Cloudflare Pages |
 | Cost | $0/month — a hard constraint, see plan §5 |
 
@@ -210,7 +210,7 @@ defect:
 | `sync-pages-config.mjs --check` | a missing Pages binding — the state that once made every data route 500 |
 
 ```bash
-cd workers   && npx tsc --noEmit && npm test    # 278 vitest test blocks
+cd workers   && npx tsc --noEmit && npm test    # 281 vitest test blocks
 cd src/app   && npx tsc --noEmit && npm run lint
 ```
 
@@ -337,14 +337,14 @@ application, in any Cloudflare account, would be accepted.
 
 **Last updated: 2026-07-26**
 
-**Everything is deployed and working.** All 46 API endpoints resolve, all 14
+**Everything is deployed and working.** All 47 API endpoints resolve, all 14
 pages render, the database has 6,236 Quran verses and 77K morphology rows.
 
 | Component | Status |
 |-----------|--------|
 | Frontend (14 routes) | ✅ All rendering 200 OK |
 | Navigation (6 links) | ✅ All wired up |
-| API (46 endpoints) | ✅ All resolving |
+| API (47 endpoints) | ✅ All resolving |
 | Database (D1) | ✅ 23 migrations applied, seeded |
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |

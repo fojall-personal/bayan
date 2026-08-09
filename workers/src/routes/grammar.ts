@@ -415,3 +415,63 @@ grammarRoutes.get('/tashkil', async (c) => {
   }
 });
 
+// POST /api/grammar/tashkil — grade restored case endings against the real text.
+//
+// The GET endpoint above never sends the answer key, so grading has to happen
+// here, server-side, against the same quran_verses row. Body:
+// { surah, ayah, answers: { [wordIndex]: reconstructedWord } }. Only words the
+// caller actually answered are graded — a word with no case ending was never
+// offered a palette in the UI, so it is never a candidate.
+grammarRoutes.post('/tashkil', async (c) => {
+  const body = await c.req.json();
+  const surah = Number(body.surah);
+  const ayah = Number(body.ayah);
+  const answers = body.answers;
+
+  if (!Number.isInteger(surah) || surah < 1 || surah > 114 || !Number.isInteger(ayah) || ayah < 1) {
+    return c.json({ error: 'Expected surah 1–114 and a positive ayah' }, 400);
+  }
+  if (!answers || typeof answers !== 'object' || Array.isArray(answers)) {
+    return c.json({ error: 'answers must be an object of wordIndex -> reconstructed word' }, 400);
+  }
+
+  const db = getDb(c);
+
+  try {
+    const verse = await db.get<Pick<QuranVersesRow, 'text_uthmani'>>(
+      `SELECT text_uthmani FROM quran_verses WHERE surah = ? AND ayah = ?`,
+      [surah, ayah]
+    );
+    if (!verse) {
+      return c.json({ error: 'No verse ingested for this surah/ayah' }, 404);
+    }
+
+    const words = verse.text_uthmani.trim().split(/\s+/).filter(Boolean);
+
+    const results: { index: number; correct: boolean; correctWord?: string }[] = [];
+    for (const [key, given] of Object.entries(answers)) {
+      const idx = Number(key);
+      if (!Number.isInteger(idx) || idx < 1 || idx > words.length) continue;
+      const real = words[idx - 1];
+      const correct = given === real;
+      // The correct form is revealed only for a miss — this is post-submission
+      // feedback (the learner already committed an answer), not the prompt.
+      results.push(correct ? { index: idx, correct } : { index: idx, correct, correctWord: real });
+    }
+    results.sort((a, b) => a.index - b.index);
+    const correctCount = results.filter((r) => r.correct).length;
+
+    return c.json({
+      data: {
+        results,
+        correctCount,
+        total: results.length,
+        accuracy: results.length === 0 ? 0 : correctCount / results.length,
+      },
+    });
+  } catch (error) {
+    console.error('Tashkil grading error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+

@@ -171,12 +171,6 @@ const apiOrphans = list
     // Auth and identity are called by the middleware or by curl during setup, not
     // from a component, so absence of a fetch() is expected for those.
     if (e.path.startsWith('/api/auth/')) return false;
-    // Tashkil (task 7 of the daily-loop build-slices plan, 2026-08-09): the route
-    // and its tests shipped deliberately ahead of the UI, per the plan's own
-    // explicit note — typing Arabic diacritics needs a tap-palette component, not
-    // a text field, and building that is its own follow-up commit. Remove this
-    // exemption once ReviewSession/ExerciseRunner (or wherever it lands) calls it.
-    if (e.path === '/api/grammar/tashkil') return false;
     // Clients build parameterised URLs by interpolation —
     // `/api/progress/roots/${encodeURIComponent(root)}/known` — so the full literal
     // never appears. Match the static prefix up to the first parameter instead.

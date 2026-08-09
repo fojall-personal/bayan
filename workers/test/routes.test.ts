@@ -1186,6 +1186,65 @@ describe('tashkil production items', () => {
   });
 });
 
+describe('tashkil grading', () => {
+  function seedVerse(t: Harness) {
+    t.db
+      .prepare(
+        `INSERT INTO quran_verses (surah, ayah, text_uthmani) VALUES (2, 501, 'الْحَمْدُ لِلَّهِ')`
+      )
+      .run();
+  }
+
+  it('grades a correct and an incorrect word in the same submission', async () => {
+    const t = H();
+    seedVerse(t);
+    const { status, body } = await t.json<{
+      data: {
+        results: { index: number; correct: boolean; correctWord?: string }[];
+        correctCount: number;
+        total: number;
+        accuracy: number;
+      };
+    }>('/api/grammar/tashkil', {
+      method: 'POST',
+      body: JSON.stringify({
+        surah: 2,
+        ayah: 501,
+        // Word 1 restored correctly; word 2 restored with the wrong ending.
+        answers: { '1': 'الْحَمْدُ', '2': 'لِلَّهَ' },
+      }),
+    });
+
+    expect(status).toBe(200);
+    expect(body.data.total).toBe(2);
+    expect(body.data.correctCount).toBe(1);
+    expect(body.data.accuracy).toBeCloseTo(0.5);
+    const word1 = body.data.results.find((r) => r.index === 1)!;
+    const word2 = body.data.results.find((r) => r.index === 2)!;
+    expect(word1.correct).toBe(true);
+    expect(word1.correctWord).toBeUndefined();
+    expect(word2.correct).toBe(false);
+    // The correct form is only revealed for a miss, after the learner submitted.
+    expect(word2.correctWord).toBe('لِلَّهِ');
+  });
+
+  it('rejects a malformed answers payload', async () => {
+    const { status } = await H().json('/api/grammar/tashkil', {
+      method: 'POST',
+      body: JSON.stringify({ surah: 2, ayah: 501, answers: 'not an object' }),
+    });
+    expect(status).toBe(400);
+  });
+
+  it('rejects an out-of-range surah', async () => {
+    const { status } = await H().json('/api/grammar/tashkil', {
+      method: 'POST',
+      body: JSON.stringify({ surah: 9999, ayah: 1, answers: {} }),
+    });
+    expect(status).toBe(400);
+  });
+});
+
 describe('the deep-dive categories are three different things', () => {
   // Before lessons.category existed, the endpoint took a category, used it for the
   // mastery lookup, and queried `module = 'grammar'` — so all three tabs returned every

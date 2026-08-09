@@ -407,6 +407,7 @@ GET    /api/grammar/mastery
 POST   /api/grammar/parse
 GET    /api/grammar/root/:root                      (corpus-derived root family, Arabic script)
 GET    /api/grammar/tashkil
+POST   /api/grammar/tashkil
 GET    /api/learning/flashcards
 POST   /api/learning/flashcards/review
 GET    /api/learning/lessons/:id
