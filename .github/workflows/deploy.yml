@@ -193,6 +193,24 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/sync-pages-config.mjs --check
 
+      # Migrations must land before the deploy that assumes their schema exists.
+      #
+      # This step never existed before 2026-08-09: nothing in this pipeline ever ran
+      # `d1 migrations apply --remote`, so every migration since 0021 shipped in code
+      # and passed every test (which run against a fresh local database that always
+      # has every table) but never reached the live database. workers/src/routes/
+      # progress.ts started querying user_known_function_word (migration 0023) and
+      # the coverage endpoint 500'd in production for real users, because that table
+      # only ever existed locally. Applying migrations here, before the deploy that
+      # ships code assuming the new schema, is what closes that gap.
+      - name: Apply D1 migrations
+        if: github.event_name != 'pull_request'
+        working-directory: workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler d1 migrations apply languagebuilder --remote
+
       # Lesson content ships with the code that renders it.
       #
       # Goes through D1's query api via scripts/seed-remote-d1.mjs rather than
