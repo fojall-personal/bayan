@@ -35,10 +35,14 @@ export interface GrammarError {
 // source that put a moon letter in the sun-letter list, and the corpus does not
 // have opinions.
 
-// Particles (حروف)
+// Particles (حروف) — excludes the 8 prepositions in isPreposition()'s own list
+// below (من، عن، إلى، في، على، ب، لـ، كـ). They used to be duplicated here too,
+// and since this list was checked first, isPreposition() could never fire for
+// them — every preposition came back tagged 'particle', and the dedicated
+// 'preposition' type was structurally dead code.
 const PARTICLES = [
   'إن', 'أن', 'كان', 'كانت', 'كانا', 'كانوا', 'كن',
-  'إذا', 'حتى', 'من', 'عن', 'إلى', 'في', 'على', 'ب', 'لـ', 'كـ',
+  'إذا', 'حتى',
   'قد', 'لعل', 'كأن', 'ليس', 'لا', 'هل', 'أ',
 ];
 
@@ -58,7 +62,7 @@ const GENDERED_NOUNS: Record<string, 'masculine' | 'feminine'> = {
   'ولد': 'masculine',
   'رجل': 'masculine',
   'امرأة': 'feminine',
-  ' بنت': 'feminine',
+  'بنت': 'feminine',
   'شمس': 'feminine',
   'قمر': 'masculine',
   'دار': 'feminine',
@@ -117,7 +121,15 @@ function parseSingleWord(word: string, index: number): ParsedWord {
 
   if (PRONOUNS.includes(word)) {
     type = 'pronoun';
-  } else if (PARTICLES.some((p) => word.includes(p) || p.includes(word))) {
+  } else if (PARTICLES.includes(word)) {
+    // Exact match, not substring. `word.includes(p)` matched any word merely
+    // CONTAINING a particle's letters — 'ب' and 'أ' are common letters, so
+    // كتب (he wrote), كتاب (book), بيت (house), قلب (heart) and others were
+    // all misclassified as particles before ever reaching isVerb/isAdjective/
+    // the noun fallback below. That also meant isVerb's five past-tense
+    // branches (all requiring a literal ب) were effectively unreachable code,
+    // which is why the gender_agreement check in checkGrammarErrors below —
+    // gated on tense === 'past' — could never fire either.
     type = 'particle';
   } else if (isPreposition(word)) {
     type = 'preposition';
@@ -163,7 +175,10 @@ function isPreposition(word: string): boolean {
 function isAdjective(word: string): boolean {
   // He is big/good/happy (كان + adjective pattern)
   if (/^[ك]ان[ت]/.test(word)) return false; // was already handled as verb
-  const adjectives = ['كبير', ' صغير', 'جديد', ' قديم', 'جميل', ' كبير', 'حسن', 'سيء'];
+  // Stray leading spaces made 'صغير' (small) and 'قديم' (old) unmatchable
+  // against any real trimmed word, and 'كبير' (big) was listed twice — once
+  // correctly, once with a leading space that made the second copy dead too.
+  const adjectives = ['كبير', 'صغير', 'جديد', 'قديم', 'جميل', 'حسن', 'سيء'];
   return adjectives.includes(word);
 }
 
