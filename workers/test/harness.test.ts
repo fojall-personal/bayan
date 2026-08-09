@@ -25,4 +25,22 @@ describe('harness', () => {
     const res = await h.request('/api/auth/whoami', { auth: false });
     expect(res.status).toBe(401);
   });
+
+  it('has the function-word knowledge table with a (user, lemma, pos) key', () => {
+    h = harness();
+    // Same shape as user_known_root, plus pos — because `maA` is REL 1,476 times
+    // and NEG 705 times, and they are different words to learn.
+    h.db.prepare(
+      `INSERT INTO user_known_function_word (user_id, lemma, pos) VALUES (?, ?, ?)`
+    ).run(TEST_USER, 'maA', 'REL');
+    h.db.prepare(
+      `INSERT INTO user_known_function_word (user_id, lemma, pos) VALUES (?, ?, ?)`
+    ).run(TEST_USER, 'maA', 'NEG');
+
+    const n = h.db
+      .prepare(`SELECT COUNT(*) AS n FROM user_known_function_word WHERE user_id = ?`)
+      .get(TEST_USER) as { n: number };
+    // Two rows, not one: the PK must include pos.
+    expect(n.n).toBe(2);
+  });
 });

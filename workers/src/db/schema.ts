@@ -236,6 +236,14 @@ export interface TutorTopicHistoryRow {
   discussed_at: string;
 }
 
+export interface UserKnownFunctionWordRow {
+  user_id: string;
+  lemma: string;
+  pos: string;
+  first_seen: string;
+  strength: number;
+}
+
 export interface UserKnownRootRow {
   user_id: string;
   root: string;
