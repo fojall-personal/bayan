@@ -1468,3 +1468,64 @@ describe('coverage counts function words', () => {
     expect(after.body.data.surahsReadable).toBe(1);
   });
 });
+
+describe('homograph exercises', () => {
+  // The kind that cannot be answered from the word alone: same spelling, different
+  // job, and only the ayah decides. Seeded here because the harness leaves content
+  // tables empty on purpose.
+  function seedHomograph(h: Harness) {
+    const ins = h.db.prepare(
+      `INSERT INTO grammar_exercise_bank
+         (id, kind, level, word_arabic, word_buckwalter, prompt, answer, options,
+          explanation, surah_id, ayah_id, word_index, segment_index)
+       VALUES (?, 'homograph', ?, ?, 'maA', ?, ?, ?, ?, ?, ?, ?, 1)`
+    );
+    ins.run(
+      'hom-2-17-8', 3, 'مَا',
+      'In this ayah, what job does مَا do?',
+      'a relative pronoun ("that which", "who")',
+      JSON.stringify(['a negation ("not")', 'a relative pronoun ("that which", "who")']),
+      'Here مَا introduces a relative clause rather than negating the verb.',
+      2, 17, 8
+    );
+    ins.run(
+      'hom-2-11-5', 4, 'مَا',
+      'In this ayah, what job does مَا do?',
+      'a negation ("not")',
+      JSON.stringify(['a negation ("not")', 'a relative pronoun ("that which", "who")']),
+      'Here مَا negates the verb that follows.',
+      2, 11, 5
+    );
+  }
+
+  it('serves homograph items filtered by kind', async () => {
+    const h = H();
+    seedHomograph(h);
+    // GET /api/grammar/exercises returns a flat array in `data`, not { exercises }.
+    const { status, body } = await h.json<{ data: any[] }>(
+      '/api/grammar/exercises?kind=homograph'
+    );
+    expect(status).toBe(200);
+    expect(body.data.length).toBe(2);
+    for (const ex of body.data) {
+      expect(ex.options).toContain(ex.answer);
+      // A homograph item is only a homograph item if the distractor is the same
+      // spelling in another role — so every item needs at least two live senses.
+      expect(ex.options.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('offers both senses of one spelling as the two options', async () => {
+    const h = H();
+    seedHomograph(h);
+    const { body } = await h.json<{ data: any[] }>(
+      '/api/grammar/exercises?kind=homograph'
+    );
+    const answers = body.data.map((e: any) => e.answer).sort();
+    // Same word, opposite jobs — that pairing is the entire pedagogical point.
+    expect(answers).toEqual([
+      'a negation ("not")',
+      'a relative pronoun ("that which", "who")',
+    ]);
+  });
+});

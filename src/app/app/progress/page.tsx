@@ -61,6 +61,7 @@ const KIND_LABELS: Record<string, string> = {
   fronting: 'Which word is fronted (تقديم)',
   jinas: 'Two words, one root (al-jinās)',
   simile: 'Which word opens a comparison (al-tashbīh)',
+  homograph: 'Which مَا is this? (one spelling, two jobs)',
   // Lesson-driven attempts record their module instead of a bank kind.
   grammar: 'Lesson exercises — grammar',
   tajweed: 'Lesson exercises — tajweed',

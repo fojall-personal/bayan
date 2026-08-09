@@ -73,6 +73,9 @@ const KINDS = [
   { value: 'jinas', label: 'Two words, one root (al-jinās)' },
   // Kind 25 — ARDT B-1. The one device of ʿilm al-bayān with a particle to find.
   { value: 'simile', label: 'Which word opens a comparison (al-tashbīh)' },
+  // One spelling, two jobs — only the sentence decides. The first kind here that
+  // cannot be answered from the word alone.
+  { value: 'homograph', label: 'Which مَا is this? (one spelling, two jobs)' },
 ];
 
 /**

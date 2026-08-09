@@ -307,6 +307,9 @@ grammarRoutes.get('/exercises', async (c) => {
       'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting',
       // Paronomasia — ARDT device CA-1. From roots, so hand-verified.
       'jinas', 'simile',
+      // One spelling, several jobs — the answer is the hand-verified pos tag, and the
+      // distractors are roles that same spelling genuinely takes elsewhere.
+      'homograph',
     ];
     if (!allowed.includes(kind)) {
       return c.json({ error: `kind must be one of ${allowed.join(', ')}` }, 400);
