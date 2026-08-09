@@ -1383,3 +1383,88 @@ describe('function words', () => {
     expect(body.data.items.find((i) => i.lemma === 'min').known).toBe(false);
   });
 });
+
+describe('coverage counts function words', () => {
+  // One ayah: two rooted words (both known) and one function word (not known).
+  // Under the old model this ayah was "100% readable". It is not — `min` is a word,
+  // and it is the word that says what the sentence is doing.
+  function seedOneAyah(h: Harness) {
+    const ins = h.db.prepare(
+      `INSERT INTO quran_word_morphology
+         (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    ins.run(1, 1, 1, 1, 'kitaAb', 'kitaAb', 'ktb', 'N');
+    ins.run(1, 1, 2, 1, 'Ealima', 'Ealima', 'Elm', 'V');
+    ins.run(1, 1, 3, 1, 'min', 'min', null, 'P');
+    h.db
+      .prepare(`INSERT INTO user_known_root (user_id, root) VALUES (?, ?)`)
+      .run(TEST_USER, 'ktb');
+    h.db
+      .prepare(`INSERT INTO user_known_root (user_id, root) VALUES (?, ?)`)
+      .run(TEST_USER, 'Elm');
+  }
+
+  it('does NOT count an ayah readable while its function word is unknown', async () => {
+    const h = H();
+    seedOneAyah(h);
+    const { body } = await h.json<{ data: any }>('/api/progress/coverage');
+    // Every rooted word is known, but `min` is not.
+    expect(body.data.ayahsReadable).toBe(0);
+    expect(body.data.functionWordsKnown).toBe(0);
+    expect(body.data.functionWordsTotal).toBe(1);
+  });
+
+  it('counts it once the function word is known too', async () => {
+    const h = H();
+    seedOneAyah(h);
+    h.db
+      .prepare(
+        `INSERT INTO user_known_function_word (user_id, lemma, pos) VALUES (?, ?, ?)`
+      )
+      .run(TEST_USER, 'min', 'P');
+
+    const { body } = await h.json<{ data: any }>('/api/progress/coverage');
+    expect(body.data.ayahsReadable).toBe(1);
+    expect(body.data.functionWordsKnown).toBe(1);
+  });
+
+  it('reports the function-word dimension in the basis string', async () => {
+    const h = H();
+    seedOneAyah(h);
+    const { body } = await h.json<{ basis: string }>('/api/progress/coverage');
+    // The old string promised unrooted words "count as known". That is now false, and
+    // a stale basis line is a lie the UI repeats verbatim.
+    expect(body.basis).not.toMatch(/count as known/i);
+    expect(body.basis).toMatch(/function word/i);
+  });
+
+  it('marking a function word known unlocks ayahs (delta is reported)', async () => {
+    const h = H();
+    seedOneAyah(h);
+    const post = await h.json<{ data: any }>(
+      '/api/progress/function-words/min/P/known',
+      { method: 'POST' }
+    );
+    // Same payoff shape the roots endpoint already returns.
+    expect(post.body.data.ayahsUnlocked).toBe(1);
+    expect(post.body.data.ayahsReadable).toBe(1);
+  });
+
+  it('a surah counts readable only when its function words are known too', async () => {
+    const h = H();
+    seedOneAyah(h);
+    // Guards the surahs_readable CTE, which has its own HAVING clause and could
+    // easily be updated for roots and forgotten for function words.
+    const before = await h.json<{ data: any }>('/api/progress/coverage');
+    expect(before.body.data.surahsReadable).toBe(0);
+
+    h.db
+      .prepare(
+        `INSERT INTO user_known_function_word (user_id, lemma, pos) VALUES (?, ?, ?)`
+      )
+      .run(TEST_USER, 'min', 'P');
+    const after = await h.json<{ data: any }>('/api/progress/coverage');
+    expect(after.body.data.surahsReadable).toBe(1);
+  });
+});

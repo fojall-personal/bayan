@@ -27,6 +27,8 @@ interface Coverage {
   rootsKnown: number;
   rootsTotal: number;
   segmentsKnownPct: number;
+  functionWordsKnown: number;
+  functionWordsTotal: number;
   surahsReadable: number;
   surahsTotal: number;
   nextRoots: { root: string; occurrences: number }[];
@@ -275,7 +277,7 @@ export function Today() {
           <h3 className="mb-4 text-xs uppercase tracking-label text-ground-400">
             How much of the Quran you can read
           </h3>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
             {[
               {
                 label: 'Ayahs',
@@ -291,6 +293,11 @@ export function Today() {
                 label: 'Words met',
                 value: `${coverage.segmentsKnownPct}%`,
                 sub: 'of all rooted words',
+              },
+              {
+                label: 'Function words',
+                value: coverage.functionWordsKnown.toLocaleString(),
+                sub: `of ${coverage.functionWordsTotal} · top 50 = 94%`,
               },
               {
                 label: 'Whole surahs',
@@ -314,10 +321,11 @@ export function Today() {
             ))}
           </div>
           <p className="mt-4 text-xs text-ground-400">
-            An ayah counts once every rooted word in it has a root you know. 63 roots
-            cover half the rooted words in the Quran, and 400 make half of all ayahs
-            readable end to end. Whole surahs come much later — they need every rare
-            word too, so ayahs are the metric that actually moves.
+            An ayah counts once you know every word in it — the roots and the function
+            words (مِن، فِي، ٱلَّذِي، إِنَّ). Function words are 35.5% of the text and
+            were previously assumed known, so this number is lower than it used to be
+            and truer than it was. 63 roots cover half the rooted words, and the 50
+            commonest function words cover 94% of the rest.
           </p>
           {/* Always reachable, not only while coverage is zero. Someone who skipped
               calibration, or whose estimate came out wrong, previously had no way
@@ -327,6 +335,11 @@ export function Today() {
               {coverage.rootsKnown === 0
                 ? 'Tell us which roots you already know →'
                 : 'Recheck which roots you know →'}
+            </Link>
+          </p>
+          <p className="mt-1.5 text-xs">
+            <Link href="/function-words" className="text-gold-400 hover:underline">
+              Mark the function words you know →
             </Link>
           </p>
         </Card>

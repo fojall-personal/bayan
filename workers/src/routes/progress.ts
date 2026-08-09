@@ -59,28 +59,45 @@ progressRoutes.get('/coverage', async (c) => {
       `WITH known AS (
          SELECT root FROM user_known_root WHERE user_id = ?
        ),
+       known_fw AS (
+         SELECT lemma, pos FROM user_known_function_word WHERE user_id = ?
+       ),
        ayah_state AS (
          SELECT surah_id, ayah_id,
-                SUM(CASE WHEN root IS NOT NULL
-                          AND root NOT IN (SELECT root FROM known)
-                         THEN 1 ELSE 0 END) AS unknown_rooted
-         FROM quran_word_morphology
+                SUM(CASE WHEN m.root IS NOT NULL
+                          AND m.root NOT IN (SELECT root FROM known)
+                         THEN 1 ELSE 0 END) AS unknown_rooted,
+                SUM(CASE WHEN m.root IS NULL
+                          AND m.lemma IS NOT NULL AND m.lemma <> '' AND m.pos IS NOT NULL
+                          AND NOT EXISTS (
+                                SELECT 1 FROM known_fw f
+                                 WHERE f.lemma = m.lemma AND f.pos = m.pos)
+                         THEN 1 ELSE 0 END) AS unknown_fn
+         FROM quran_word_morphology m
          GROUP BY surah_id, ayah_id
        )
        SELECT
-         (SELECT COUNT(*) FROM ayah_state WHERE unknown_rooted = 0)  AS ayahs_readable,
+         (SELECT COUNT(*) FROM ayah_state
+           WHERE unknown_rooted = 0 AND unknown_fn = 0)               AS ayahs_readable,
          (SELECT COUNT(*) FROM ayah_state)                            AS ayahs_total,
          (SELECT COUNT(*) FROM known)                                 AS roots_known,
          (SELECT COUNT(DISTINCT root) FROM quran_word_morphology
            WHERE root IS NOT NULL)                                    AS roots_total,
+         (SELECT COUNT(*) FROM known_fw)                              AS fn_known,
+         (SELECT COUNT(*) FROM (
+            SELECT 1 FROM quran_word_morphology
+             WHERE root IS NULL AND lemma IS NOT NULL AND lemma <> ''
+               AND pos IS NOT NULL
+             GROUP BY lemma, pos))                                    AS fn_total,
          (SELECT COUNT(*) FROM quran_word_morphology
            WHERE root IN (SELECT root FROM known))                    AS segments_known,
          (SELECT COUNT(*) FROM quran_word_morphology
            WHERE root IS NOT NULL)                                    AS segments_rooted,
          (SELECT COUNT(*) FROM (
             SELECT surah_id FROM ayah_state
-            GROUP BY surah_id HAVING SUM(unknown_rooted) = 0))        AS surahs_readable`,
-      [userId]
+            GROUP BY surah_id
+            HAVING SUM(unknown_rooted) = 0 AND SUM(unknown_fn) = 0))  AS surahs_readable`,
+      [userId, userId]
     );
 
     if (!row) return c.json({ error: 'Coverage unavailable' }, 500);
@@ -110,14 +127,20 @@ progressRoutes.get('/coverage', async (c) => {
         segmentsKnown: row.segments_known,
         segmentsRooted: row.segments_rooted,
         segmentsKnownPct: pct(row.segments_known, row.segments_rooted),
+        functionWordsKnown: row.fn_known,
+        functionWordsTotal: row.fn_total,
         surahsReadable: row.surahs_readable,
         surahsTotal: 114,
         nextRoots: next,
       },
       // Stated, not buried: the reader should know what "readable" counts.
       basis:
-        'An ayah counts as readable when every rooted word in it has a known root. ' +
-        'Unrooted words (particles, pronouns, the disconnected letters) count as known.',
+        'An ayah counts as readable when every rooted word has a known root AND every ' +
+        'function word is known. Function words — particles, pronouns, negations — are ' +
+        '35.5% of the text and carry the syntax; they were previously assumed known. ' +
+        'There are 215 of them (counted per part of speech, because maA is a relative ' +
+        'pronoun 1,476 times and a negation 705 times) and the top 50 cover 94% of ' +
+        'their occurrences.',
     });
   } catch (error) {
     console.error('Coverage error:', error);
@@ -138,18 +161,39 @@ progressRoutes.get('/coverage', async (c) => {
  * is the obvious next thing a learner needs, and a progress model you cannot
  * correct is one people stop trusting.
  */
+/**
+ * Ayahs where every rooted word AND every function word is known.
+ *
+ * The function-word half is not a refinement. Measured against this corpus, 27,462 of
+ * 77,429 word tokens carry no root — prepositions (9,886), conjunctions (4,090),
+ * relative pronouns (2,202), negations (1,258) — and the old query counted every one
+ * of them as known. So "fully readable" was asserted over 64.5% of the text and
+ * assumed for the rest, which is precisely the part that carries the syntax.
+ *
+ * Matched on (lemma, pos), never lemma alone: `maA` is a relative pronoun 1,476 times
+ * and a negation 705 times. They are different words that share a spelling.
+ */
 async function ayahsReadable(db: Database, userId: string): Promise<number> {
   const row = await db.get<{ n: number }>(
-    `WITH known AS (SELECT root FROM user_known_root WHERE user_id = ?)
+    `WITH known AS (SELECT root FROM user_known_root WHERE user_id = ?),
+          known_fw AS (
+            SELECT lemma, pos FROM user_known_function_word WHERE user_id = ?
+          )
      SELECT COUNT(*) AS n FROM (
        SELECT surah_id, ayah_id
-         FROM quran_word_morphology
+         FROM quran_word_morphology m
         GROUP BY surah_id, ayah_id
-       HAVING SUM(CASE WHEN root IS NOT NULL
-                        AND root NOT IN (SELECT root FROM known)
+       HAVING SUM(CASE WHEN m.root IS NOT NULL
+                        AND m.root NOT IN (SELECT root FROM known)
+                       THEN 1 ELSE 0 END) = 0
+          AND SUM(CASE WHEN m.root IS NULL
+                        AND m.lemma IS NOT NULL AND m.lemma <> '' AND m.pos IS NOT NULL
+                        AND NOT EXISTS (
+                              SELECT 1 FROM known_fw f
+                               WHERE f.lemma = m.lemma AND f.pos = m.pos)
                        THEN 1 ELSE 0 END) = 0
      )`,
-    [userId]
+    [userId, userId]
   );
   return row?.n ?? 0;
 }
@@ -552,13 +596,24 @@ progressRoutes.post('/function-words/:lemma/:pos/known', async (c) => {
       );
     }
 
+    const before = await ayahsReadable(db, userId);
     await db.run(
       `INSERT OR IGNORE INTO user_known_function_word (user_id, lemma, pos)
        VALUES (?, ?, ?)`,
       [userId, lemma, pos]
     );
+    const after = await ayahsReadable(db, userId);
 
-    return c.json({ data: { lemma, pos, occurrences: exists.n } });
+    return c.json({
+      data: {
+        lemma,
+        pos,
+        occurrences: exists.n,
+        ayahsUnlocked: after - before,
+        ayahsReadable: after,
+        ayahsTotal: 6236,
+      },
+    });
   } catch (error) {
     console.error('Mark function word known error:', error);
     return c.json({ error: 'Internal server error' }, 500);
