@@ -470,3 +470,116 @@ progressRoutes.post('/calibration', async (c) => {
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
+
+/**
+ * GET    /api/progress/function-words            — the 175 function words, by frequency
+ * POST   /api/progress/function-words/:lemma/:pos/known
+ * DELETE /api/progress/function-words/:lemma/:pos/known
+ *
+ * Coverage assumed every unrooted word was already known — 35.5% of the text, and
+ * precisely the words that carry the syntax. These endpoints are the missing state.
+ *
+ * Addressed by (lemma, pos), never lemma alone: `maA` is REL 1,476 times and NEG 705
+ * times. Two words, one spelling, learned separately.
+ */
+progressRoutes.get('/function-words', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  try {
+    const items = await db.query<{
+      lemma: string;
+      pos: string;
+      occurrences: number;
+      known: number;
+    }>(
+      `SELECT m.lemma,
+              m.pos,
+              COUNT(*) AS occurrences,
+              CASE WHEN k.lemma IS NULL THEN 0 ELSE 1 END AS known
+         FROM quran_word_morphology m
+         LEFT JOIN user_known_function_word k
+           ON k.user_id = ? AND k.lemma = m.lemma AND k.pos = m.pos
+        WHERE m.root IS NULL
+          AND m.lemma IS NOT NULL AND m.lemma <> ''
+          AND m.pos IS NOT NULL
+        GROUP BY m.lemma, m.pos
+        ORDER BY occurrences DESC, m.lemma, m.pos`,
+      [userId]
+    );
+
+    return c.json({
+      data: {
+        items: items.map((i) => ({
+          lemma: i.lemma,
+          pos: i.pos,
+          occurrences: i.occurrences,
+          known: i.known === 1,
+        })),
+      },
+      // Measured, so the learner can check the claim rather than trust it.
+      basis:
+        'Function words are segments with no root — particles, pronouns, negations. ' +
+        'There are 215 (lemma,pos) pairs in the Quran; the top 50 cover 94% of all ' +
+        'function-word ' +
+        'occurrences. Listed separately per part of speech, because maA is a relative ' +
+        'pronoun 1,476 times and a negation 705 times.',
+    });
+  } catch (error) {
+    console.error('Function words error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+progressRoutes.post('/function-words/:lemma/:pos/known', async (c) => {
+  const userId = c.get('userId');
+  const lemma = c.req.param('lemma');
+  const pos = c.req.param('pos');
+  const db = getDb(c);
+
+  try {
+    // Same refusal as roots: an unattested pair can never make an ayah readable,
+    // so accepting a typo would inflate the count with nothing.
+    const exists = await db.get<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM quran_word_morphology
+        WHERE lemma = ? AND pos = ? AND root IS NULL`,
+      [lemma, pos]
+    );
+    if (!exists || exists.n === 0) {
+      return c.json(
+        { error: `The corpus has no function word "${lemma}" as ${pos}` },
+        404
+      );
+    }
+
+    await db.run(
+      `INSERT OR IGNORE INTO user_known_function_word (user_id, lemma, pos)
+       VALUES (?, ?, ?)`,
+      [userId, lemma, pos]
+    );
+
+    return c.json({ data: { lemma, pos, occurrences: exists.n } });
+  } catch (error) {
+    console.error('Mark function word known error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+progressRoutes.delete('/function-words/:lemma/:pos/known', async (c) => {
+  const userId = c.get('userId');
+  const lemma = c.req.param('lemma');
+  const pos = c.req.param('pos');
+  const db = getDb(c);
+
+  try {
+    await db.run(
+      `DELETE FROM user_known_function_word
+        WHERE user_id = ? AND lemma = ? AND pos = ?`,
+      [userId, lemma, pos]
+    );
+    return c.json({ data: { lemma, pos } });
+  } catch (error) {
+    console.error('Unmark function word error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});

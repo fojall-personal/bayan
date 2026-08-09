@@ -402,10 +402,10 @@ GET    /api/auth/whoami
 GET    /api/certificate/export
 GET    /api/grammar/deepdive/:category
 POST   /api/grammar/exercise
-GET    /api/grammar/exercises         (38,995-item graded bank; ?level=1-5 &kind=)
+GET    /api/grammar/exercises                       (38,995-item graded bank; ?level=1-5 &kind=)
 GET    /api/grammar/mastery
 POST   /api/grammar/parse
-GET    /api/grammar/root/:root        (corpus-derived root family, Arabic script)
+GET    /api/grammar/root/:root                      (corpus-derived root family, Arabic script)
 GET    /api/learning/flashcards
 POST   /api/learning/flashcards/review
 GET    /api/learning/lessons/:id
@@ -415,23 +415,26 @@ POST   /api/learning/vocabulary/start
 POST   /api/memorization/:id/recall
 POST   /api/memorization/:id/review
 POST   /api/memorization/add
-GET    /api/memorization/curriculum   (908 ordered units; ?level=1-6 &limit &offset)
+GET    /api/memorization/curriculum                 (908 ordered units; ?level=1-6 &limit &offset)
 GET    /api/memorization/review/today
 GET    /api/memorization/surah/:surahId
 GET    /api/memorization/surahs
-GET    /api/progress/calibration      (GET twelve sampled roots, POST records answers + opt-in band)
-POST   /api/progress/calibration      (GET twelve sampled roots, POST records answers + opt-in band)
-GET    /api/progress/coverage         (ayahs readable from known roots; 400 roots is half the Quran)
+GET    /api/progress/calibration                    (GET twelve sampled roots, POST records answers + opt-in band)
+POST   /api/progress/calibration                    (GET twelve sampled roots, POST records answers + opt-in band)
+GET    /api/progress/coverage                       (ayahs readable from known roots; 400 roots is half the Quran)
+GET    /api/progress/function-words
+DELETE /api/progress/function-words/:lemma/:pos/known
+POST   /api/progress/function-words/:lemma/:pos/known
 GET    /api/progress/reading-queue
-DELETE /api/progress/roots/:root/known(POST records, DELETE undoes; POST returns the delta)
-POST   /api/progress/roots/:root/known(POST records, DELETE undoes; POST returns the delta)
+DELETE /api/progress/roots/:root/known              (POST records, DELETE undoes; POST returns the delta)
+POST   /api/progress/roots/:root/known              (POST records, DELETE undoes; POST returns the delta)
 GET    /api/progress/scores
-GET    /api/quran/ayah/:surah/:ayah   (one ayah: text, words + gloss + parse + known flag, tajweed)
+GET    /api/quran/ayah/:surah/:ayah                 (one ayah: text, words + gloss + parse + known flag, tajweed)
 GET    /api/tajweed/mastery
 GET    /api/tajweed/verses/:surahId
 POST   /api/tutor/chat
-GET    /api/tutor/history             (last 50 turns; the chat restores the most recent three)
-GET    /api/tutor/suggested-exercises (weak lessons by accuracy over answered questions)
+GET    /api/tutor/history                           (last 50 turns; the chat restores the most recent three)
+GET    /api/tutor/suggested-exercises               (weak lessons by accuracy over answered questions)
 GET    /api/vocabulary
 GET    /api/vocabulary/root/:root
 GET    /api/vocabulary/word/:word

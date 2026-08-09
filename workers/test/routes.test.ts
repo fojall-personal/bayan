@@ -1304,3 +1304,82 @@ describe('tutor chat NaN safety', () => {
     }
   });
 });
+
+describe('function words', () => {
+  // The harness applies real migrations but leaves content tables empty, so a test
+  // that needs corpus rows inserts them. Two `maA` senses is the case that matters.
+  function seedFunctionWords(h: Harness) {
+    const ins = h.db.prepare(
+      `INSERT INTO quran_word_morphology
+         (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos)
+       VALUES (?, ?, ?, ?, ?, ?, NULL, ?)`
+    );
+    // 3 x maA/REL, 2 x maA/NEG, 1 x min/P
+    ins.run(1, 1, 1, 1, 'maA', 'maA', 'REL');
+    ins.run(1, 2, 1, 1, 'maA', 'maA', 'REL');
+    ins.run(1, 3, 1, 1, 'maA', 'maA', 'REL');
+    ins.run(2, 1, 1, 1, 'maA', 'maA', 'NEG');
+    ins.run(2, 2, 1, 1, 'maA', 'maA', 'NEG');
+    ins.run(3, 1, 1, 1, 'min', 'min', 'P');
+  }
+
+  it('lists function words by frequency, with the two maA senses separate', async () => {
+    const h = H();
+    seedFunctionWords(h);
+    const { status, body } = await h.json<{ data: { items: any[] } }>(
+      '/api/progress/function-words'
+    );
+    expect(status).toBe(200);
+    const items = body.data.items;
+    expect(items[0]).toMatchObject({ lemma: 'maA', pos: 'REL', occurrences: 3 });
+    // Same lemma, different pos, listed as its own row.
+    expect(items.find((i) => i.pos === 'NEG')).toMatchObject({
+      lemma: 'maA',
+      occurrences: 2,
+    });
+    expect(items.every((i) => i.known === false)).toBe(true);
+  });
+
+  it('marks one sense known without marking the other', async () => {
+    const h = H();
+    seedFunctionWords(h);
+    const post = await h.json<{ data: any }>(
+      '/api/progress/function-words/maA/REL/known',
+      { method: 'POST' }
+    );
+    expect(post.status).toBe(200);
+    expect(post.body.data).toMatchObject({ lemma: 'maA', pos: 'REL', occurrences: 3 });
+
+    const { body } = await h.json<{ data: { items: any[] } }>(
+      '/api/progress/function-words'
+    );
+    const rel = body.data.items.find((i) => i.pos === 'REL');
+    const neg = body.data.items.find((i) => i.pos === 'NEG');
+    expect(rel.known).toBe(true);
+    // The whole point of the composite key.
+    expect(neg.known).toBe(false);
+  });
+
+  it('refuses a (lemma,pos) pair the corpus does not attest', async () => {
+    const h = H();
+    seedFunctionWords(h);
+    const { status } = await h.json('/api/progress/function-words/zzz/P/known', {
+      method: 'POST',
+    });
+    expect(status).toBe(404);
+  });
+
+  it('unmarks a function word', async () => {
+    const h = H();
+    seedFunctionWords(h);
+    await h.json('/api/progress/function-words/min/P/known', { method: 'POST' });
+    const del = await h.json('/api/progress/function-words/min/P/known', {
+      method: 'DELETE',
+    });
+    expect(del.status).toBe(200);
+    const { body } = await h.json<{ data: { items: any[] } }>(
+      '/api/progress/function-words'
+    );
+    expect(body.data.items.find((i) => i.lemma === 'min').known).toBe(false);
+  });
+});
