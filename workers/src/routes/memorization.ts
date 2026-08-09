@@ -3,7 +3,7 @@ import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 
-import { schedule, gradeFromAccuracy, isGrade, GRADE_VALUES } from '../lib/space-repetition';
+import { schedule, gradeFromAccuracy, isGrade, GRADE_VALUES, type Grade } from '../lib/space-repetition';
 import { parseAyahRange } from '../lib/memorization-input';
 import type { MemorizationRow, MemorizationUnitsRow } from '../db/schema';
 
@@ -97,20 +97,43 @@ memorizationRoutes.post('/add', async (c) => {
   }
 });
 
-// POST /api/memorization/:id/review — Review a memorization entry (SM-2)
+// POST /api/memorization/:id/review — Review a memorization entry (FSRS-6)
 memorizationRoutes.post('/:id/review', async (c) => {
   const { id } = c.req.param();
   const userId = c.get('userId');
   const db = getDb(c);
-  const { grade } = await c.req.json();
+  const body = await c.req.json();
+  const hasAccuracy = body.accuracy !== undefined;
 
-  // Four named grades rather than a 1–5 number. FSRS grades on exactly four values,
-  // and a numeric scale with five points would have to collapse two of them onto the
-  // same schedule — a scale where two answers do the same thing is a lie to the
-  // learner. Rejected loudly rather than defaulted, because silently treating an
-  // unknown grade as "good" would corrupt the schedule invisibly.
-  if (!isGrade(grade)) {
-    return c.json({ error: `grade must be one of ${GRADE_VALUES.join(', ')}` }, 400);
+  // Two ways in: a measured accuracy from typed recall (gradeRecall client-side),
+  // or a self-reported grade from the "I recited it aloud" fallback — recitation
+  // without typing is legitimate practice and not every session can be measured.
+  // Whichever arrives, gradedFrom on the response says which it was, because a
+  // schedule built from a measurement and one built from an opinion are not the
+  // same evidence and later analysis needs to tell them apart.
+  let grade: Grade;
+  if (hasAccuracy) {
+    // Reject rather than clamp: an accuracy outside 0..1 means the caller computed
+    // it wrongly, and silently clamping would bury that in a plausible schedule.
+    if (
+      typeof body.accuracy !== 'number' ||
+      Number.isNaN(body.accuracy) ||
+      body.accuracy < 0 ||
+      body.accuracy > 1
+    ) {
+      return c.json({ error: 'accuracy must be a number between 0 and 1' }, 400);
+    }
+    grade = gradeFromAccuracy(body.accuracy);
+  } else {
+    // Four named grades rather than a 1–5 number. FSRS grades on exactly four values,
+    // and a numeric scale with five points would have to collapse two of them onto the
+    // same schedule — a scale where two answers do the same thing is a lie to the
+    // learner. Rejected loudly rather than defaulted, because silently treating an
+    // unknown grade as "good" would corrupt the schedule invisibly.
+    if (!isGrade(body.grade)) {
+      return c.json({ error: `grade must be one of ${GRADE_VALUES.join(', ')}` }, 400);
+    }
+    grade = body.grade;
   }
 
   try {
@@ -165,6 +188,8 @@ memorizationRoutes.post('/:id/review', async (c) => {
     return c.json({
       data: {
         success: true,
+        grade,
+        gradedFrom: hasAccuracy ? 'accuracy' : 'self',
         nextReview: result.nextReview,
         status: result.status,
         interval: result.interval,

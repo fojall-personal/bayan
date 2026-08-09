@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { isAnswerCorrect, normalizeArabic } from '../src/routes/learning';
 import type { Exercise } from '../src/routes/learning';
+import { gradeFromAccuracy } from '../src/lib/space-repetition';
 
 const mc: Exercise = {
   type: 'multiple_choice',
@@ -112,5 +113,14 @@ describe('normalizeArabic', () => {
 
   it('does not collapse genuinely different words', () => {
     expect(normalizeArabic('كتاب')).not.toBe(normalizeArabic('كتب'));
+  });
+});
+
+describe('accuracy drives the FSRS grade', () => {
+  it('maps measured accuracy onto the four grades', () => {
+    expect(gradeFromAccuracy(0.30)).toBe('again');
+    expect(gradeFromAccuracy(0.65)).toBe('hard');
+    expect(gradeFromAccuracy(0.90)).toBe('good');
+    expect(gradeFromAccuracy(1.00)).toBe('easy');
   });
 });

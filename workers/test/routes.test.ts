@@ -893,6 +893,68 @@ describe('FSRS scheduling through the API', () => {
   });
 });
 
+describe('memorization review accepts a measured accuracy', () => {
+  function seedEntry(t: Harness, id = 'mem-1') {
+    t.db
+      .prepare(
+        `INSERT INTO memorization (id, user_id, surah_id, ayah_from, ayah_to, status)
+         VALUES (?, ?, 112, 1, 4, 'learning')`
+      )
+      .run(id, TEST_USER);
+    return id;
+  }
+
+  it('grades from accuracy when one is supplied', async () => {
+    const t = H();
+    const id = seedEntry(t);
+    const { status, body } = await t.json<{ data: any }>(
+      `/api/memorization/${id}/review`,
+      { method: 'POST', body: JSON.stringify({ accuracy: 0.35 }) }
+    );
+    expect(status).toBe(200);
+    expect(body.data.grade).toBe('again');
+    // Verified against the real scheduler rather than assumed: FSRS-6's
+    // same-day due date on a lapse (see space-repetition.ts's own comment)
+    // applies to a card RELAPSING out of Review state. This entry has never
+    // been reviewed before, so its first 'again' is a New->Learning
+    // transition, which ts-fsrs schedules one day out, not same-day.
+    expect(body.data.interval).toBe(1);
+  });
+
+  it('still accepts an explicit grade (recited aloud, not typed)', async () => {
+    const t = H();
+    const id = seedEntry(t);
+    const { status, body } = await t.json<{ data: any }>(
+      `/api/memorization/${id}/review`,
+      { method: 'POST', body: JSON.stringify({ grade: 'good' }) }
+    );
+    expect(status).toBe(200);
+    expect(body.data.grade).toBe('good');
+  });
+
+  it('rejects an out-of-range accuracy rather than silently clamping', async () => {
+    const t = H();
+    const id = seedEntry(t);
+    const { status } = await t.json(`/api/memorization/${id}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ accuracy: 1.4 }),
+    });
+    expect(status).toBe(400);
+  });
+
+  it('records which grading path was used', async () => {
+    const t = H();
+    const id = seedEntry(t);
+    const { body } = await t.json<{ data: any }>(`/api/memorization/${id}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ accuracy: 0.95 }),
+    });
+    // A schedule built from a measurement and one built from an opinion are not
+    // the same evidence, and later analysis needs to tell them apart.
+    expect(body.data.gradedFrom).toBe('accuracy');
+  });
+});
+
 describe('lesson results explain the mistakes', () => {
   it('returns the authored explanation for every exercise, including match', async () => {
     const t = H();
