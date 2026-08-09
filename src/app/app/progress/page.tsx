@@ -26,11 +26,14 @@ interface MasteryEntry {
 }
 
 /**
- * Human labels for the seven exercise kinds the derived bank actually contains.
+ * Human labels for all 25 exercise kinds selectable in the filter.
  *
- * Mirrors the list in ExerciseRunner so both screens name a kind the same way. The
- * raw values are database enums — `case_ending`, `pos_id` — and showing those to a
- * learner would be leaking a column name into the UI.
+ * The filter offers 25 kinds; the bank currently holds rows for 17 of them; this map
+ * must cover every kind the filter can select, so raw database enums never leak into
+ * the UI. Three additional "Lesson exercises" labels cover module-driven attempts that
+ * record their module instead of a bank kind.
+ *
+ * Mirrors the list in ExerciseRunner so both screens name a kind the same way.
  */
 const KIND_LABELS: Record<string, string> = {
   word_meaning: 'Word meaning',
@@ -40,6 +43,24 @@ const KIND_LABELS: Record<string, string> = {
   root_id: 'Root identification',
   pos_id: 'Part of speech',
   aspect: 'Verb aspect',
+  subject_agreement: 'Who is the subject',
+  definiteness: 'Definite or indefinite',
+  mood: 'Mood (indicative / subjunctive / jussive)',
+  voice: 'Active or passive',
+  negation: 'Which word negates',
+  word_role: 'What role does this word play',
+  relative_pronoun: 'Which word is the relative pronoun',
+  demonstrative: 'Which word is the demonstrative',
+  conditional: 'Which word makes it conditional',
+  sentence_type: 'Nominal or verbal sentence',
+  mubtada_khabar: 'Which word is the predicate (خبر)',
+  subject_word: 'Which word is the doer (فاعل)',
+  object: 'Which word is the object (مفعول به)',
+  idafa: 'Which word is the مضاف إليه',
+  derived_noun: 'Participle or verbal noun',
+  fronting: 'Which word is fronted (تقديم)',
+  jinas: 'Two words, one root (al-jinās)',
+  simile: 'Which word opens a comparison (al-tashbīh)',
   // Lesson-driven attempts record their module instead of a bank kind.
   grammar: 'Lesson exercises — grammar',
   tajweed: 'Lesson exercises — tajweed',
