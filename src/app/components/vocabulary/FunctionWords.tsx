@@ -102,19 +102,20 @@ export function FunctionWords() {
     );
   }
 
+  // All counted over the full set, not the shown slice: knowing a word ranked 60th
+  // must move both numbers or neither, or the header contradicts itself.
   const shown = items.slice(0, SHOWN);
-  const knownCount = items.filter((i) => i.known).length;
-  const totalOccurrences = shown.reduce((n, i) => n + i.occurrences, 0);
-  const knownOccurrences = shown
-    .filter((i) => i.known)
-    .reduce((n, i) => n + i.occurrences, 0);
+  const known = items.filter((i) => i.known);
+  const sum = (xs: Item[]) => xs.reduce((n, i) => n + i.occurrences, 0);
+  const totalOccurrences = sum(items);
+  const knownOccurrences = sum(known);
 
   return (
     <div className="page-transition mx-auto max-w-2xl space-y-6">
       <div>
         <h1 className="font-display text-3xl">Function words</h1>
         <p className="mt-1 text-sm text-ground-300">
-          {knownCount} of {items.length} known ·{' '}
+          {known.length} of {items.length} known ·{' '}
           {knownOccurrences.toLocaleString()} of {totalOccurrences.toLocaleString()}{' '}
           occurrences covered
         </p>
