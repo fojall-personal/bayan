@@ -321,3 +321,41 @@ export function estimateReviewsPerDay(
   }
   return Math.round((dueWithinHorizon / horizonDays) * 10) / 10;
 }
+
+/** Default cold-start/warm-context window. */
+export const WARM_START_WINDOW_MINUTES = 10;
+
+/**
+ * Whether a review was warm — immediately preceded by a review of the adjacent
+ * span, within WARM_START_WINDOW_MINUTES.
+ *
+ * Chained recall inflates apparent strength: a learner who can only recite
+ * ayah 12 after reciting ayah 11 has not memorised 12 independently. This does
+ * not change what grade schedules to — FSRS still runs on the grade given —
+ * it is a signal recorded alongside the review so a future surface can treat
+ * a warm-only pass differently from a genuinely cold one, per the doc's own
+ * "mark items that pass only when warm as weak."
+ */
+export function isWarmStart(
+  precedingLastReviewed: string | null,
+  now: Date,
+  windowMinutes: number = WARM_START_WINDOW_MINUTES
+): boolean {
+  if (!precedingLastReviewed) return false;
+  const prev = new Date(normalizeSqliteUtc(precedingLastReviewed));
+  if (Number.isNaN(prev.getTime())) return false;
+  const minutesSince = (now.getTime() - prev.getTime()) / 60_000;
+  return minutesSince >= 0 && minutesSince <= windowMinutes;
+}
+
+/**
+ * SQLite's `datetime('now')` produces "YYYY-MM-DD HH:MM:SS" — UTC, but with no
+ * timezone marker. `new Date()` treats a string in that shape as LOCAL time,
+ * not UTC, so the same instant parses differently depending on the runtime's
+ * timezone. Only that bare shape is rewritten to unambiguous UTC; anything
+ * else (already-ISO strings like `last_review`'s own `toISOString()` output)
+ * passes through untouched.
+ */
+function normalizeSqliteUtc(s: string): string {
+  return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s) ? `${s.replace(' ', 'T')}Z` : s;
+}

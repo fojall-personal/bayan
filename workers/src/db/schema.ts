@@ -103,6 +103,7 @@ export interface MemorizationRow {
   difficulty: number | null;
   last_review: string | null;
   fsrs_state: number | null;
+  warm_start: number | null;
 }
 
 export interface MemorizationUnitsRow {

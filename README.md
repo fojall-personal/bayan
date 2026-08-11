@@ -51,7 +51,7 @@ What works today, honestly:
 | Database | Cloudflare D1, with `wrangler d1 migrations` |
 | Storage | Cloudflare R2 |
 | Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
-| Tests | Vitest (308 test blocks) + ESLint + `tsc`, all gated in CI |
+| Tests | Vitest (319 test blocks) + ESLint + `tsc`, all gated in CI |
 | CI/CD | GitHub Actions → Cloudflare Pages |
 | Cost | $0/month — a hard constraint, see plan §5 |
 
@@ -210,7 +210,7 @@ defect:
 | `sync-pages-config.mjs --check` | a missing Pages binding — the state that once made every data route 500 |
 
 ```bash
-cd workers   && npx tsc --noEmit && npm test    # 308 vitest test blocks
+cd workers   && npx tsc --noEmit && npm test    # 319 vitest test blocks
 cd src/app   && npx tsc --noEmit && npm run lint
 ```
 
@@ -345,7 +345,7 @@ pages render, the database has 6,236 Quran verses and 77K morphology rows.
 | Frontend (15 routes) | ✅ All rendering 200 OK |
 | Navigation (6 links) | ✅ All wired up |
 | API (55 endpoints) | ✅ All resolving |
-| Database (D1) | ✅ 25 migrations applied, seeded |
+| Database (D1) | ✅ 26 migrations applied, seeded |
 | Quran text | ✅ 6,236 verses with tajweed tags |
 | Morphology corpus | ✅ 128,219 segments, 49,968 roots, 8,977 verb forms |
 | Syntax layer | ✅ 117,947 rows from the Extended Quranic Treebank — roles, constituents, 11,157 elided tokens; shown in the Parse lens |

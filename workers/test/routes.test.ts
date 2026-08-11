@@ -1151,6 +1151,81 @@ describe('hifz retention preference', () => {
   });
 });
 
+describe('cold-start vs warm-context review flag', () => {
+  function seedSpan(
+    t: Harness,
+    id: string,
+    ayahFrom: number,
+    ayahTo: number,
+    lastReviewed: string | null
+  ) {
+    t.db
+      .prepare(
+        `INSERT INTO memorization (id, user_id, surah_id, ayah_from, ayah_to, status, last_reviewed)
+         VALUES (?, ?, 112, ?, ?, 'reviewing', ?)`
+      )
+      .run(id, TEST_USER, ayahFrom, ayahTo, lastReviewed);
+  }
+
+  it('is false when no adjacent preceding span exists', async () => {
+    const t = H();
+    seedSpan(t, 'mem-solo', 1, 4, null);
+
+    const { body } = await t.json<{ data: any }>('/api/memorization/mem-solo/review', {
+      method: 'POST',
+      body: JSON.stringify({ grade: 'good' }),
+    });
+    expect(body.data.warmStart).toBe(false);
+    const row = t.db
+      .prepare(`SELECT warm_start FROM memorization WHERE id = ?`)
+      .get('mem-solo') as { warm_start: number };
+    expect(row.warm_start).toBe(0);
+  });
+
+  it('is true when the preceding span was reviewed just before, within the warm-start window', async () => {
+    const t = H();
+    seedSpan(t, 'mem-prev', 1, 4, null);
+    t.db.prepare(`UPDATE memorization SET last_reviewed = datetime('now', '-2 minutes') WHERE id = 'mem-prev'`).run();
+    seedSpan(t, 'mem-next', 5, 8, null);
+
+    const { body } = await t.json<{ data: any }>('/api/memorization/mem-next/review', {
+      method: 'POST',
+      body: JSON.stringify({ grade: 'good' }),
+    });
+    expect(body.data.warmStart).toBe(true);
+    const row = t.db
+      .prepare(`SELECT warm_start FROM memorization WHERE id = ?`)
+      .get('mem-next') as { warm_start: number };
+    expect(row.warm_start).toBe(1);
+  });
+
+  it('is false when the preceding span was reviewed long before the window', async () => {
+    const t = H();
+    seedSpan(t, 'mem-prev-old', 1, 4, null);
+    t.db.prepare(`UPDATE memorization SET last_reviewed = datetime('now', '-2 hours') WHERE id = 'mem-prev-old'`).run();
+    seedSpan(t, 'mem-next-old', 5, 8, null);
+
+    const { body } = await t.json<{ data: any }>('/api/memorization/mem-next-old/review', {
+      method: 'POST',
+      body: JSON.stringify({ grade: 'good' }),
+    });
+    expect(body.data.warmStart).toBe(false);
+  });
+
+  it('also computes on the /recall path', async () => {
+    const t = H();
+    seedSpan(t, 'mem-prev-r', 1, 4, null);
+    t.db.prepare(`UPDATE memorization SET last_reviewed = datetime('now', '-1 minute') WHERE id = 'mem-prev-r'`).run();
+    seedSpan(t, 'mem-next-r', 5, 8, null);
+
+    const { body } = await t.json<{ data: any }>('/api/memorization/mem-next-r/recall', {
+      method: 'POST',
+      body: JSON.stringify({ recalledAyah: 9 }),
+    });
+    expect(body.data.warmStart).toBe(true);
+  });
+});
+
 describe('memorization review accepts a measured accuracy', () => {
   function seedEntry(t: Harness, id = 'mem-1') {
     t.db

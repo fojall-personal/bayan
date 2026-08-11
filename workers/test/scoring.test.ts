@@ -24,6 +24,7 @@ import {
   REQUEST_RETENTION,
   TRACK_RETENTION,
   estimateReviewsPerDay,
+  isWarmStart,
 } from '../src/lib/space-repetition';
 import type { FsrsState, Grade } from '../src/lib/space-repetition';
 
@@ -286,6 +287,54 @@ describe('FSRS scheduler', () => {
       // fitted parameters.
       expect(at095).toBeGreaterThanOrEqual(at09);
     });
+  });
+});
+
+describe('isWarmStart', () => {
+  const NOW = new Date('2026-07-27T12:00:00.000Z');
+
+  it('is false with no preceding review', () => {
+    expect(isWarmStart(null, NOW)).toBe(false);
+  });
+
+  it('is true within the window', () => {
+    const fiveMinAgo = new Date(NOW.getTime() - 5 * 60_000).toISOString();
+    expect(isWarmStart(fiveMinAgo, NOW)).toBe(true);
+  });
+
+  it('is false right at and beyond the window boundary', () => {
+    const elevenMinAgo = new Date(NOW.getTime() - 11 * 60_000).toISOString();
+    expect(isWarmStart(elevenMinAgo, NOW)).toBe(false);
+    // Exactly at the boundary counts as warm — inclusive, not a strict "<".
+    const tenMinAgo = new Date(NOW.getTime() - 10 * 60_000).toISOString();
+    expect(isWarmStart(tenMinAgo, NOW)).toBe(true);
+  });
+
+  it('is false for a timestamp in the future (clock skew, bad data)', () => {
+    const future = new Date(NOW.getTime() + 60_000).toISOString();
+    expect(isWarmStart(future, NOW)).toBe(false);
+  });
+
+  it('is false for an unparseable timestamp rather than throwing', () => {
+    expect(isWarmStart('not a date', NOW)).toBe(false);
+  });
+
+  it('respects a custom window', () => {
+    const twoMinAgo = new Date(NOW.getTime() - 2 * 60_000).toISOString();
+    expect(isWarmStart(twoMinAgo, NOW, 1)).toBe(false);
+    expect(isWarmStart(twoMinAgo, NOW, 5)).toBe(true);
+  });
+
+  // last_reviewed is written by SQL as `datetime('now')`, which yields
+  // "YYYY-MM-DD HH:MM:SS" with no timezone marker — a shape `new Date()`
+  // treats as LOCAL time, not UTC. On a non-UTC host this silently shifted
+  // "5 minutes ago" into "hours ago" and isWarmStart came back false for a
+  // review that had just happened. Regression check, not a hypothetical: this
+  // is exactly the string shape the /review and /recall routes read back.
+  it('treats a bare SQLite datetime() string as UTC, regardless of host timezone', () => {
+    const fiveMinAgo = new Date(NOW.getTime() - 5 * 60_000);
+    const sqliteShape = fiveMinAgo.toISOString().slice(0, 19).replace('T', ' ');
+    expect(isWarmStart(sqliteShape, NOW)).toBe(true);
   });
 });
 

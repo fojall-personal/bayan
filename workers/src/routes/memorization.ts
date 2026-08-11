@@ -11,6 +11,7 @@ import {
   REQUEST_RETENTION,
   TRACK_RETENTION,
   estimateReviewsPerDay,
+  isWarmStart,
   type Grade,
   type FsrsState,
 } from '../lib/space-repetition';
@@ -33,6 +34,29 @@ async function hifzRetentionFor(db: Database, userId: string): Promise<number> {
     [userId]
   );
   return row?.hifz_retention ?? REQUEST_RETENTION;
+}
+
+/**
+ * Was this review chained off a span the learner just recited, rather than
+ * recalled cold? Looks at the adjacent PRECEDING span (this entry's
+ * ayah_from - 1 as someone else's ayah_to) and checks whether it was
+ * reviewed within the warm-start window of now. No adjacent span, or that
+ * span never reviewed, both mean false — chaining can't be claimed without
+ * evidence of it.
+ */
+async function precedingSpanWarmStart(
+  db: Database,
+  userId: string,
+  surahId: number,
+  ayahFrom: number,
+  now: Date
+): Promise<boolean> {
+  if (ayahFrom <= 1) return false;
+  const preceding = await db.get<{ last_reviewed: string | null }>(
+    `SELECT last_reviewed FROM memorization WHERE user_id = ? AND surah_id = ? AND ayah_to = ?`,
+    [userId, surahId, ayahFrom - 1]
+  );
+  return isWarmStart(preceding?.last_reviewed ?? null, now);
 }
 
 // GET /api/memorization/surah/:surahId — Get surah progress
@@ -172,6 +196,8 @@ memorizationRoutes.post('/:id/review', async (c) => {
       return c.json({ error: 'Entry not found' }, 404);
     }
 
+    const now = new Date();
+
     const result = schedule(
       {
         stability: entry.stability,
@@ -184,9 +210,11 @@ memorizationRoutes.post('/:id/review', async (c) => {
         reviews: entry.revision_count,
       },
       grade,
-      new Date(),
+      now,
       await hifzRetentionFor(db, userId)
     );
+
+    const warmStart = await precedingSpanWarmStart(db, userId, entry.surah_id, entry.ayah_from, now);
 
     await db.run(
       `UPDATE memorization SET
@@ -198,7 +226,8 @@ memorizationRoutes.post('/:id/review', async (c) => {
          stability = ?,
          difficulty = ?,
          fsrs_state = ?,
-         last_review = ?
+         last_review = ?,
+         warm_start = ?
        WHERE id = ? AND user_id = ?`,
       [
         result.nextReview,
@@ -208,6 +237,7 @@ memorizationRoutes.post('/:id/review', async (c) => {
         result.difficulty,
         result.fsrsState,
         result.lastReview,
+        warmStart ? 1 : 0,
         id,
         userId,
       ]
@@ -221,6 +251,7 @@ memorizationRoutes.post('/:id/review', async (c) => {
         nextReview: result.nextReview,
         status: result.status,
         interval: result.interval,
+        warmStart,
       },
     });
   } catch (error) {
@@ -267,6 +298,7 @@ memorizationRoutes.post('/:id/recall', async (c) => {
     // ayah), so it maps to the two unambiguous grades and leaves the middle two to
     // surfaces that can actually measure partial recall.
     const grade = isCorrect ? 'good' : 'again';
+    const now = new Date();
 
     const result = schedule(
       {
@@ -278,9 +310,11 @@ memorizationRoutes.post('/:id/recall', async (c) => {
         reviews: entry.revision_count,
       },
       grade,
-      new Date(),
+      now,
       await hifzRetentionFor(db, userId)
     );
+
+    const warmStart = await precedingSpanWarmStart(db, userId, entry.surah_id, entry.ayah_from, now);
 
     await db.run(
       `UPDATE memorization SET
@@ -292,7 +326,8 @@ memorizationRoutes.post('/:id/recall', async (c) => {
          stability = ?,
          difficulty = ?,
          fsrs_state = ?,
-         last_review = ?
+         last_review = ?,
+         warm_start = ?
        WHERE id = ? AND user_id = ?`,
       [
         result.nextReview,
@@ -302,6 +337,7 @@ memorizationRoutes.post('/:id/recall', async (c) => {
         result.difficulty,
         result.fsrsState,
         result.lastReview,
+        warmStart ? 1 : 0,
         id,
         userId,
       ]
@@ -315,6 +351,7 @@ memorizationRoutes.post('/:id/recall', async (c) => {
         grade,
         nextReview: result.nextReview,
         interval: result.interval,
+        warmStart,
       },
     });
   } catch (error) {
