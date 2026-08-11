@@ -68,6 +68,60 @@ const KIND_LABELS: Record<string, string> = {
   literacy: 'Lesson exercises — literacy',
 };
 
+/**
+ * Which skill a kind actually diagnoses, not which database column it lives in.
+ *
+ * Grouping by raw `kind` — the shape this page had before — is diagnostic of the
+ * schema, not of the learner: case_ending, mood, voice and subject_agreement are all
+ * "can you get the ending right," but nothing said so; they just sat in a flat list in
+ * whatever order the bank happened to return them. This is a judgement call about
+ * which skill each kind actually measures, not a value derived from any source of
+ * truth — reasonable people could group `word_role` under Vocabulary instead of
+ * Governor, for instance. Kept in sync with KIND_LABELS deliberately: anything missing
+ * here falls into 'Other' rather than disappearing, so an unmapped kind is visible as
+ * unmapped rather than silently dropped.
+ */
+const KIND_CHANNEL: Record<string, string> = {
+  root_id: 'Morphology',
+  verb_form: 'Morphology',
+  pos_id: 'Morphology',
+  aspect: 'Morphology',
+  definiteness: 'Morphology',
+  derived_noun: 'Morphology',
+  case_ending: "Case & i'rab",
+  mood: "Case & i'rab",
+  voice: "Case & i'rab",
+  subject_agreement: "Case & i'rab",
+  mubtada_khabar: 'Governor & role',
+  subject_word: 'Governor & role',
+  object: 'Governor & role',
+  idafa: 'Governor & role',
+  fronting: 'Governor & role',
+  word_role: 'Governor & role',
+  word_meaning: 'Vocabulary',
+  find_word: 'Vocabulary',
+  negation: 'Syntax',
+  relative_pronoun: 'Syntax',
+  demonstrative: 'Syntax',
+  conditional: 'Syntax',
+  sentence_type: 'Syntax',
+  jinas: 'Syntax',
+  simile: 'Syntax',
+  homograph: 'Syntax',
+  grammar: 'Lessons',
+  tajweed: 'Lessons',
+  literacy: 'Lessons',
+};
+const CHANNEL_ORDER = [
+  'Morphology',
+  "Case & i'rab",
+  'Governor & role',
+  'Vocabulary',
+  'Syntax',
+  'Lessons',
+  'Other',
+];
+
 export default function ProgressPage() {
   const router = useRouter();
   const [scores, setScores] = useState<ScoreEntry[]>([]);
@@ -134,42 +188,53 @@ export default function ProgressPage() {
           measurements that were never taken. */}
       {mastery.length > 0 && (
         <Card>
-          <h2 className="mb-4 text-xl font-bold">Grammar by exercise type</h2>
-          <div className="space-y-3">
-            {[...mastery]
-              .sort((a, b) => a.percentage - b.percentage)
-              .map((m) => (
-                <div key={m.category}>
-                  <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
-                    <span>{KIND_LABELS[m.category] ?? m.category}</span>
-                    {/* Raw counts beside the percentage: "3 of 3 · 100%" reads very
-                        differently from "47 of 52 · 90%". */}
-                    <span className="text-ground-400">
-                      {m.correctAttempts} of {m.totalAttempts} · {m.percentage}%
-                    </span>
-                  </div>
-                  <div
-                    className="h-1.5 overflow-hidden rounded-full bg-ground-800"
-                    role="progressbar"
-                    aria-valuenow={m.percentage}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={KIND_LABELS[m.category] ?? m.category}
-                  >
-                    <div
-                      className={`h-full rounded-full ${
-                        m.percentage >= 80
-                          ? 'bg-leaf-500'
-                          : m.percentage >= 50
-                            ? 'bg-gold-500'
-                            : 'bg-error'
-                      }`}
-                      style={{ width: `${m.percentage}%` }}
-                    />
-                  </div>
+          <h2 className="mb-4 text-xl font-bold">Grammar by skill</h2>
+          {CHANNEL_ORDER.map((channel) => {
+            const items = mastery
+              .filter((m) => (KIND_CHANNEL[m.category] ?? 'Other') === channel)
+              .sort((a, b) => a.percentage - b.percentage);
+            if (items.length === 0) return null;
+            return (
+              <div key={channel} className="mb-6 last:mb-0">
+                <h3 className="mb-2 text-xs uppercase tracking-label text-ground-400">
+                  {channel}
+                </h3>
+                <div className="space-y-3">
+                  {items.map((m) => (
+                    <div key={m.category}>
+                      <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
+                        <span>{KIND_LABELS[m.category] ?? m.category}</span>
+                        {/* Raw counts beside the percentage: "3 of 3 · 100%" reads very
+                            differently from "47 of 52 · 90%". */}
+                        <span className="text-ground-400">
+                          {m.correctAttempts} of {m.totalAttempts} · {m.percentage}%
+                        </span>
+                      </div>
+                      <div
+                        className="h-1.5 overflow-hidden rounded-full bg-ground-800"
+                        role="progressbar"
+                        aria-valuenow={m.percentage}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={KIND_LABELS[m.category] ?? m.category}
+                      >
+                        <div
+                          className={`h-full rounded-full ${
+                            m.percentage >= 80
+                              ? 'bg-leaf-500'
+                              : m.percentage >= 50
+                                ? 'bg-gold-500'
+                                : 'bg-error'
+                          }`}
+                          style={{ width: `${m.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-          </div>
+              </div>
+            );
+          })}
           <p className="mt-4 text-xs text-ground-400">
             Only types you have attempted appear. Practise more in{' '}
             <Link href="/grammar" className="text-gold-400 hover:underline">
