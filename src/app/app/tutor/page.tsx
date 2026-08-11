@@ -8,7 +8,7 @@ export default function TutorPage() {
     <div>
       <PageHeader
         title="AI Tutor"
-        subtitle="Ask me anything about Arabic grammar, Quran memorization, or tajweed"
+        subtitle="Ask about a word, a root, a location, or a tajweed rule — answered from the corpus, not invented"
       />
       <TutorChat />
     </div>
