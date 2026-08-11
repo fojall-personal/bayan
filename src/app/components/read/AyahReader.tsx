@@ -109,6 +109,10 @@ export function AyahReader() {
   const params = useSearchParams();
   const surah = Math.min(114, Math.max(1, Number(params.get('s')) || 1));
   const ayah = Math.max(1, Number(params.get('a')) || 1);
+  // Static surah metadata (name, ayah count) — available synchronously, no
+  // fetch needed. Used below to default a continuous run's end to "the rest
+  // of this surah" when no explicit ayahTo is given.
+  const s = getSurah(surah);
 
   /**
    * Continuous reading mode: play a run of ayat at pace, advancing on each
@@ -118,10 +122,22 @@ export function AyahReader() {
    * single-ayah reading (continuousMode false) is completely unaffected by
    * everything below — `data`/`loading`/`error` still come from exactly one
    * fetch, exactly as before.
+   *
+   * Two different callers reach this mode, and neither has to pass every
+   * param: the freeflow card (Today.tsx) always passes an explicit `ayahTo`
+   * — a coverage-vetted run it already computed. The plain "play on
+   * continuously" button below passes none, and gets the rest of the
+   * current surah — no coverage requirement, because unlike freeflow this
+   * is not claiming the ayat are already known, only that playback should
+   * keep going.
    */
   const continuousMode = params.get('continuous') === '1';
+  // Whether this run is freeflow's coverage-vetted range (explicit ayahTo) or
+  // the unbounded "keep playing" button below (no ayahTo, defaults to the
+  // rest of the surah) — the two mean different things and say so in the UI.
+  const isVettedRun = params.get('ayahTo') !== null;
   const ayahTo = continuousMode
-    ? Math.max(ayah, Number(params.get('ayahTo')) || ayah)
+    ? Math.max(ayah, Number(params.get('ayahTo')) || s?.ayahCount || ayah)
     : ayah;
 
   const [data, setData] = useState<Ayah | null>(null);
@@ -234,7 +250,6 @@ export function AyahReader() {
     }
   };
 
-  const s = getSurah(surah);
   const total = data?.ayahsInSurah ?? s?.ayahCount ?? 1;
 
   if (loading) {
@@ -295,13 +310,32 @@ export function AyahReader() {
                 : `${data.wordsToLearn} word${data.wordsToLearn === 1 ? '' : 's'} to learn`}
             </p>
           </div>
-          <AyahAudioButton
-            surah={surah}
-            ayah={currentAyah}
-            onPositionChange={setPositionMs}
-            onEnded={continuousMode ? handleAyahEnded : undefined}
-            autoPlay={continuousMode}
-          />
+          <div className="flex items-center gap-1.5">
+            <AyahAudioButton
+              surah={surah}
+              ayah={currentAyah}
+              onPositionChange={setPositionMs}
+              onEnded={continuousMode ? handleAyahEnded : undefined}
+              autoPlay={continuousMode}
+            />
+            {/* Not the freeflow band (that requires 98% known coverage first,
+                which most learners have not calibrated yet). This is unbounded
+                — plays every ayah in the surah, one after another, whatever
+                the coverage. A real <Link> rather than a state toggle, because
+                autoplay-with-sound needs the click that navigates here to
+                count as the user gesture (verified, see
+                .hermes/plans/2026-08-10_CONTINUOUS-READ-for-orinth.md). */}
+            {!continuousMode && (
+              <Link
+                href={`/read?s=${surah}&a=${ayah}&continuous=1`}
+                aria-label={`Play ${s?.name ?? `surah ${surah}`} continuously from ${surah}:${ayah}`}
+                title="Play on continuously from here"
+                className="rounded-lg bg-leaf-500/10 px-3 py-2 text-sm text-leaf-400 transition-colors hover:bg-leaf-500/20"
+              >
+                ▶▶
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* The ayah. Amiri, lang="ar", leading-arabic — and tajweed colours only
@@ -413,7 +447,8 @@ export function AyahReader() {
               {s?.name ?? `Surah ${surah}`} {ayah}–{ayahTo}
             </h2>
             <p className="mt-1 text-sm text-ground-300">
-              {ayahTo - ayah + 1} ayahs, at speed, no lookups.
+              {ayahTo - ayah + 1} ayahs
+              {isVettedRun ? ', at speed, no lookups.' : ' played through.'}
             </p>
             <Link href="/today" className="mt-4 block">
               <Button className="w-full">Back to Today</Button>
