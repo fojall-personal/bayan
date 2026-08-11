@@ -76,6 +76,9 @@ const KINDS = [
   // One spelling, two jobs — only the sentence decides. The first kind here that
   // cannot be answered from the word alone.
   { value: 'homograph', label: 'Which مَا is this? (one spelling, two jobs)' },
+  // Two near-identical ayahs, one word apart — the classic hifz confusion,
+  // auto-detected by edit distance rather than a curated list.
+  { value: 'mutashabihat', label: 'Which ayah is this? (near-identical verses)' },
 ];
 
 /**
@@ -85,7 +88,7 @@ const KINDS = [
  */
 const WHOLE_AYAH_KINDS = new Set([
   'find_word', 'mubtada_khabar', 'subject_word', 'object', 'idafa', 'fronting', 'jinas',
-  'simile',
+  'simile', 'mutashabihat',
 ]);
 
 const LEVELS = [

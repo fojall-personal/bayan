@@ -1763,3 +1763,64 @@ describe('homograph exercises', () => {
     ]);
   });
 });
+
+describe('mutashabihat exercises', () => {
+  // Two near-identical ayahs, auto-detected by edit distance rather than a curated
+  // list. Unlike homograph, the "word" fields carry a real word (NOT NULL, per the
+  // schema) but are not the point of the item — the two options are full ayah texts.
+  function seedMutashabihat(h: Harness) {
+    const ins = h.db.prepare(
+      `INSERT INTO grammar_exercise_bank
+         (id, kind, level, word_arabic, word_buckwalter, prompt, answer, options,
+          explanation, surah_id, ayah_id, word_index, segment_index)
+       VALUES (?, 'mutashabihat', ?, ?, NULL, ?, ?, ?, ?, ?, ?, 1, ?)`
+    );
+    ins.run(
+      'mutashabihat-27-81-30-53', 5, 'وَمَآ',
+      'Which of these is the real text of 27:81?',
+      'وَمَآ أَنتَ بِهَٰدِى ٱلْعُمْىِ',
+      JSON.stringify(['وَمَآ أَنتَ بِهَٰدِ ٱلْعُمْىِ', 'وَمَآ أَنتَ بِهَٰدِى ٱلْعُمْىِ']),
+      '27:81 reads: وَمَآ أَنتَ بِهَٰدِى ٱلْعُمْىِ. The confusable text is 30:53.',
+      27, 81, 1
+    );
+    ins.run(
+      'mutashabihat-30-53-27-81', 5, 'وَمَآ',
+      'Which of these is the real text of 30:53?',
+      'وَمَآ أَنتَ بِهَٰدِ ٱلْعُمْىِ',
+      JSON.stringify(['وَمَآ أَنتَ بِهَٰدِ ٱلْعُمْىِ', 'وَمَآ أَنتَ بِهَٰدِى ٱلْعُمْىِ']),
+      '30:53 reads: وَمَآ أَنتَ بِهَٰدِ ٱلْعُمْىِ. The confusable text is 27:81.',
+      30, 53, 1
+    );
+  }
+
+  it('is accepted by the kind allowlist and served', async () => {
+    const h = H();
+    seedMutashabihat(h);
+    const { status, body } = await h.json<{ data: any[] }>(
+      '/api/grammar/exercises?kind=mutashabihat'
+    );
+    expect(status).toBe(200);
+    expect(body.data.length).toBe(2);
+    for (const ex of body.data) {
+      expect(ex.options).toContain(ex.answer);
+      expect(ex.options.length).toBe(2);
+    }
+  });
+
+  it("each direction of a pair asks about its own ayah and answers accordingly", async () => {
+    const h = H();
+    seedMutashabihat(h);
+    const { body } = await h.json<{ data: any[] }>(
+      '/api/grammar/exercises?kind=mutashabihat'
+    );
+    const a = body.data.find((e: any) => e.source === '27:81');
+    const b = body.data.find((e: any) => e.source === '30:53');
+    expect(a).toBeDefined();
+    expect(b).toBeDefined();
+    // The two directions share the same pair of options, in whichever order each
+    // item's own deterministic shuffle produced — only the correct ANSWER differs,
+    // and it differs because each item asks about a different real location.
+    expect([...a!.options].sort()).toEqual([...b!.options].sort());
+    expect(a!.answer).not.toBe(b!.answer);
+  });
+});

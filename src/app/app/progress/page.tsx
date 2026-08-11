@@ -62,6 +62,7 @@ const KIND_LABELS: Record<string, string> = {
   jinas: 'Two words, one root (al-jinās)',
   simile: 'Which word opens a comparison (al-tashbīh)',
   homograph: 'Which مَا is this? (one spelling, two jobs)',
+  mutashabihat: 'Which ayah is this? (near-identical verses)',
   // Lesson-driven attempts record their module instead of a bank kind.
   grammar: 'Lesson exercises — grammar',
   tajweed: 'Lesson exercises — tajweed',
@@ -108,6 +109,7 @@ const KIND_CHANNEL: Record<string, string> = {
   jinas: 'Syntax',
   simile: 'Syntax',
   homograph: 'Syntax',
+  mutashabihat: 'Syntax',
   grammar: 'Lessons',
   tajweed: 'Lessons',
   literacy: 'Lessons',

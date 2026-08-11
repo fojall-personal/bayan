@@ -298,8 +298,11 @@ grammarRoutes.get('/exercises', async (c) => {
     params.push(n);
   }
   if (kind) {
-    // Seventeen kinds. Everything past the first seven reads annotation the ingest had
-    // captured and the generator never used — roughly 108,000 facts sitting idle.
+    // Everything past the first seven reads annotation the ingest had captured and the
+    // generator never used — roughly 108,000 facts sitting idle. Count is stated where
+    // it's checked, not here — this comment already went stale once ("Seventeen kinds"
+    // sat here after the bank had grown to 25), and gen-content-manifest.mjs --check
+    // now gates the kind-count claim in prose, which this comment format defeats.
     const allowed = [
       'verb_form', 'case_ending', 'root_id', 'pos_id', 'aspect', 'word_meaning',
       'find_word', 'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
@@ -313,6 +316,9 @@ grammarRoutes.get('/exercises', async (c) => {
       // One spelling, several jobs — the answer is the hand-verified pos tag, and the
       // distractors are roles that same spelling genuinely takes elsewhere.
       'homograph',
+      // Two near-identical ayahs, one word apart — auto-detected by edit distance.
+      // See scripts/find-mutashabihat.mjs and gen-mutashabihat-exercises.mjs.
+      'mutashabihat',
     ];
     if (!allowed.includes(kind)) {
       return c.json({ error: `kind must be one of ${allowed.join(', ')}` }, 400);
