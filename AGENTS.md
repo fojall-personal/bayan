@@ -424,6 +424,7 @@ GET    /api/memorization/surahs
 GET    /api/progress/calibration                    (GET twelve sampled roots, POST records answers + opt-in band)
 POST   /api/progress/calibration                    (GET twelve sampled roots, POST records answers + opt-in band)
 GET    /api/progress/coverage                       (ayahs readable from known roots; 400 roots is half the Quran)
+GET    /api/progress/freeflow
 GET    /api/progress/function-words
 DELETE /api/progress/function-words/:lemma/:pos/known
 POST   /api/progress/function-words/:lemma/:pos/known

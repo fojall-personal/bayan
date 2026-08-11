@@ -61,10 +61,21 @@ interface ReadingQueueItem {
   coveragePct: number;
 }
 
+/** One run from GET /api/progress/freeflow. */
+interface FreeflowRun {
+  surah: number;
+  ayahFrom: number;
+  ayahTo: number;
+  ayahCount: number;
+  wordCount: number;
+  estimatedSeconds: number;
+}
+
 export function Today() {
   const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [due, setDue] = useState<DueItem[]>([]);
   const [reading, setReading] = useState<ReadingQueueItem[]>([]);
+  const [freeflow, setFreeflow] = useState<FreeflowRun | null>(null);
   const [lesson, setLesson] = useState<NextLesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,12 +85,15 @@ export function Today() {
     setError(null);
     // Settled rather than all: a learner with no memorization rows should still
     // see their coverage and next lesson, not a single error for the whole page.
-    const [cov, dueRes, next, queue] = await Promise.allSettled([
+    const [cov, dueRes, next, queue, flow] = await Promise.allSettled([
       apiFetch<{ data: Coverage }>('/api/progress/coverage'),
       apiFetch<{ data: DueItem[] }>('/api/memorization/review/today'),
       apiFetch<{ data: { lesson: NextLesson | null } }>('/api/learning/next'),
       apiFetch<{ data: { items: ReadingQueueItem[] } }>(
         '/api/progress/reading-queue?limit=3'
+      ),
+      apiFetch<{ data: { runs: FreeflowRun[] } }>(
+        '/api/progress/freeflow?minWords=20'
       ),
     ]);
     if (cov.status === 'fulfilled') setCoverage(cov.value.data);
@@ -87,6 +101,7 @@ export function Today() {
     if (dueRes.status === 'fulfilled') setDue(dueRes.value.data ?? []);
     if (next.status === 'fulfilled') setLesson(next.value.data?.lesson ?? null);
     if (queue.status === 'fulfilled') setReading(queue.value.data?.items ?? []);
+    if (flow.status === 'fulfilled') setFreeflow(flow.value.data?.runs?.[0] ?? null);
     setLoading(false);
   }, []);
 
@@ -230,6 +245,33 @@ export function Today() {
               </p>
             </Card>
           </Link>
+          {/* Effortful review and i+1 both build accuracy; neither builds speed.
+              Only shown once a run exists — a learner with few known roots has
+              nothing at 98% coverage yet, and a card linking to an empty run
+              would be worse than no card.
+
+              Links to the run's first ayah in the existing single-ayah reader,
+              not a "continuous mode with autoplay" — AyahReader has no such mode
+              yet (no continuous/audio query param anywhere in it), and claiming
+              one here would be a dead promise, not a feature. Building an actual
+              continuous reading view is separate future work. */}
+          {freeflow && (
+            <Link href={`/read?s=${freeflow.surah}&a=${freeflow.ayahFrom}`} className="block">
+              <Card interactive>
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="font-semibold">Read a page you already know</p>
+                  <span className="shrink-0 text-xs text-ground-400">
+                    ~{Math.round(freeflow.estimatedSeconds / 60) || 1} min
+                  </span>
+                </div>
+                <p className="mt-0.5 text-sm text-ground-300">
+                  {getSurah(freeflow.surah)?.name ?? `Surah ${freeflow.surah}`}{' '}
+                  {freeflow.ayahFrom}–{freeflow.ayahTo} · {freeflow.ayahCount} ayahs at
+                  speed, no lookups
+                </p>
+              </Card>
+            </Link>
+          )}
         </div>
       </div>
 

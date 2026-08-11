@@ -638,3 +638,118 @@ progressRoutes.delete('/function-words/:lemma/:pos/known', async (c) => {
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
+
+/**
+ * GET /api/progress/freeflow — contiguous runs of ayat you can already read at pace.
+ *
+ * Coverage and the reading queue are both effortful bands — 100% known (review) or
+ * one root short (i+1). Neither builds speed, and Refold names "only mining, never
+ * freeflowing" as a top-3 learner mistake: a learner who only ever does hard work
+ * stays slow forever. This is the third band — reading a run of ayat you already
+ * know, at pace, with no lookups.
+ *
+ * "Contiguous" is the point. A scattered single ayah at 100% is not a reading
+ * session; a run of ten in a row is. The threshold is 98%, not 100% — Laufer 2020's
+ * adequate-comprehension figure — computed the same way coverage counts it: every
+ * segment that is either a known root or a known function word (rooted and
+ * unrooted words both count, per Task 3; a run that only checked roots would be
+ * exactly the bug that made coverage wrong before).
+ */
+progressRoutes.get('/freeflow', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+  const minWords = Math.max(0, Number(c.req.query('minWords') ?? 0) || 0);
+
+  try {
+    const rows = await db.query<{
+      surah_id: number;
+      ayah_id: number;
+      word_count: number;
+      total_meaningful: number;
+      unknown_meaningful: number;
+    }>(
+      `WITH known AS (
+         SELECT root FROM user_known_root WHERE user_id = ?
+       ),
+       known_fw AS (
+         SELECT lemma, pos FROM user_known_function_word WHERE user_id = ?
+       )
+       SELECT surah_id, ayah_id,
+              COUNT(DISTINCT word_index) AS word_count,
+              SUM(CASE WHEN m.root IS NOT NULL THEN 1
+                       WHEN m.lemma IS NOT NULL AND m.lemma <> '' AND m.pos IS NOT NULL THEN 1
+                       ELSE 0 END) AS total_meaningful,
+              SUM(CASE WHEN m.root IS NOT NULL
+                            AND m.root NOT IN (SELECT root FROM known) THEN 1
+                       WHEN m.root IS NULL
+                            AND m.lemma IS NOT NULL AND m.lemma <> '' AND m.pos IS NOT NULL
+                            AND NOT EXISTS (
+                                  SELECT 1 FROM known_fw f
+                                   WHERE f.lemma = m.lemma AND f.pos = m.pos)
+                       THEN 1 ELSE 0 END) AS unknown_meaningful
+         FROM quran_word_morphology m
+        GROUP BY surah_id, ayah_id
+        ORDER BY surah_id, ayah_id`,
+      [userId, userId]
+    );
+
+    // Group into maximal contiguous runs, in JS rather than SQL — this is an
+    // ordered scan with a running window, not a set operation. An ayah with zero
+    // meaningful segments (only disconnected letters) is vacuously 100% covered,
+    // matching how coverage/ayahsReadable already treat unrooted, unlabeled words.
+    // A gap in ayah_id — even within the same surah — ends the run rather than
+    // being silently bridged, for the same reason Task 8's own eval exists: an
+    // unmeasured ayah must never be assumed readable.
+    type Run = { surah: number; ayahFrom: number; ayahTo: number; wordCount: number };
+    const runs: Run[] = [];
+    let current: Run | null = null;
+
+    for (const r of rows) {
+      const coverage =
+        r.total_meaningful === 0
+          ? 1
+          : (r.total_meaningful - r.unknown_meaningful) / r.total_meaningful;
+      const qualifies = coverage >= 0.98;
+
+      if (qualifies && current && current.surah === r.surah_id && current.ayahTo === r.ayah_id - 1) {
+        current.ayahTo = r.ayah_id;
+        current.wordCount += r.word_count;
+      } else {
+        if (current) runs.push(current);
+        current = qualifies
+          ? { surah: r.surah_id, ayahFrom: r.ayah_id, ayahTo: r.ayah_id, wordCount: r.word_count }
+          : null;
+      }
+    }
+    if (current) runs.push(current);
+
+    const filtered = runs
+      .filter((r) => r.wordCount >= minWords)
+      .sort((a, b) => b.wordCount - a.wordCount || a.surah - b.surah || a.ayahFrom - b.ayahFrom);
+
+    return c.json({
+      data: {
+        runs: filtered.map((r) => ({
+          surah: r.surah,
+          ayahFrom: r.ayahFrom,
+          ayahTo: r.ayahTo,
+          ayahCount: r.ayahTo - r.ayahFrom + 1,
+          wordCount: r.wordCount,
+          // A rough reading pace, not a cited figure — flagged as an estimate
+          // rather than dressed up as measured, same discipline as the coverage
+          // model's interest-income estimate. ~2.2 words/sec is a moderate,
+          // unhurried tarteel pace; the UI should say "about" and mean it.
+          estimatedSeconds: Math.round(r.wordCount / 2.2),
+        })),
+      },
+      basis:
+        'Contiguous ayahs at 98% or more of words known — rooted and function words ' +
+        'both, per the coverage model. Longest run first, filtered to runs with at ' +
+        'least minWords words so a single short ayah does not count as a reading ' +
+        'session.',
+    });
+  } catch (error) {
+    console.error('Freeflow error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});

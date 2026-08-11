@@ -47,6 +47,7 @@ const GETS: [path: string, note: string][] = [
   ['/api/progress/scores', 'no assessments'],
   ['/api/progress/coverage', 'no known roots'],
   ['/api/progress/calibration', 'samples from an empty corpus'],
+  ['/api/progress/freeflow', 'empty corpus, no runs'],
   ['/api/tajweed/mastery', 'rules exist from migration 0001'],
   ['/api/tajweed/verses/1', 'no verses ingested'],
   ['/api/tutor/history', 'no conversations'],
@@ -715,6 +716,65 @@ describe('the reading queue', () => {
     expect(item!.knownWords).toBe(3);
     expect(item!.totalWords).toBe(4);
     expect(item!.coveragePct).toBe(75);
+  });
+});
+
+describe('the freeflow reading band', () => {
+  it('requires auth', async () => {
+    const { status } = await H().json('/api/progress/freeflow', { auth: false });
+    expect(status).toBe(401);
+  });
+
+  it('returns only contiguous runs at or above the coverage threshold', async () => {
+    const t = H();
+    // Ayahs 1-3 of surah 1 are fully known. Ayah 4 has one unknown root out of
+    // three — 66.7% coverage, well under the 98% threshold — and must not
+    // silently extend the run.
+    const seedAyah = (ayah: number, roots: string[]) => {
+      roots.forEach((root, i) => {
+        t.db
+          .prepare(
+            `INSERT INTO quran_word_morphology
+               (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos)
+             VALUES (1, ?, ?, 1, 'f', 'l', ?, 'N')`
+          )
+          .run(ayah, i + 1, root);
+      });
+    };
+    seedAyah(1, ['r1', 'r2', 'r3']);
+    seedAyah(2, ['r4', 'r5', 'r6']);
+    seedAyah(3, ['r7', 'r8', 'r9']);
+    seedAyah(4, ['r10', 'r11', 'rUnknown']);
+
+    for (const root of ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8', 'r9', 'r10', 'r11']) {
+      t.db.prepare(`INSERT INTO user_known_root (user_id, root) VALUES (?, ?)`).run(TEST_USER, root);
+    }
+    // rUnknown deliberately left unmarked.
+
+    const { status, body } = await t.json<{
+      data: { runs: { surah: number; ayahFrom: number; ayahTo: number; wordCount: number }[] };
+    }>('/api/progress/freeflow?minWords=3');
+
+    expect(status).toBe(200);
+    const run = body.data.runs.find((r) => r.surah === 1);
+    expect(run).toMatchObject({ surah: 1, ayahFrom: 1, ayahTo: 3, wordCount: 9 });
+  });
+
+  it('excludes runs shorter than minWords', async () => {
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_morphology
+           (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos)
+         VALUES (9, 1, 1, 1, 'f', 'l', 'solo', 'N')`
+      )
+      .run();
+    t.db.prepare(`INSERT INTO user_known_root (user_id, root) VALUES (?, ?)`).run(TEST_USER, 'solo');
+
+    const { body } = await t.json<{ data: { runs: { surah: number }[] } }>(
+      '/api/progress/freeflow?minWords=50'
+    );
+    expect(body.data.runs.find((r) => r.surah === 9)).toBeUndefined();
   });
 });
 
