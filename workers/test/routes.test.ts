@@ -46,6 +46,7 @@ const GETS: [path: string, note: string][] = [
   ['/api/memorization/surah/1', 'nothing tracked for this surah'],
   ['/api/progress/scores', 'no assessments'],
   ['/api/progress/coverage', 'no known roots'],
+  ['/api/progress/patterns', 'empty corpus, no attested forms'],
   ['/api/progress/calibration', 'samples from an empty corpus'],
   ['/api/progress/freeflow', 'empty corpus, no runs'],
   ['/api/tajweed/mastery', 'rules exist from migration 0001'],
@@ -655,6 +656,94 @@ describe('known roots and coverage', () => {
       .prepare(`SELECT COUNT(*) AS n FROM user_known_root WHERE user_id = ? AND root = 'ktb'`)
       .get(TEST_USER) as { n: number };
     expect(after.n).toBe(0);
+  });
+});
+
+describe('known patterns (wazn)', () => {
+  it('requires auth', async () => {
+    const { status } = await H().json('/api/progress/patterns', { auth: false });
+    expect(status).toBe(401);
+  });
+
+  it('refuses a verb form the corpus does not attest', async () => {
+    const { status, body } = await H().json<{ error: string }>(
+      '/api/progress/patterns/XX/known',
+      { method: 'POST' }
+    );
+    expect(status).toBe(404);
+    expect(body.error).toMatch(/no verb form/i);
+  });
+
+  it('lists attested forms with occurrences and known flag', async () => {
+    const t = H();
+    for (const [wordIndex, form] of [
+      [1, 'IV'],
+      [2, 'IV'],
+      [3, 'X'],
+    ] as const) {
+      t.db
+        .prepare(
+          `INSERT INTO quran_word_morphology
+             (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos, verb_form)
+           VALUES (2, 1, ?, 1, 'f', 'l', 'ktb', 'V', ?)`
+        )
+        .run(wordIndex, form);
+    }
+    const { status, body } = await t.json<{
+      data: { items: { verbForm: string; occurrences: number; known: boolean }[] };
+    }>('/api/progress/patterns');
+    expect(status).toBe(200);
+    const iv = body.data.items.find((i) => i.verbForm === 'IV');
+    const x = body.data.items.find((i) => i.verbForm === 'X');
+    expect(iv).toMatchObject({ occurrences: 2, known: false });
+    expect(x).toMatchObject({ occurrences: 1, known: false });
+  });
+
+  it('records a pattern known and undoes it', async () => {
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_morphology
+           (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos, verb_form)
+         VALUES (2, 1, 1, 1, 'f', 'l', 'ktb', 'V', 'IV')`
+      )
+      .run();
+    const post = await t.json<{ data: { verbForm: string; occurrences: number } }>(
+      '/api/progress/patterns/IV/known',
+      { method: 'POST' }
+    );
+    expect(post.status).toBe(200);
+    expect(post.body.data).toMatchObject({ verbForm: 'IV', occurrences: 1 });
+    const row = t.db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM user_known_pattern WHERE user_id = ? AND verb_form = 'IV'`
+      )
+      .get(TEST_USER) as { n: number };
+    expect(row.n).toBe(1);
+
+    const del = await t.json('/api/progress/patterns/IV/known', { method: 'DELETE' });
+    expect(del.status).toBe(200);
+    const after = t.db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM user_known_pattern WHERE user_id = ? AND verb_form = 'IV'`
+      )
+      .get(TEST_USER) as { n: number };
+    expect(after.n).toBe(0);
+  });
+
+  it('Form I (unmarked, no verb_form value) cannot be marked known', async () => {
+    const t = H();
+    // Deliberately no verb_form column value at all — Form I is represented by
+    // its ABSENCE, not the literal string 'I'.
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_morphology
+           (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos)
+         VALUES (2, 1, 1, 1, 'f', 'l', 'ktb', 'V')`
+      )
+      .run();
+    const { status } = await t.json('/api/progress/patterns/I/known', { method: 'POST' });
+    expect(status).toBe(404);
   });
 });
 

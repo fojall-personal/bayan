@@ -428,6 +428,9 @@ GET    /api/progress/freeflow
 GET    /api/progress/function-words
 DELETE /api/progress/function-words/:lemma/:pos/known
 POST   /api/progress/function-words/:lemma/:pos/known
+GET    /api/progress/patterns
+DELETE /api/progress/patterns/:form/known
+POST   /api/progress/patterns/:form/known
 GET    /api/progress/reading-queue
 DELETE /api/progress/roots/:root/known              (POST records, DELETE undoes; POST returns the delta)
 POST   /api/progress/roots/:root/known              (POST records, DELETE undoes; POST returns the delta)

@@ -753,3 +753,103 @@ progressRoutes.get('/freeflow', async (c) => {
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
+
+/**
+ * GET    /api/progress/patterns                — attested verb forms, by frequency
+ * POST   /api/progress/patterns/:form/known
+ * DELETE /api/progress/patterns/:form/known
+ *
+ * Same shape as roots and function words, applied to the other half of the
+ * multiplicative pair the coverage model is missing: Bayan tracks roots, but
+ * Arabic is root x pattern (knowing a root plus a form lets you decode a word
+ * you have never met). Form I is the unmarked default (verb_form IS NULL in the
+ * corpus) and is deliberately not trackable here — there is no attested value to
+ * validate a POST against, and a learner does not "learn" the base form
+ * separately from the root itself.
+ */
+progressRoutes.get('/patterns', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  try {
+    const items = await db.query<{
+      verb_form: string;
+      occurrences: number;
+      known: number;
+    }>(
+      `SELECT m.verb_form,
+              COUNT(*) AS occurrences,
+              CASE WHEN k.verb_form IS NULL THEN 0 ELSE 1 END AS known
+         FROM quran_word_morphology m
+         LEFT JOIN user_known_pattern k
+           ON k.user_id = ? AND k.verb_form = m.verb_form
+        WHERE m.verb_form IS NOT NULL
+        GROUP BY m.verb_form
+        ORDER BY occurrences DESC`,
+      [userId]
+    );
+
+    return c.json({
+      data: {
+        items: items.map((i) => ({
+          verbForm: i.verb_form,
+          occurrences: i.occurrences,
+          known: i.known === 1,
+        })),
+      },
+      basis:
+        'Derived verb forms only (Form I is the unmarked default and has no ' +
+        'attested value here). Six forms — I, IV, II, VIII, III, V — cover 99% of ' +
+        'the 19,356 verb stems in the Quran; the rest are individually rare.',
+    });
+  } catch (error) {
+    console.error('Patterns error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+progressRoutes.post('/patterns/:form/known', async (c) => {
+  const userId = c.get('userId');
+  const form = c.req.param('form');
+  const db = getDb(c);
+
+  try {
+    // Refuse a form the corpus does not attest — same discipline as roots and
+    // function words: an unattested value can never mean anything, so accepting
+    // one would inflate the count with nothing real.
+    const exists = await db.get<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM quran_word_morphology WHERE verb_form = ?`,
+      [form]
+    );
+    if (!exists || exists.n === 0) {
+      return c.json({ error: `The corpus has no verb form "${form}"` }, 404);
+    }
+
+    await db.run(
+      `INSERT OR IGNORE INTO user_known_pattern (user_id, verb_form) VALUES (?, ?)`,
+      [userId, form]
+    );
+
+    return c.json({ data: { verbForm: form, occurrences: exists.n } });
+  } catch (error) {
+    console.error('Mark pattern known error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+progressRoutes.delete('/patterns/:form/known', async (c) => {
+  const userId = c.get('userId');
+  const form = c.req.param('form');
+  const db = getDb(c);
+
+  try {
+    await db.run(
+      `DELETE FROM user_known_pattern WHERE user_id = ? AND verb_form = ?`,
+      [userId, form]
+    );
+    return c.json({ data: { verbForm: form } });
+  } catch (error) {
+    console.error('Unmark pattern error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
