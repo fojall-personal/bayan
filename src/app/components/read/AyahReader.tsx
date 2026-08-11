@@ -137,7 +137,12 @@ export function AyahReader() {
    * the words, and the words are rendered by this component.
    */
   const [positionMs, setPositionMs] = useState<number | null>(null);
-  const [lens, setLens] = useState<Lens>('meaning');
+  // Continuous mode is about listening at pace, not parsing — default there,
+  // but the tabs stay live; a learner mid-run may still want to check meaning
+  // on one ayah. Lazy initializer: only the FIRST render's mode matters here,
+  // matching how the rest of this component treats the URL as a starting
+  // point rather than something re-read every render.
+  const [lens, setLens] = useState<Lens>(() => (continuousMode ? 'recite' : 'meaning'));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -397,25 +402,54 @@ export function AyahReader() {
         {lens === 'ask' && <AskLens surah={surah} ayah={currentAyah} />}
       </Card>
 
-      <div className="flex items-center justify-between">
-        <Button
-          variant="secondary"
-          disabled={ayah <= 1}
-          onClick={() => go(surah, ayah - 1)}
-        >
-          ← Previous
-        </Button>
-        <span className="text-sm text-ground-400">
-          {ayah} of {total}
-        </span>
-        <Button
-          variant="secondary"
-          disabled={ayah >= total}
-          onClick={() => go(surah, ayah + 1)}
-        >
-          Next →
-        </Button>
-      </div>
+      {continuousMode ? (
+        runComplete ? (
+          // Deliberately does not auto-loop or auto-navigate — Refold's "only
+          // mining, never freeflowing" framing is about a learner CHOOSING pace
+          // reading, not the app deciding what plays next indefinitely.
+          <Card className="border-leaf-500/40 text-center">
+            <p className="text-xs uppercase tracking-label text-leaf-400">Run complete</p>
+            <h2 className="mt-1.5 text-xl font-semibold">
+              {s?.name ?? `Surah ${surah}`} {ayah}–{ayahTo}
+            </h2>
+            <p className="mt-1 text-sm text-ground-300">
+              {ayahTo - ayah + 1} ayahs, at speed, no lookups.
+            </p>
+            <Link href="/today" className="mt-4 block">
+              <Button className="w-full">Back to Today</Button>
+            </Link>
+          </Card>
+        ) : (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-ground-400">
+              ayah {runIndex + 1} of {ayahTo - ayah + 1} in this run
+            </span>
+            <Button variant="secondary" onClick={() => go(surah, currentAyah)}>
+              Exit
+            </Button>
+          </div>
+        )
+      ) : (
+        <div className="flex items-center justify-between">
+          <Button
+            variant="secondary"
+            disabled={ayah <= 1}
+            onClick={() => go(surah, ayah - 1)}
+          >
+            ← Previous
+          </Button>
+          <span className="text-sm text-ground-400">
+            {ayah} of {total}
+          </span>
+          <Button
+            variant="secondary"
+            disabled={ayah >= total}
+            onClick={() => go(surah, ayah + 1)}
+          >
+            Next →
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
