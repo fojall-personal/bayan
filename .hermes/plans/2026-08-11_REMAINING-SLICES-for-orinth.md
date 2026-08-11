@@ -103,20 +103,23 @@ here so this plan doesn't redo already-shipped work:
 
 | # | Task | Group | State |
 |---|---|---|---|
-| 1 | Gate the "kinds" claim in `gen-content-manifest.mjs` | Fixes | open |
-| 2 | Fix the stale SM-2 comment (`Today.tsx:163`) | Fixes | open |
-| 3 | `/tutor` subtitle honesty | Fixes | open |
-| 4 | `/progress` regroup by skill channel | Fixes | open |
-| 5 | Mutashabihat near-duplicate detection | 5b | open |
-| 6 | Mutashabihat discrimination exercise kind | 5b | open |
-| 7 | `user_known_pattern` migration + endpoints | 6 (wazn) | open |
-| 8 | Wazn dimension in `/api/progress/coverage` | 6 (wazn) | open |
-| 9 | Root × wazn grid UI | 6 (wazn) | open |
+| 1 | Gate the "kinds" claim in `gen-content-manifest.mjs` | Fixes | ✅ done |
+| 2 | Fix the stale SM-2 comment (`Today.tsx:163`) | Fixes | ✅ done |
+| 3 | `/tutor` subtitle honesty | Fixes | ✅ done |
+| 4 | `/progress` regroup by skill channel | Fixes | ✅ done |
+| 5 | Mutashabihat near-duplicate detection | 5b | ✅ done |
+| 6 | Mutashabihat discrimination exercise kind | 5b | ✅ done |
+| 7 | `user_known_pattern` migration + endpoints | 6 (wazn) | ✅ done |
+| 8 | Wazn dimension in `/api/progress/coverage` | 6 (wazn) | ✅ done |
+| 9 | Root × wazn grid UI | 6 (wazn) | ✅ done |
 | 10 | Elided-subject exercise kind | 8 (governor) | ⛔ blocked — `data/quranic-treebank-eqtb.csv` missing on disk, not re-acquired; see Task 10's own notes |
-| 11 | Per-track retention target + workload preview | 7 (hifz) | open |
-| 12 | Cold-start / warm-context review flag | 7 (hifz) | open |
-| 13 | Sabaq/sabqi/manzil tier classification + manzil rotation | 7 (hifz) | open |
-| 14 | Daily-loop session composer | Daily loop | open |
+| 11 | Per-track retention target + workload preview | 7 (hifz) | ✅ done |
+| 12 | Cold-start / warm-context review flag | 7 (hifz) | ✅ done — also fixed a real bug: `isWarmStart` was parsing SQLite's naive `datetime('now')` string as local time instead of UTC |
+| 13 | Sabaq/sabqi/manzil tier classification + manzil rotation | 7 (hifz) | ✅ done — manzil selection verified with an actual 7-day clock-freeze simulation, not a hand trace |
+| 14 | Daily-loop session composer | Daily loop | ✅ done — `/session` route; live browser walkthrough not possible this pass (browser tool's CDP connection was unresponsive), verified via clean build + compiled-bundle content checks instead |
+
+**Plan complete.** Every task shipped except item 10 (honestly blocked on missing external
+data) and struck item 9 (ASR, out of scope by instruction).
 
 Struck: **item 9, ASR recitation grading — out of scope, do not build.**
 
