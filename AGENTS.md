@@ -432,7 +432,6 @@ GET    /api/progress/function-words
 DELETE /api/progress/function-words/:lemma/:pos/known
 POST   /api/progress/function-words/:lemma/:pos/known
 GET    /api/progress/pattern-grid
-GET    /api/progress/patterns
 DELETE /api/progress/patterns/:form/known
 POST   /api/progress/patterns/:form/known
 GET    /api/progress/reading-queue
@@ -469,6 +468,7 @@ the URL, which is how `/dashboard` went unnoticed after the nav shrank.
 /progress
 /read
 /root
+/session
 /tajweed
 /today
 /tutor

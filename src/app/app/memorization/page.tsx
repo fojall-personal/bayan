@@ -8,6 +8,7 @@ import { SurahProgress } from '@/components/memorization/SurahProgress';
 import { ReviewSession } from '@/components/memorization/ReviewSession';
 import { AddAyahForm } from '@/components/memorization/AddAyahForm';
 import { CurriculumPicker } from '@/components/memorization/CurriculumPicker';
+import { RetentionSettings } from '@/components/memorization/RetentionSettings';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
@@ -220,6 +221,8 @@ export default function MemorizationPage() {
               ))}
             </div>
           )}
+
+          <RetentionSettings />
         </div>
       )}
 

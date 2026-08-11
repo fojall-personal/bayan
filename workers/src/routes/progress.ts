@@ -775,59 +775,22 @@ progressRoutes.get('/freeflow', async (c) => {
 });
 
 /**
- * GET    /api/progress/patterns                — attested verb forms, by frequency
  * POST   /api/progress/patterns/:form/known
  * DELETE /api/progress/patterns/:form/known
  *
- * Same shape as roots and function words, applied to the other half of the
- * multiplicative pair the coverage model is missing: Bayan tracks roots, but
- * Arabic is root x pattern (knowing a root plus a form lets you decode a word
- * you have never met). Form I is the unmarked default (verb_form IS NULL in the
- * corpus) and is deliberately not trackable here — there is no attested value to
- * validate a POST against, and a learner does not "learn" the base form
- * separately from the root itself.
+ * Applied to the other half of the multiplicative pair the coverage model is
+ * missing: Bayan tracks roots, but Arabic is root x pattern (knowing a root
+ * plus a form lets you decode a word you have never met). Form I is the
+ * unmarked default (verb_form IS NULL in the corpus) and is deliberately not
+ * trackable here — there is no attested value to validate a POST against, and
+ * a learner does not "learn" the base form separately from the root itself.
+ *
+ * There was a GET /patterns here too (attested forms, by frequency, with a
+ * known flag) — same query PatternGrid.tsx's GET /pattern-grid already runs
+ * to build its `forms` column, unconditionally of which roots are known.
+ * Nothing ever called the standalone version; removed rather than kept as an
+ * unreachable second listing endpoint.
  */
-progressRoutes.get('/patterns', async (c) => {
-  const userId = c.get('userId');
-  const db = getDb(c);
-
-  try {
-    const items = await db.query<{
-      verb_form: string;
-      occurrences: number;
-      known: number;
-    }>(
-      `SELECT m.verb_form,
-              COUNT(*) AS occurrences,
-              CASE WHEN k.verb_form IS NULL THEN 0 ELSE 1 END AS known
-         FROM quran_word_morphology m
-         LEFT JOIN user_known_pattern k
-           ON k.user_id = ? AND k.verb_form = m.verb_form
-        WHERE m.verb_form IS NOT NULL
-        GROUP BY m.verb_form
-        ORDER BY occurrences DESC`,
-      [userId]
-    );
-
-    return c.json({
-      data: {
-        items: items.map((i) => ({
-          verbForm: i.verb_form,
-          occurrences: i.occurrences,
-          known: i.known === 1,
-        })),
-      },
-      basis:
-        'Derived verb forms only (Form I is the unmarked default and has no ' +
-        'attested value here). Six forms — I, IV, II, VIII, III, V — cover 99% of ' +
-        'the 19,356 verb stems in the Quran; the rest are individually rare.',
-    });
-  } catch (error) {
-    console.error('Patterns error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});
-
 progressRoutes.post('/patterns/:form/known', async (c) => {
   const userId = c.get('userId');
   const form = c.req.param('form');

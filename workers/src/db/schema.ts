@@ -245,6 +245,12 @@ export interface UserKnownFunctionWordRow {
   strength: number;
 }
 
+export interface UserKnownPatternRow {
+  user_id: string;
+  verb_form: string;
+  first_seen: string;
+}
+
 export interface UserKnownRootRow {
   user_id: string;
   root: string;
@@ -261,6 +267,7 @@ export interface UsersRow {
   updated_at: string;
   email: string | null;
   name: string | null;
+  hifz_retention: number | null;
 }
 
 export interface VocabularyRow {

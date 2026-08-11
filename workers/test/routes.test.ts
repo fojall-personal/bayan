@@ -47,7 +47,6 @@ const GETS: [path: string, note: string][] = [
   ['/api/memorization/surah/1', 'nothing tracked for this surah'],
   ['/api/progress/scores', 'no assessments'],
   ['/api/progress/coverage', 'no known roots'],
-  ['/api/progress/patterns', 'empty corpus, no attested forms'],
   ['/api/progress/pattern-grid', 'no known roots, empty grid'],
   ['/api/progress/calibration', 'samples from an empty corpus'],
   ['/api/progress/freeflow', 'empty corpus, no runs'],
@@ -663,7 +662,10 @@ describe('known roots and coverage', () => {
 
 describe('known patterns (wazn)', () => {
   it('requires auth', async () => {
-    const { status } = await H().json('/api/progress/patterns', { auth: false });
+    const { status } = await H().json('/api/progress/patterns/IV/known', {
+      method: 'POST',
+      auth: false,
+    });
     expect(status).toBe(401);
   });
 
@@ -674,31 +676,6 @@ describe('known patterns (wazn)', () => {
     );
     expect(status).toBe(404);
     expect(body.error).toMatch(/no verb form/i);
-  });
-
-  it('lists attested forms with occurrences and known flag', async () => {
-    const t = H();
-    for (const [wordIndex, form] of [
-      [1, 'IV'],
-      [2, 'IV'],
-      [3, 'X'],
-    ] as const) {
-      t.db
-        .prepare(
-          `INSERT INTO quran_word_morphology
-             (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos, verb_form)
-           VALUES (2, 1, ?, 1, 'f', 'l', 'ktb', 'V', ?)`
-        )
-        .run(wordIndex, form);
-    }
-    const { status, body } = await t.json<{
-      data: { items: { verbForm: string; occurrences: number; known: boolean }[] };
-    }>('/api/progress/patterns');
-    expect(status).toBe(200);
-    const iv = body.data.items.find((i) => i.verbForm === 'IV');
-    const x = body.data.items.find((i) => i.verbForm === 'X');
-    expect(iv).toMatchObject({ occurrences: 2, known: false });
-    expect(x).toMatchObject({ occurrences: 1, known: false });
   });
 
   it('records a pattern known and undoes it', async () => {
@@ -2187,6 +2164,27 @@ describe('root x wazn grid', () => {
       '/api/progress/pattern-grid?limit=1'
     );
     expect(body.data.roots.length).toBe(1);
+  });
+
+  // forms is every attested verb form with occurrences + known flag, computed
+  // independently of which roots the caller knows (unlike roots/cells) — it is
+  // what PatternGrid.tsx's column headers render, and used to be duplicated by
+  // a standalone GET /patterns endpoint nothing ever called.
+  it('forms lists every attested verb form with occurrences and known flag, independent of known roots', async () => {
+    const h = H();
+    seedGrid(h); // slm x IV (twice), ktb x III, ghr x IV (unknown root)
+    h.db
+      .prepare(`INSERT INTO user_known_pattern (user_id, verb_form) VALUES (?, ?)`)
+      .run(TEST_USER, 'III');
+    const { body } = await h.json<{
+      data: { forms: { verbForm: string; occurrences: number; known: boolean }[] };
+    }>('/api/progress/pattern-grid');
+    const iv = body.data.forms.find((f) => f.verbForm === 'IV');
+    const iii = body.data.forms.find((f) => f.verbForm === 'III');
+    // 3 occurrences of IV: 2 from slm (known root) + 1 from ghr (unknown root) —
+    // forms counts every occurrence in the corpus, not just the caller's known roots.
+    expect(iv).toMatchObject({ occurrences: 3, known: false });
+    expect(iii).toMatchObject({ occurrences: 1, known: true });
   });
 });
 
