@@ -216,6 +216,17 @@ export function Today() {
       <div>
         <h3 className="mb-3 text-xs uppercase tracking-label text-ground-400">Then</h3>
         <div className="space-y-3">
+          {/* The same five surfaces below, composed into one guided flow instead
+              of five separate taps. One more line in this list, not a rival tile
+              grid — the stepper itself has exactly one "Continue" at a time. */}
+          <Link href="/session" className="block">
+            <Card interactive>
+              <p className="font-semibold">Run today&apos;s full session</p>
+              <p className="mt-0.5 text-sm text-ground-300">
+                Review, function words, reading, grammar, freeflow — guided, in order
+              </p>
+            </Card>
+          </Link>
           {/* Always present. Rendering this only when the API returns a next
               lesson made the lesson path unreachable once every lesson was done,
               or whenever that call failed — and "Learn" is no longer in the nav. */}
