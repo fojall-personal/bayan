@@ -47,6 +47,7 @@ const GETS: [path: string, note: string][] = [
   ['/api/progress/scores', 'no assessments'],
   ['/api/progress/coverage', 'no known roots'],
   ['/api/progress/patterns', 'empty corpus, no attested forms'],
+  ['/api/progress/pattern-grid', 'no known roots, empty grid'],
   ['/api/progress/calibration', 'samples from an empty corpus'],
   ['/api/progress/freeflow', 'empty corpus, no runs'],
   ['/api/tajweed/mastery', 'rules exist from migration 0001'],
@@ -1842,6 +1843,70 @@ describe('coverage counts patterns (wazn) separately from readability', () => {
     seedOneAyah(h);
     const { body } = await h.json<{ basis: string }>('/api/progress/coverage');
     expect(body.basis).toMatch(/pattern.*wazn.*separate|separate.*pattern/i);
+  });
+});
+
+describe('root x wazn grid', () => {
+  it('requires auth', async () => {
+    const { status } = await H().json('/api/progress/pattern-grid', { auth: false });
+    expect(status).toBe(401);
+  });
+
+  // Two known roots, one occurring in two forms (I-shaped/unmarked and IV), the
+  // other in one (III). An unknown root is seeded too and must not appear.
+  function seedGrid(h: Harness) {
+    const ins = h.db.prepare(
+      `INSERT INTO quran_word_morphology
+         (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos, verb_form)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    ins.run(1, 1, 1, 1, 'a', 'a', 'slm', 'V', 'IV');
+    ins.run(1, 2, 1, 1, 'b', 'b', 'slm', 'V', 'IV');
+    ins.run(1, 3, 1, 1, 'c', 'c', 'ktb', 'V', 'III');
+    ins.run(1, 4, 1, 1, 'd', 'd', 'ghr', 'V', 'IV'); // unknown root — must not appear
+    h.db
+      .prepare(`INSERT INTO user_known_root (user_id, root) VALUES (?, ?)`)
+      .run(TEST_USER, 'slm');
+    h.db
+      .prepare(`INSERT INTO user_known_root (user_id, root) VALUES (?, ?)`)
+      .run(TEST_USER, 'ktb');
+  }
+
+  it('rows are only the caller\'s known roots, commonest first', async () => {
+    const h = H();
+    seedGrid(h);
+    const { status, body } = await h.json<{ data: { roots: { root: string; occurrences: number }[] } }>(
+      '/api/progress/pattern-grid'
+    );
+    expect(status).toBe(200);
+    expect(body.data.roots.map((r) => r.root)).toEqual(['slm', 'ktb']);
+    expect(body.data.roots.find((r) => r.root === 'slm')!.occurrences).toBe(2);
+    expect(body.data.roots.some((r) => r.root === 'ghr')).toBe(false);
+  });
+
+  it('cells are only combinations that actually occur, scoped to known roots', async () => {
+    const h = H();
+    seedGrid(h);
+    const { body } = await h.json<{
+      data: { cells: { root: string; verbForm: string; occurrences: number }[] };
+    }>('/api/progress/pattern-grid');
+    const slmIv = body.data.cells.find((c) => c.root === 'slm' && c.verbForm === 'IV');
+    const ktbIii = body.data.cells.find((c) => c.root === 'ktb' && c.verbForm === 'III');
+    expect(slmIv).toMatchObject({ occurrences: 2 });
+    expect(ktbIii).toMatchObject({ occurrences: 1 });
+    // The unknown root's cell must not leak in even though it shares a form.
+    expect(body.data.cells.some((c) => c.root === 'ghr')).toBe(false);
+    // ktb never occurs in Form IV — no cell for that combination.
+    expect(body.data.cells.some((c) => c.root === 'ktb' && c.verbForm === 'IV')).toBe(false);
+  });
+
+  it('respects the limit query param, capped at 50', async () => {
+    const h = H();
+    seedGrid(h);
+    const { body } = await h.json<{ data: { roots: unknown[] } }>(
+      '/api/progress/pattern-grid?limit=1'
+    );
+    expect(body.data.roots.length).toBe(1);
   });
 });
 

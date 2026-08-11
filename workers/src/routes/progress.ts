@@ -873,3 +873,86 @@ progressRoutes.delete('/patterns/:form/known', async (c) => {
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
+
+/**
+ * GET /api/progress/pattern-grid — root x wazn, the multiplicative payoff made visible.
+ *
+ * Rows are the learner's own known roots (frequency order, capped — a learner with
+ * 400 known roots cannot see them all on one screen, so this is the commonest N,
+ * not an arbitrary N). Columns are every verb form actually attested in the corpus.
+ * `cells` lists only the (root, form) combinations that genuinely occur — most of
+ * the grid is structurally empty (a root does not occur in every form), and the UI
+ * is expected to treat "no cell" as "does not occur," not as a loading gap.
+ */
+progressRoutes.get('/pattern-grid', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+  const limit = Math.min(Number(c.req.query('limit') ?? 20) || 20, 50);
+
+  try {
+    const roots = await db.query<{ root: string; occurrences: number }>(
+      `SELECT k.root, COUNT(*) AS occurrences
+         FROM user_known_root k
+         JOIN quran_word_morphology m ON m.root = k.root
+        WHERE k.user_id = ?
+        GROUP BY k.root
+        ORDER BY occurrences DESC
+        LIMIT ?`,
+      [userId, limit]
+    );
+
+    const forms = await db.query<{
+      verb_form: string;
+      occurrences: number;
+      known: number;
+    }>(
+      `SELECT m.verb_form,
+              COUNT(*) AS occurrences,
+              CASE WHEN k.verb_form IS NULL THEN 0 ELSE 1 END AS known
+         FROM quran_word_morphology m
+         LEFT JOIN user_known_pattern k
+           ON k.user_id = ? AND k.verb_form = m.verb_form
+        WHERE m.verb_form IS NOT NULL
+        GROUP BY m.verb_form
+        ORDER BY occurrences DESC`,
+      [userId]
+    );
+
+    const rootList = roots.map((r) => r.root);
+    const cells =
+      rootList.length === 0
+        ? []
+        : await db.query<{ root: string; verb_form: string; occurrences: number }>(
+            `SELECT root, verb_form, COUNT(*) AS occurrences
+               FROM quran_word_morphology
+              WHERE verb_form IS NOT NULL
+                AND root IN (${rootList.map(() => '?').join(',')})
+              GROUP BY root, verb_form`,
+            rootList
+          );
+
+    return c.json({
+      data: {
+        roots: roots.map((r) => ({ root: r.root, occurrences: r.occurrences })),
+        forms: forms.map((f) => ({
+          verbForm: f.verb_form,
+          occurrences: f.occurrences,
+          known: f.known === 1,
+        })),
+        cells: cells.map((cell) => ({
+          root: cell.root,
+          verbForm: cell.verb_form,
+          occurrences: cell.occurrences,
+        })),
+      },
+      basis:
+        'Rows are your known roots, commonest first, capped at the requested limit. ' +
+        'Columns are every verb form attested anywhere in the Quran. A lit cell means ' +
+        'that root actually occurs in that form; a cell you know both halves of is a ' +
+        'word you could decode without ever having met it.',
+    });
+  } catch (error) {
+    console.error('Pattern grid error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});

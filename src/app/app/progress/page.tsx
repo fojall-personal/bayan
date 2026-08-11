@@ -244,6 +244,11 @@ export default function ProgressPage() {
             </Link>
             .
           </p>
+          <p className="mt-1.5 text-xs">
+            <Link href="/patterns" className="text-gold-400 hover:underline">
+              See which verb forms you know, crossed against your roots →
+            </Link>
+          </p>
         </Card>
       )}
 
