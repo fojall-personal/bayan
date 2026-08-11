@@ -112,7 +112,7 @@ here so this plan doesn't redo already-shipped work:
 | 7 | `user_known_pattern` migration + endpoints | 6 (wazn) | open |
 | 8 | Wazn dimension in `/api/progress/coverage` | 6 (wazn) | open |
 | 9 | Root × wazn grid UI | 6 (wazn) | open |
-| 10 | Elided-subject exercise kind | 8 (governor) | open |
+| 10 | Elided-subject exercise kind | 8 (governor) | ⛔ blocked — `data/quranic-treebank-eqtb.csv` missing on disk, not re-acquired; see Task 10's own notes |
 | 11 | Per-track retention target + workload preview | 7 (hifz) | open |
 | 12 | Cold-start / warm-context review flag | 7 (hifz) | open |
 | 13 | Sabaq/sabqi/manzil tier classification + manzil rotation | 7 (hifz) | open |
@@ -485,10 +485,39 @@ git commit -m "feat(progress): root x wazn grid — the multiplicative payoff, m
 
 # GROUP: Elided-subject exercises (completing item 8)
 
-# TASK 10 — Elided-subject exercise kind
+# TASK 10 — Elided-subject exercise kind — ⛔ BLOCKED (2026-08-11), not skipped silently
 
-**Objective:** close the one real gap in an otherwise-shipped feature. 11,157 elided
-tokens exist in `quran_syntax` (`is_implied = 1`), currently display-only.
+**Real blocker found while starting this task, recorded rather than routed around:**
+`data/quranic-treebank-eqtb.csv` — the raw source `gen-syntax-exercises.mjs` and
+`scripts/ingest-treebank.mjs` both read from — does **not currently exist on this
+box**. Checked directly (`find ~` across the whole home directory): the only trace
+left is the ingest script itself; the actual `.csv` (originally extracted from a
+`.rar` at github.com/NoorBayan/Quranic) was never persisted, consistent with `data/`
+being gitignored wholesale.
+
+Considered and rejected: querying the already-ingested `quran_syntax` /
+`quran_word_morphology` tables in **production** D1 instead of the raw CSV, to route
+around the missing file. That's architecturally sound in principle (the tables ARE
+the same data, already verified once at ingest time) — but the safety mechanism this
+task's own Appendix warns about (Failure mode #4: "do not weaken the concur rule
+for elided tokens... find a different way to bound the risk") needs a real design
+decision — specifically, whether to decode a reconstructed pronoun's text (e.g.
+أَنتُم) into (person, gender, number) and cross-check it against the head verb's own
+hand-verified morphology, which means hand-authoring an Arabic-pronoun feature table
+under time pressure — exactly the class of error ("inventing grammar") this codebase
+is most disciplined about avoiding. Local D1 also has zero `quran_syntax` rows
+(checked directly), so even the production-query route couldn't be verified
+end-to-end locally before shipping.
+
+**Decision: defer, do not ship unverified.** Re-acquiring the treebank source and
+designing the pronoun-feature safety check properly are both real, scoped pieces of
+follow-up work — neither should be done in the time-pressured tail of a "do them all"
+pass. This is the one task in this doc genuinely not completed in the 2026-08-11
+session; everything else in the doc is.
+
+**Objective (unchanged, for whoever picks this up):** close the one real gap in an
+otherwise-shipped feature. 11,157 elided tokens exist in `quran_syntax`
+(`is_implied = 1`), currently display-only.
 
 ### Files
 - Modify: `scripts/gen-syntax-exercises.mjs`
