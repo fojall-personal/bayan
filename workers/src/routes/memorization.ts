@@ -361,12 +361,39 @@ memorizationRoutes.post('/:id/recall', async (c) => {
 });
 
 // GET /api/memorization/review/today — Get today's review targets
+//
+// Sabaq (never reviewed) and sabqi (last reviewed within 30 days) select the
+// same way this always has: due by FSRS's next_review. Manzil (last reviewed
+// over 30 days ago) deliberately does NOT — chained recall depends on
+// contiguity, so a per-item due-date queue would scatter what should surface
+// as one contiguous span. Instead every manzil-tier span is ordered by
+// position and split into 7 contiguous buckets; today's bucket (UTC
+// day-of-week) is what surfaces, so the whole memorised body rotates through
+// once a week regardless of any individual span's due date. Tier is computed
+// from last_reviewed at query time, not stored — it is a pure function of
+// review history, and storing it would just be a second place to keep in sync.
 memorizationRoutes.get('/review/today', async (c) => {
   const userId = c.get('userId');
   const db = getDb(c);
 
   try {
-    const due = await db.query<
+    const dueTiered = await db.query<
+      MemorizationRow & { ayah_text: string | null; text_simple: string | null; tier: string }
+    >(
+      `SELECT m.*,
+              q.text_uthmani AS ayah_text,
+              q.text_simple  AS text_simple,
+              CASE WHEN m.last_reviewed IS NULL THEN 'sabaq' ELSE 'sabqi' END AS tier
+       FROM memorization m
+       LEFT JOIN quran_verses q ON m.surah_id = q.surah AND m.ayah_to = q.ayah
+       WHERE m.user_id = ?
+         AND m.next_review <= datetime('now')
+         AND (m.last_reviewed IS NULL OR julianday('now') - julianday(m.last_reviewed) <= 30)
+       ORDER BY m.next_review ASC`,
+      [userId]
+    );
+
+    const manzilAll = await db.query<
       MemorizationRow & { ayah_text: string | null; text_simple: string | null }
     >(
       `SELECT m.*,
@@ -374,12 +401,20 @@ memorizationRoutes.get('/review/today', async (c) => {
               q.text_simple  AS text_simple
        FROM memorization m
        LEFT JOIN quran_verses q ON m.surah_id = q.surah AND m.ayah_to = q.ayah
-       WHERE m.user_id = ? AND m.next_review <= datetime('now')
-       ORDER BY m.next_review ASC`,
+       WHERE m.user_id = ?
+         AND m.last_reviewed IS NOT NULL
+         AND julianday('now') - julianday(m.last_reviewed) > 30
+       ORDER BY m.surah_id ASC, m.ayah_from ASC`,
       [userId]
     );
 
-    return c.json({ data: due });
+    const bucket = new Date().getUTCDay(); // 0–6, rotates weekly
+    const n = manzilAll.length;
+    const start = Math.floor((bucket * n) / 7);
+    const end = Math.floor(((bucket + 1) * n) / 7);
+    const manzilToday = manzilAll.slice(start, end).map((row) => ({ ...row, tier: 'manzil' }));
+
+    return c.json({ data: [...dueTiered, ...manzilToday] });
   } catch (error) {
     console.error('Memorization today error:', error);
     return c.json({ error: 'Internal server error' }, 500);

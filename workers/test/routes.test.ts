@@ -15,7 +15,7 @@
  * emptiness would make an assertion vacuous, the test seeds the minimum first.
  */
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { harness, TEST_USER, type Harness } from './helpers/harness';
 
 let h: Harness | null = null;
@@ -1223,6 +1223,103 @@ describe('cold-start vs warm-context review flag', () => {
       body: JSON.stringify({ recalledAyah: 9 }),
     });
     expect(body.data.warmStart).toBe(true);
+  });
+});
+
+describe('sabaq/sabqi/manzil tiers and manzil rotation', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('classifies sabaq (never reviewed) and sabqi (recent) by due date; manzil (old) ignores next_review entirely', async () => {
+    vi.useFakeTimers();
+    // A lone manzil item only ever lands in the LAST of 7 floor-divided
+    // buckets (floor(0*1/7)..floor(6*1/7) are all 0..0 — empty), so the
+    // fixture needs the bucket-6 day, not an arbitrary one.
+    vi.setSystemTime(new Date('2026-08-15T12:00:00.000Z')); // a UTC Saturday — bucket 6
+
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO memorization (id, user_id, surah_id, ayah_from, ayah_to, status, last_reviewed, next_review)
+         VALUES ('sabaq-1', ?, 112, 1, 4, 'learning', NULL, datetime('now'))`
+      )
+      .run(TEST_USER);
+    t.db
+      .prepare(
+        `INSERT INTO memorization (id, user_id, surah_id, ayah_from, ayah_to, status, last_reviewed, next_review)
+         VALUES ('sabqi-1', ?, 113, 1, 5, 'reviewing', datetime('now', '-14 days'), datetime('now'))`
+      )
+      .run(TEST_USER);
+    // next_review is 60 days out — would never show up in a due-date queue.
+    // Surfacing anyway is the point: manzil selection does not consult it.
+    t.db
+      .prepare(
+        `INSERT INTO memorization (id, user_id, surah_id, ayah_from, ayah_to, status, last_reviewed, next_review)
+         VALUES ('manzil-1', ?, 1, 1, 7, 'reviewing', datetime('now', '-90 days'), datetime('now', '+60 days'))`
+      )
+      .run(TEST_USER);
+
+    const { body } = await t.json<{ data: { id: string; tier: string }[] }>(
+      '/api/memorization/review/today'
+    );
+    const byId = Object.fromEntries(body.data.map((r) => [r.id, r.tier]));
+    expect(byId['sabaq-1']).toBe('sabaq');
+    expect(byId['sabqi-1']).toBe('sabqi');
+    expect(byId['manzil-1']).toBe('manzil');
+  });
+
+  it('excludes a not-yet-due sabqi item but still surfaces manzil regardless of due date', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-15T12:00:00.000Z')); // bucket 6 — see note above
+
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO memorization (id, user_id, surah_id, ayah_from, ayah_to, status, last_reviewed, next_review)
+         VALUES ('sabqi-not-due', ?, 113, 1, 5, 'reviewing', datetime('now', '-14 days'), datetime('now', '+3 days'))`
+      )
+      .run(TEST_USER);
+    t.db
+      .prepare(
+        `INSERT INTO memorization (id, user_id, surah_id, ayah_from, ayah_to, status, last_reviewed, next_review)
+         VALUES ('manzil-1', ?, 1, 1, 7, 'reviewing', datetime('now', '-90 days'), datetime('now', '+60 days'))`
+      )
+      .run(TEST_USER);
+
+    const { body } = await t.json<{ data: { id: string }[] }>('/api/memorization/review/today');
+    const ids = body.data.map((r) => r.id);
+    expect(ids).not.toContain('sabqi-not-due');
+    expect(ids).toContain('manzil-1');
+  });
+
+  it('rotates manzil through 7 contiguous buckets, covering every span exactly once per week', async () => {
+    const t = H();
+    // 7 manzil-eligible spans, in contiguous surah/ayah order.
+    for (let i = 0; i < 7; i += 1) {
+      t.db
+        .prepare(
+          `INSERT INTO memorization (id, user_id, surah_id, ayah_from, ayah_to, status, last_reviewed, next_review)
+           VALUES (?, ?, 1, ?, ?, 'reviewing', datetime('now', '-90 days'), datetime('now', '+60 days'))`
+        )
+        .run(`manzil-${i}`, TEST_USER, i * 10 + 1, i * 10 + 5);
+    }
+
+    const seenPerDay: string[][] = [];
+    for (let day = 0; day < 7; day += 1) {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(Date.UTC(2026, 7, 9 + day, 12))); // Sun 2026-08-09 .. Sat 2026-08-15
+      const { body } = await t.json<{ data: { id: string }[] }>('/api/memorization/review/today');
+      seenPerDay.push(body.data.map((r) => r.id));
+      vi.useRealTimers();
+    }
+
+    // 7 items split across 7 buckets — one contiguous span surfaces per day.
+    seenPerDay.forEach((ids) => expect(ids.length).toBe(1));
+    const coveredAcrossWeek = seenPerDay.flat().sort();
+    expect(coveredAcrossWeek).toEqual([
+      'manzil-0', 'manzil-1', 'manzil-2', 'manzil-3', 'manzil-4', 'manzil-5', 'manzil-6',
+    ]);
   });
 });
 
