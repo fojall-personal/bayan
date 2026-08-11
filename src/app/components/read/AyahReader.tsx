@@ -23,6 +23,7 @@ import { segmentVerse } from '@/lib/tajweed-render';
 import { rootToArabic as rootArabic } from '@/lib/arabic-root';
 import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
 import { SURAHS, getSurah } from '@/lib/surahs';
+import { nextInRun } from '@/lib/freeflow-run';
 
 type Lens = 'recite' | 'meaning' | 'parse' | 'memorize' | 'ask';
 
@@ -109,9 +110,28 @@ export function AyahReader() {
   const surah = Math.min(114, Math.max(1, Number(params.get('s')) || 1));
   const ayah = Math.max(1, Number(params.get('a')) || 1);
 
-  const [data, setData] = useState<Ayah | null>(null);
   /**
-   * Where the recitation currently is, in milliseconds, or null when silent.
+   * Continuous reading mode: play a run of ayat at pace, advancing on each
+   * ayah's real 'ended' event rather than a per-ayah router.push + refetch.
+   *
+   * `ayah` (above) is the run's first ayah; `ayahTo` is the last. Ordinary
+   * single-ayah reading (continuousMode false) is completely unaffected by
+   * everything below — `data`/`loading`/`error` still come from exactly one
+   * fetch, exactly as before.
+   */
+  const continuousMode = params.get('continuous') === '1';
+  const ayahTo = continuousMode
+    ? Math.max(ayah, Number(params.get('ayahTo')) || ayah)
+    : ayah;
+
+  const [data, setData] = useState<Ayah | null>(null);
+  /** The whole prefetched run, only populated in continuous mode. */
+  const [runAyahs, setRunAyahs] = useState<Ayah[] | null>(null);
+  /** Position within runAyahs of the ayah currently shown/sounding. */
+  const [runIndex, setRunIndex] = useState(0);
+  const [runComplete, setRunComplete] = useState(false);
+  /**
+   * Playback position in milliseconds, or null when silent.
    *
    * Held here rather than inside the audio button because the highlight belongs to
    * the words, and the words are rendered by this component.
@@ -122,25 +142,70 @@ export function AyahReader() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  /** The ayah actually on screen: the run's current position in continuous
+   * mode, the URL's ayah otherwise. Everything that displays or plays "the
+   * current ayah" reads this, not the raw `ayah` param. */
+  const currentAyah = continuousMode ? ayah + runIndex : ayah;
+
   const go = (s: number, a: number) => router.push(`/read?s=${s}&a=${a}`);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setRunComplete(false);
     try {
-      const res = await apiFetch<{ data: Ayah }>(`/api/quran/ayah/${surah}/${ayah}`);
-      setData(res.data);
+      if (continuousMode) {
+        // One call per ayah, in parallel — the existing single-ayah endpoint,
+        // no new backend work. Runs are short by construction: they only
+        // exist because GET /api/progress/freeflow already filtered them to
+        // a contiguous run above the 98% coverage threshold.
+        const ayahNumbers = Array.from(
+          { length: ayahTo - ayah + 1 },
+          (_, i) => ayah + i
+        );
+        const results = await Promise.all(
+          ayahNumbers.map((a) =>
+            apiFetch<{ data: Ayah }>(`/api/quran/ayah/${surah}/${a}`)
+          )
+        );
+        const run = results.map((r) => r.data);
+        setRunAyahs(run);
+        setRunIndex(0);
+        setData(run[0] ?? null);
+      } else {
+        const res = await apiFetch<{ data: Ayah }>(`/api/quran/ayah/${surah}/${ayah}`);
+        setRunAyahs(null);
+        setData(res.data);
+      }
     } catch (err) {
       setError(apiErrorMessage(err));
       setData(null);
+      setRunAyahs(null);
     } finally {
       setLoading(false);
     }
-  }, [surah, ayah]);
+  }, [surah, ayah, ayahTo, continuousMode]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  /**
+   * Advances the run on the current ayah's real 'ended' event — never a
+   * timer, never assumed. Only wired to AyahAudioButton when continuousMode
+   * is true.
+   */
+  const handleAyahEnded = useCallback(() => {
+    if (!runAyahs) return;
+    const result = nextInRun({ surah, ayahFrom: ayah, ayahTo }, currentAyah);
+    if (result.done) {
+      setRunComplete(true);
+      return;
+    }
+    const nextIndex = runIndex + 1;
+    setRunIndex(nextIndex);
+    setData(runAyahs[nextIndex] ?? null);
+  }, [runAyahs, runIndex, surah, ayah, ayahTo, currentAyah]);
 
   /** Learn the root of a word you just hit, without leaving the ayah. */
   const learnRoot = async (root: string) => {
@@ -212,7 +277,7 @@ export function AyahReader() {
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <p className="text-sm text-ground-300">
-              {s?.name ?? `Surah ${surah}`} · {surah}:{ayah}
+              {s?.name ?? `Surah ${surah}`} · {surah}:{currentAyah}
             </p>
             {/* The coverage model, at the only scale where it is actionable. */}
             <p
@@ -225,7 +290,13 @@ export function AyahReader() {
                 : `${data.wordsToLearn} word${data.wordsToLearn === 1 ? '' : 's'} to learn`}
             </p>
           </div>
-          <AyahAudioButton surah={surah} ayah={ayah} onPositionChange={setPositionMs} />
+          <AyahAudioButton
+            surah={surah}
+            ayah={currentAyah}
+            onPositionChange={setPositionMs}
+            onEnded={continuousMode ? handleAyahEnded : undefined}
+            autoPlay={continuousMode}
+          />
         </div>
 
         {/* The ayah. Amiri, lang="ar", leading-arabic — and tajweed colours only
@@ -322,8 +393,8 @@ export function AyahReader() {
         {lens === 'recite' && <ReciteLens data={data} />}
         {lens === 'meaning' && <MeaningLens data={data} />}
         {lens === 'parse' && <ParseLens data={data} />}
-        {lens === 'memorize' && <MemorizeLens surah={surah} ayah={ayah} />}
-        {lens === 'ask' && <AskLens surah={surah} ayah={ayah} />}
+        {lens === 'memorize' && <MemorizeLens surah={surah} ayah={currentAyah} />}
+        {lens === 'ask' && <AskLens surah={surah} ayah={currentAyah} />}
       </Card>
 
       <div className="flex items-center justify-between">
