@@ -115,6 +115,23 @@ progressRoutes.get('/coverage', async (c) => {
       [userId]
     );
 
+    // Pattern (wazn) coverage — a separate metric, deliberately NOT folded into
+    // ayahsReadable above. A learner can read غفر without knowing it is Form I by
+    // name, so gating readability on pattern knowledge would make coverage drop
+    // again for a much weaker reason than the function-word rollout had. This is
+    // "which of the trackable forms do you know," parallel to roots and function
+    // words, not a new AND-condition on top of them. Scoped to forms that are
+    // actually attested with a verb_form value — Form I has none (see
+    // 0024_known_patterns.sql) and is out of scope by construction, not filtered
+    // here.
+    const patternRow = await db.get<{ known: number; total: number }>(
+      `SELECT
+         (SELECT COUNT(*) FROM user_known_pattern WHERE user_id = ?) AS known,
+         (SELECT COUNT(DISTINCT verb_form) FROM quran_word_morphology
+           WHERE verb_form IS NOT NULL)                              AS total`,
+      [userId]
+    );
+
     const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
 
     return c.json({
@@ -129,6 +146,8 @@ progressRoutes.get('/coverage', async (c) => {
         segmentsKnownPct: pct(row.segments_known, row.segments_rooted),
         functionWordsKnown: row.fn_known,
         functionWordsTotal: row.fn_total,
+        patternsKnown: patternRow?.known ?? 0,
+        patternsTotal: patternRow?.total ?? 0,
         surahsReadable: row.surahs_readable,
         surahsTotal: 114,
         nextRoots: next,
@@ -140,7 +159,8 @@ progressRoutes.get('/coverage', async (c) => {
         '35.5% of the text and carry the syntax; they were previously assumed known. ' +
         'There are 215 of them (counted per part of speech, because maA is a relative ' +
         'pronoun 1,476 times and a negation 705 times) and the top 50 cover 94% of ' +
-        'their occurrences.',
+        'their occurrences. Pattern (wazn) coverage is separate and does not affect ' +
+        'ayahsReadable — knowing a word does not require knowing its verb form by name.',
     });
   } catch (error) {
     console.error('Coverage error:', error);

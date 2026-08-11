@@ -1792,6 +1792,59 @@ describe('coverage counts function words', () => {
   });
 });
 
+describe('coverage counts patterns (wazn) separately from readability', () => {
+  // One ayah, one rooted word carrying a verb_form (Form IV) — pattern coverage
+  // must move independently, and ayahsReadable must NOT depend on it at all.
+  function seedOneAyah(h: Harness) {
+    h.db
+      .prepare(
+        `INSERT INTO quran_word_morphology
+           (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos, verb_form)
+         VALUES (1, 1, 1, 1, 'aslama', 'aslama', 'slm', 'V', 'IV')`
+      )
+      .run();
+    h.db
+      .prepare(`INSERT INTO user_known_root (user_id, root) VALUES (?, ?)`)
+      .run(TEST_USER, 'slm');
+  }
+
+  it('reports patternsKnown/patternsTotal without needing a known pattern', async () => {
+    const h = H();
+    seedOneAyah(h);
+    const { body } = await h.json<{ data: any }>('/api/progress/coverage');
+    expect(body.data.patternsKnown).toBe(0);
+    expect(body.data.patternsTotal).toBe(1);
+    // Every rooted word known, no function words in this ayah at all — readable
+    // regardless of the (unknown) pattern.
+    expect(body.data.ayahsReadable).toBe(1);
+  });
+
+  it('marking the pattern known moves patternsKnown but not ayahsReadable', async () => {
+    const h = H();
+    seedOneAyah(h);
+    const before = await h.json<{ data: any }>('/api/progress/coverage');
+    const readableBefore = before.body.data.ayahsReadable;
+
+    h.db
+      .prepare(`INSERT INTO user_known_pattern (user_id, verb_form) VALUES (?, ?)`)
+      .run(TEST_USER, 'IV');
+
+    const { body } = await h.json<{ data: any }>('/api/progress/coverage');
+    expect(body.data.patternsKnown).toBe(1);
+    expect(body.data.patternsTotal).toBe(1);
+    // The regression check that matters most: pattern knowledge must not change
+    // ayah readability at all, in either direction.
+    expect(body.data.ayahsReadable).toBe(readableBefore);
+  });
+
+  it('states the pattern dimension is separate in the basis string', async () => {
+    const h = H();
+    seedOneAyah(h);
+    const { body } = await h.json<{ basis: string }>('/api/progress/coverage');
+    expect(body.basis).toMatch(/pattern.*wazn.*separate|separate.*pattern/i);
+  });
+});
+
 describe('homograph exercises', () => {
   // The kind that cannot be answered from the word alone: same spelling, different
   // job, and only the ayah decides. Seeded here because the harness leaves content
