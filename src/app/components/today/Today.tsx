@@ -160,7 +160,7 @@ export function Today() {
       )}
 
       {/* ── The one primary action ──────────────────────────────────────────
-          Chosen, not offered alongside seven equals. Reviews first because SM-2
+          Chosen, not offered alongside seven equals. Reviews first because FSRS
           decides when they are due and a missed review costs retention; the next
           root only when nothing is owed. */}
       {dueCount > 0 ? (
