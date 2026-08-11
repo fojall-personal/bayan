@@ -250,13 +250,16 @@ export function Today() {
               nothing at 98% coverage yet, and a card linking to an empty run
               would be worse than no card.
 
-              Links to the run's first ayah in the existing single-ayah reader,
-              not a "continuous mode with autoplay" — AyahReader has no such mode
-              yet (no continuous/audio query param anywhere in it), and claiming
-              one here would be a dead promise, not a feature. Building an actual
-              continuous reading view is separate future work. */}
+              Links into real continuous mode (autoplay, auto-advance on each
+              ayah's ended event, no per-ayah reload) — see
+              .hermes/plans/2026-08-10_CONTINUOUS-READ-for-orinth.md. This used
+              to link to the plain single-ayah reader because that mode didn't
+              exist yet; it does now, so the link says what it means. */}
           {freeflow && (
-            <Link href={`/read?s=${freeflow.surah}&a=${freeflow.ayahFrom}`} className="block">
+            <Link
+              href={`/read?s=${freeflow.surah}&a=${freeflow.ayahFrom}&ayahTo=${freeflow.ayahTo}&continuous=1`}
+              className="block"
+            >
               <Card interactive>
                 <div className="flex items-baseline justify-between gap-3">
                   <p className="font-semibold">Read a page you already know</p>
