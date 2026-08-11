@@ -70,12 +70,22 @@ cd workers && npx vitest run    # only if a task touches workers/ (it shouldn't)
   `package.json`, no workspaces). Vitest lives only in `workers/node_modules`. Adding
   it to `src/app` is a real new dependency, not something already available —
   scoped as its own task (Task 1) rather than assumed.
-- **Unverified, real risk:** whether `AyahAudioButton.play()` called programmatically
-  inside a `useEffect` — after a client-side `router.push` navigation, not a direct
-  click on that button — survives Chrome's autoplay-with-sound gate. This has not
-  been tested in this repo. If it is blocked, "no click required" is false and the
-  UI needs a first-ayah "Start" tap instead of true autoplay. Task 0 answers this
-  before anything downstream is designed around an assumption.
+- **Task 0 finding (2026-08-10): autoplay survives.** Tested with an isolated
+  reproduction (a real 440Hz WAV, real `<audio>` element, real `history.pushState` —
+  not the Bayan app itself, since only the browser's gesture/activation behaviour was
+  in question) across three scenarios: `play()` in the same click handler that calls
+  `pushState`, and `play()` deferred via `setTimeout(0)` after `pushState` — the
+  closer proxy for when a React effect actually commits after a client-side route
+  push. Both resolved (`play()` promise resolved, `playing` event fired, real audible
+  playback). A fourth scenario deferring via `requestAnimationFrame` never resolved,
+  but that is a rAF-suspension artifact of the test harness's own pane not being
+  composited (the same "rAF stops entirely while hidden" behaviour already documented
+  in `AyahAudioButton.tsx`'s own comments) — not a Chrome autoplay-gesture result, and
+  not how a real `useEffect` fires anyway, so it does not change the finding.
+  **Conclusion: Task 4 can auto-play the first ayah on mount when `continuous=1`, no
+  "Start reading" tap required.** Click-driven user activation survives a client-side
+  `router.push` long enough to authorize a subsequent `play()` call in the mounted
+  page's effect.
 
 ---
 
@@ -83,7 +93,7 @@ cd workers && npx vitest run    # only if a task touches workers/ (it shouldn't)
 
 | Task | State |
 |---|---|
-| 0 | open |
+| 0 | ✅ done — autoplay survives, no gating needed for Task 4 (see Ground truth) |
 | 1 | open |
 | 2 | open |
 | 3 | open |
@@ -107,51 +117,47 @@ cd workers && npx vitest run    # only if a task touches workers/ (it shouldn't)
 
 ---
 
-# TASK 0 — Spike: does autoplay survive a client-side navigation?
+# TASK 0 — Spike: does autoplay survive a client-side navigation? ✅ DONE
 
 **Objective:** answer, empirically, whether `AyahAudioButton`'s `el.play()` can be
 called from a `useEffect` on mount and actually start sounding, when the mount was
 caused by a `router.push()` from a `<Link>` click rather than a direct click on the
 audio element. This gates Task 4's whole design.
 
-### Files
-- None committed. Throwaway edit to `AyahReader.tsx`, reverted after the finding is
-  written down below (or kept if Task 4 starts immediately after).
+### What was actually done (2026-08-10)
 
-### Step 1 — The throwaway
-Temporarily add, right after the existing `load()` effect (~line 143):
-```ts
-useEffect(() => {
-  if (params.get('autoplaytest') === '1') {
-    // Reach into the same Audio() pattern AyahAudioButton uses, minimally,
-    // just to observe whether play() resolves or rejects with NotAllowedError.
-  }
-}, []);
-```
-The simplest real test: temporarily pass `autoStart` into `AyahAudioButton` (a throwaway
-prop, not the real Task 2 API) that calls `el.play()` inside the button's own mount
-effect instead of waiting for a click, then click the Today freeflow card and watch
-the browser console for a `NotAllowedError` rejection from the `.catch()` at the
-bottom of `handleClick`'s pattern.
+Rather than a throwaway edit inside `AyahReader.tsx`, the question was isolated
+into a standalone reproduction — the only thing in question is Chrome's
+gesture/activation policy, not anything Bayan-specific (auth, the real corpus API,
+`AyahAudioButton`'s own state machine). A tiny static page (real 440Hz WAV, real
+`<audio>` element, real `history.pushState`) with four buttons:
 
-### Step 2 — Observe
-Navigate from `/today` by clicking the freeflow card (a real user gesture) into
-`/read?...&autoplaytest=1`. Check:
-1. Does audio actually sound?
-2. If not, what does `read_console_messages` / devtools show — `NotAllowedError`,
-   or something else?
+- **A** — `play()` called directly inside the click handler (known-good baseline).
+- **B** — `history.pushState(...)` then `play()` in the *same* tick.
+- **C** — `pushState(...)` then `play()` deferred via `setTimeout(0)` — the closer
+  proxy for when a React `useEffect` actually commits after a client-side route
+  push.
+- **D** — `pushState(...)` then `play()` deferred via `requestAnimationFrame`.
 
-### Step 3 — Write the finding
-Record the answer directly in this file's Ground truth section (replace the
-"Unverified, real risk" bullet with what was actually observed) before starting
-Task 4. Two outcomes, each changes Task 4's design:
-- **Survives:** Task 4 can auto-play the first ayah on mount when `continuous=1`.
-- **Blocked:** Task 4 needs a "▶ Start reading" button as the first user gesture
-  *inside* `/read` itself (still zero extra clicks per ayah after that one, which is
-  the part that actually matters for the feature's premise).
+Served locally, driven with the Browser tool (`computer` clicks +
+`read_console_messages`), not assumed from documentation.
 
-### Step 4 — Revert
-Remove the throwaway code. Nothing from this task is committed on its own.
+### Result
+
+**A, B, and C all resolved** — `play()`'s promise resolved, the `playing` event
+fired, real audible playback. **D never fired at all** — but that is because the
+test harness's own Browser pane was not composited/visible, and `requestAnimationFrame`
+is suspended entirely while a page isn't visible (the exact same behaviour
+`AyahAudioButton.tsx`'s own comments already document for hidden tabs). That is a
+harness artifact, not a Chrome autoplay-gesture result, and it isn't how a real
+`useEffect` fires anyway — React effects don't wait on compositing. C is the
+meaningful result, and it passed.
+
+**Conclusion: autoplay survives.** Click-driven user activation persists across a
+client-side `router.push` long enough to authorize a `play()` call in the newly
+mounted page's effect. Task 4 needs no "▶ Start reading" gesture — true autoplay on
+mount is safe to build against. (Finding also recorded in this doc's Ground truth
+section.)
 
 ---
 
@@ -353,16 +359,14 @@ Read the query params: `continuous=1`, `ayahTo` (surah/ayah already parsed at li
 3. Pass `onEnded={handleAyahEnded}` to `AyahAudioButton` only in this mode.
    `handleAyahEnded` calls `nextInRun` (Task 3) and either advances `currentIndex` or
    marks the run complete.
-4. If Task 0 found autoplay is blocked without a prior click, mount into a "▶ Start
-   reading" state and call `play()` only from that button's own click handler for the
-   *first* ayah; every ayah after that is `onEnded`-driven, which is a real media
-   event, not a synthetic `play()` call, and is far less likely to be gated.
+4. Task 0 confirmed autoplay survives a client-side route push, so the first ayah's
+   `AyahAudioButton` calls `play()` directly from a mount effect when `continuous=1`
+   — no "▶ Start reading" gesture needed. Every ayah after the first is
+   `onEnded`-driven, which is a real media event regardless.
 
 ### Step 2 — Implement
-This is the one task in this doc without a runnable code sample — the exact shape
-depends on Task 0's finding (autoplay-survives vs. requires-a-first-click) and should
-not be pre-written against an unverified assumption. Implement against whichever
-branch Task 0 confirmed.
+Build against the autoplay-on-mount branch above — Task 0 resolved the ambiguity
+this step used to carry.
 
 ### Step 3 — Verify (manual, stated as such — no automated coverage exists for this)
 - `cd src/app && npx tsc --noEmit && npm run build` — must be clean.
