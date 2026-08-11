@@ -3,11 +3,37 @@ import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 
-import { schedule, gradeFromAccuracy, isGrade, GRADE_VALUES, type Grade } from '../lib/space-repetition';
+import {
+  schedule,
+  gradeFromAccuracy,
+  isGrade,
+  GRADE_VALUES,
+  REQUEST_RETENTION,
+  TRACK_RETENTION,
+  estimateReviewsPerDay,
+  type Grade,
+  type FsrsState,
+} from '../lib/space-repetition';
 import { parseAyahRange } from '../lib/memorization-input';
 import type { MemorizationRow, MemorizationUnitsRow } from '../db/schema';
 
 export const memorizationRoutes = new Hono<AppEnv>();
+
+/**
+ * The caller's own hifz retention preference, or the unchanged default.
+ *
+ * NULL (the column's state for every learner who has never opted in) means
+ * REQUEST_RETENTION — never TRACK_RETENTION.hifz automatically. That constant
+ * is the SUGGESTED value a settings screen offers, not something applied
+ * silently; an existing learner's schedule must not shift on its own.
+ */
+async function hifzRetentionFor(db: Database, userId: string): Promise<number> {
+  const row = await db.get<{ hifz_retention: number | null }>(
+    `SELECT hifz_retention FROM users WHERE id = ?`,
+    [userId]
+  );
+  return row?.hifz_retention ?? REQUEST_RETENTION;
+}
 
 // GET /api/memorization/surah/:surahId — Get surah progress
 memorizationRoutes.get('/surah/:surahId', async (c) => {
@@ -157,7 +183,9 @@ memorizationRoutes.post('/:id/review', async (c) => {
         interval: entry.interval,
         reviews: entry.revision_count,
       },
-      grade
+      grade,
+      new Date(),
+      await hifzRetentionFor(db, userId)
     );
 
     await db.run(
@@ -249,7 +277,9 @@ memorizationRoutes.post('/:id/recall', async (c) => {
         interval: entry.interval,
         reviews: entry.revision_count,
       },
-      grade
+      grade,
+      new Date(),
+      await hifzRetentionFor(db, userId)
     );
 
     await db.run(
@@ -410,6 +440,117 @@ memorizationRoutes.get('/curriculum', async (c) => {
     });
   } catch (error) {
     console.error('Curriculum error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * GET  /api/memorization/retention — current preference + a real workload preview
+ * POST /api/memorization/retention — set it
+ *
+ * "Make it a per-track setting, and show the workload cost before the learner
+ * chooses" — the preview is computed from the caller's OWN current memorization
+ * rows via estimateReviewsPerDay(), not a canned figure. NULL/unset means the
+ * unchanged 0.9 default; TRACK_RETENTION.hifz (0.95) is offered as a suggestion,
+ * never applied automatically.
+ */
+memorizationRoutes.get('/retention', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  try {
+    const current = await hifzRetentionFor(db, userId);
+
+    const rows = await db.query<{
+      stability: number | null;
+      difficulty: number | null;
+      last_review: string | null;
+      fsrs_state: number | null;
+      interval: number | null;
+      revision_count: number | null;
+    }>(
+      `SELECT stability, difficulty, last_review, fsrs_state, interval, revision_count
+         FROM memorization WHERE user_id = ?`,
+      [userId]
+    );
+    const states: FsrsState[] = rows.map((r) => ({
+      stability: r.stability,
+      difficulty: r.difficulty,
+      last_review: r.last_review,
+      fsrs_state: r.fsrs_state,
+      interval: r.interval,
+      reviews: r.revision_count,
+    }));
+
+    const now = new Date();
+    const candidates = [0.85, REQUEST_RETENTION, TRACK_RETENTION.hifz];
+    const preview = [...new Set(candidates)]
+      .sort((a, b) => a - b)
+      .map((retention) => ({
+        retention,
+        estimatedReviewsPerDay: estimateReviewsPerDay(states, retention, now),
+      }));
+
+    return c.json({
+      data: {
+        current,
+        isDefault: current === REQUEST_RETENTION,
+        suggestedHifz: TRACK_RETENTION.hifz,
+        itemCount: states.length,
+        preview,
+      },
+      basis:
+        'preview is simulated from your own current memorization items — each ' +
+        'scheduled one step ahead at a good grade, the modal real outcome — not a ' +
+        'general figure. Estimate, not a guarantee.',
+    });
+  } catch (error) {
+    console.error('Retention preview error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+memorizationRoutes.post('/retention', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  try {
+    const body = (await c.req.json()) as { retention?: unknown };
+    // A retention outside a sane band is refused rather than clamped, same
+    // discipline as accuracy validation elsewhere in this file — silently
+    // clamping would bury a caller's mistake in a plausible-looking schedule.
+    if (
+      typeof body.retention !== 'number' ||
+      Number.isNaN(body.retention) ||
+      body.retention < 0.7 ||
+      body.retention > 0.99
+    ) {
+      return c.json({ error: 'retention must be a number between 0.7 and 0.99' }, 400);
+    }
+
+    await db.run(`UPDATE users SET hifz_retention = ? WHERE id = ?`, [
+      body.retention,
+      userId,
+    ]);
+
+    return c.json({ data: { retention: body.retention } });
+  } catch (error) {
+    console.error('Set retention error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+memorizationRoutes.delete('/retention', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  try {
+    // Back to the unchanged default — "I want to undo my choice" needs the
+    // same escape hatch every other known-state toggle in this app has.
+    await db.run(`UPDATE users SET hifz_retention = NULL WHERE id = ?`, [userId]);
+    return c.json({ data: { retention: REQUEST_RETENTION } });
+  } catch (error) {
+    console.error('Reset retention error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

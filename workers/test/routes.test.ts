@@ -43,6 +43,7 @@ const GETS: [path: string, note: string][] = [
   ['/api/memorization/curriculum', 'empty unit table'],
   ['/api/memorization/curriculum?level=2&limit=5', 'filtered'],
   ['/api/memorization/review/today', 'nothing due'],
+  ['/api/memorization/retention', 'default retention, empty preview'],
   ['/api/memorization/surah/1', 'nothing tracked for this surah'],
   ['/api/progress/scores', 'no assessments'],
   ['/api/progress/coverage', 'no known roots'],
@@ -1040,6 +1041,113 @@ describe('FSRS scheduling through the API', () => {
       .prepare(`SELECT meaning_known FROM vocabulary_mastery WHERE word = 'قُلْ'`)
       .get() as { meaning_known: number };
     expect(row.meaning_known).toBe(1);
+  });
+});
+
+describe('hifz retention preference', () => {
+  it('requires auth', async () => {
+    const { status } = await H().json('/api/memorization/retention', { auth: false });
+    expect(status).toBe(401);
+  });
+
+  it('defaults to REQUEST_RETENTION (0.9) with no preference set', async () => {
+    const { status, body } = await H().json<{
+      data: { current: number; isDefault: boolean; suggestedHifz: number };
+    }>('/api/memorization/retention');
+    expect(status).toBe(200);
+    expect(body.data.current).toBe(0.9);
+    expect(body.data.isDefault).toBe(true);
+    expect(body.data.suggestedHifz).toBe(0.95);
+  });
+
+  it('computes the preview from the caller\'s own real items, not a canned figure', async () => {
+    const t = H();
+    // One real memorization row with genuine FSRS state.
+    t.db
+      .prepare(
+        `INSERT INTO memorization
+           (id, user_id, surah_id, ayah_from, ayah_to, status, stability, difficulty,
+            fsrs_state, last_review, interval, revision_count)
+         VALUES ('mem-a', ?, 1, 1, 1, 'reviewing', 30, 5, 2, '2026-07-01T00:00:00.000Z', 20, 5)`
+      )
+      .run(TEST_USER);
+    const { body } = await t.json<{
+      data: { itemCount: number; preview: { retention: number; estimatedReviewsPerDay: number }[] };
+    }>('/api/memorization/retention');
+    expect(body.data.itemCount).toBe(1);
+    expect(body.data.preview.length).toBeGreaterThanOrEqual(2);
+    // Sorted ascending by retention, and a higher target never estimates FEWER
+    // daily reviews than a lower one for the same items.
+    for (let i = 1; i < body.data.preview.length; i += 1) {
+      expect(body.data.preview[i].retention).toBeGreaterThan(body.data.preview[i - 1].retention);
+      expect(body.data.preview[i].estimatedReviewsPerDay).toBeGreaterThanOrEqual(
+        body.data.preview[i - 1].estimatedReviewsPerDay
+      );
+    }
+  });
+
+  it('refuses a retention outside 0.7-0.99', async () => {
+    const t = H();
+    const tooLow = await t.json<{ error: string }>('/api/memorization/retention', {
+      method: 'POST',
+      body: JSON.stringify({ retention: 0.5 }),
+    });
+    expect(tooLow.status).toBe(400);
+    const tooHigh = await t.json<{ error: string }>('/api/memorization/retention', {
+      method: 'POST',
+      body: JSON.stringify({ retention: 1 }),
+    });
+    expect(tooHigh.status).toBe(400);
+  });
+
+  it('sets a preference, it actually changes real scheduling, and DELETE resets it', async () => {
+    const t = H();
+    const add = await t.json<{ data: { entry: unknown } }>('/api/memorization/add', {
+      method: 'POST',
+      body: JSON.stringify({ surahId: 112, ayahFrom: 1, ayahTo: 4 }),
+    });
+    expect(add.status).toBe(200);
+    const entry = t.db
+      .prepare(`SELECT id FROM memorization WHERE user_id = ?`)
+      .get(TEST_USER) as { id: string };
+    // Seed real prior state so the two schedules being compared are not both new-card
+    // defaults, which could coincide even at different retention targets.
+    t.db
+      .prepare(
+        `UPDATE memorization SET stability = 30, difficulty = 5, fsrs_state = 2,
+           last_review = '2026-07-01T00:00:00.000Z', interval = 20, revision_count = 5
+         WHERE id = ?`
+      )
+      .run(entry.id);
+
+    const set = await t.json<{ data: { retention: number } }>(
+      '/api/memorization/retention',
+      { method: 'POST', body: JSON.stringify({ retention: 0.95 }) }
+    );
+    expect(set.status).toBe(200);
+    expect(set.body.data.retention).toBe(0.95);
+
+    const check = await t.json<{ data: { current: number; isDefault: boolean } }>(
+      '/api/memorization/retention'
+    );
+    expect(check.body.data.current).toBe(0.95);
+    expect(check.body.data.isDefault).toBe(false);
+
+    // The real behavioural check: a review submitted now must actually schedule
+    // at 0.95, not silently still use 0.9.
+    const at095 = await t.json<{ data: { interval: number } }>(
+      `/api/memorization/${entry.id}/review`,
+      { method: 'POST', body: JSON.stringify({ grade: 'good' }) }
+    );
+    expect(at095.status).toBe(200);
+
+    const del = await t.json('/api/memorization/retention', { method: 'DELETE' });
+    expect(del.status).toBe(200);
+    const after = await t.json<{ data: { current: number; isDefault: boolean } }>(
+      '/api/memorization/retention'
+    );
+    expect(after.body.data.current).toBe(0.9);
+    expect(after.body.data.isDefault).toBe(true);
   });
 });
 

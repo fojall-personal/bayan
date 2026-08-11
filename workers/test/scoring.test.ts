@@ -22,6 +22,8 @@ import {
   gradeFromAccuracy,
   isGrade,
   REQUEST_RETENTION,
+  TRACK_RETENTION,
+  estimateReviewsPerDay,
 } from '../src/lib/space-repetition';
 import type { FsrsState, Grade } from '../src/lib/space-repetition';
 
@@ -243,6 +245,47 @@ describe('FSRS scheduler', () => {
     for (const bad of [5, '5', 'perfect', '', null, undefined, 'GOOD']) {
       expect(isGrade(bad)).toBe(false);
     }
+  });
+
+  it('defaults to REQUEST_RETENTION when no retention is passed — the regression check that matters most', () => {
+    // Every existing caller that omits the 4th argument must get byte-for-byte
+    // the same schedule as before this parameter existed.
+    const withDefault = schedule(state(), 'good', NOW);
+    const withExplicit = schedule(state(), 'good', NOW, REQUEST_RETENTION);
+    expect(withDefault).toEqual(withExplicit);
+  });
+
+  it('a higher retention target schedules sooner (shorter interval) for the same review', () => {
+    const seeded = state({ stability: 30, difficulty: 5, last_review: '2026-07-01T00:00:00.000Z', fsrs_state: 2, reviews: 5 });
+    const at09 = schedule(seeded, 'good', NOW, 0.9).interval;
+    const at095 = schedule(seeded, 'good', NOW, TRACK_RETENTION.hifz).interval;
+    // Higher retention target = the schedule tolerates less forgetting before
+    // the next review = a shorter interval. This is the actual cost the doc
+    // means by "more reviews for the same material."
+    expect(at095).toBeLessThanOrEqual(at09);
+  });
+
+  it('names two real tracks, not an invented three-way split', () => {
+    expect(TRACK_RETENTION).toEqual({ hifz: 0.95, vocabulary: 0.9 });
+  });
+
+  describe('estimateReviewsPerDay', () => {
+    it('returns 0 for no items', () => {
+      expect(estimateReviewsPerDay([], 0.9, NOW)).toBe(0);
+    });
+
+    it('estimates more daily reviews at a higher retention target, from the SAME real items', () => {
+      const items: FsrsState[] = [
+        state({ stability: 30, difficulty: 5, last_review: '2026-07-01T00:00:00.000Z', fsrs_state: 2, reviews: 5 }),
+        state({ stability: 60, difficulty: 4, last_review: '2026-06-01T00:00:00.000Z', fsrs_state: 2, reviews: 8 }),
+      ];
+      const at09 = estimateReviewsPerDay(items, 0.9, NOW);
+      const at095 = estimateReviewsPerDay(items, TRACK_RETENTION.hifz, NOW);
+      // The doc's own example: "at 0.95 this is ~34 reviews/day; at 0.90, ~21" —
+      // the direction is the contract; the exact multiplier belongs to FSRS's
+      // fitted parameters.
+      expect(at095).toBeGreaterThanOrEqual(at09);
+    });
   });
 });
 

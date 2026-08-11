@@ -67,8 +67,27 @@ export function isGrade(value: unknown): value is Grade {
  * Written down because a learner who forgets an ayah occasionally should know that is
  * the schedule working rather than a fault — and because anyone tempted to raise it
  * should see the cost, which is more reviews for the same material.
+ *
+ * Stays the DEFAULT for any caller that does not pass one explicitly — nobody's
+ * existing schedule shifts because this file grew a `retention` parameter.
  */
 export const REQUEST_RETENTION = 0.9;
+
+/**
+ * Per-track defaults, named rather than left as one global constant.
+ *
+ * Two real tracks call `schedule()` today — memorization.ts (hifz) and
+ * learning.ts (vocabulary_mastery) — so these are the two tracks that exist, not
+ * an invented three-way split. Hifz gets a higher target: for verbatim recall of
+ * scripture, the FSRS default's "one lapse in ten by design" is arguably too
+ * loose, where traditional practice implies something closer to 0.95. Neither
+ * value is applied automatically — see schedule()'s `retention` parameter.
+ */
+export const TRACK_RETENTION = {
+  hifz: 0.95,
+  vocabulary: 0.9,
+} as const;
+export type Track = keyof typeof TRACK_RETENTION;
 
 /**
  * No learning or relearning steps.
@@ -85,14 +104,20 @@ export const REQUEST_RETENTION = 0.9;
  * step one again — stability climbed from 2.3 to 20.6 across five reviews while the
  * interval stayed at zero days. Removing the steps removes the state that would
  * otherwise have to be stored, and every review now yields a day-scale interval.
+ *
+ * Built per retention target rather than once at module load — `generatorParameters`
+ * is cheap (a config object, not a fitted model), so parameterizing it costs nothing
+ * measurable and is what makes per-track retention possible at all.
  */
-const scheduler = fsrs(
-  generatorParameters({
-    request_retention: REQUEST_RETENTION,
-    learning_steps: [],
-    relearning_steps: [],
-  })
-);
+function buildScheduler(retention: number) {
+  return fsrs(
+    generatorParameters({
+      request_retention: retention,
+      learning_steps: [],
+      relearning_steps: [],
+    })
+  );
+}
 
 /** Stored memory state. Null throughout on a row that has had no FSRS review yet. */
 export interface FsrsState {
@@ -179,14 +204,22 @@ function statusFor(intervalDays: number, grade: Grade): MemorizationStatus {
   return 'learning';
 }
 
-/** Schedule the next review. */
+/**
+ * Schedule the next review.
+ *
+ * `retention` defaults to REQUEST_RETENTION (0.9) — every existing caller that
+ * does not pass one gets byte-for-byte the same schedule as before this
+ * parameter existed. Pass TRACK_RETENTION.hifz / .vocabulary, or a per-user
+ * override, to opt a specific call site in.
+ */
 export function schedule(
   state: FsrsState,
   grade: Grade,
-  now: Date = new Date()
+  now: Date = new Date(),
+  retention: number = REQUEST_RETENTION
 ): ScheduleResult {
   const card = toCard(state, now);
-  const next = scheduler.repeat(card, now)[GRADES[grade]].card;
+  const next = buildScheduler(retention).repeat(card, now)[GRADES[grade]].card;
 
   // FSRS returns a same-day due date for a lapse. The columns and the UI both speak
   // in whole days, and 0 — "due today" — is the honest rendering of that.
@@ -260,4 +293,31 @@ function getReviewDescription(days: number): string {
   if (days <= 7) return 'Regular review to maintain recall';
   if (days <= 30) return 'Monthly maintenance review';
   return 'Annual maintenance — quick scan through memorization';
+}
+
+/**
+ * Rough workload estimate for a candidate retention target: "at 0.95 this is
+ * ~34 reviews/day; at 0.90, ~21" (the plan's own example), computed from the
+ * caller's REAL current items rather than asserted as a general figure.
+ *
+ * Method: schedule each item's next review from its CURRENT state at the
+ * candidate retention with a 'good' grade — the modal real-world outcome, not
+ * a best or worst case — then count how many land within the horizon and
+ * average per day. A real simulation over real items, not a canned number;
+ * accuracy is bounded by how well "assume everyone grades good" holds, which
+ * is why this is presented as an estimate, never a promise.
+ */
+export function estimateReviewsPerDay(
+  states: FsrsState[],
+  retention: number,
+  now: Date = new Date(),
+  horizonDays = 30
+): number {
+  if (states.length === 0 || horizonDays <= 0) return 0;
+  let dueWithinHorizon = 0;
+  for (const s of states) {
+    const result = schedule(s, 'good', now, retention);
+    if (result.interval <= horizonDays) dueWithinHorizon += 1;
+  }
+  return Math.round((dueWithinHorizon / horizonDays) * 10) / 10;
 }

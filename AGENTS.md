@@ -418,6 +418,9 @@ POST   /api/memorization/:id/recall
 POST   /api/memorization/:id/review
 POST   /api/memorization/add
 GET    /api/memorization/curriculum                 (908 ordered units; ?level=1-6 &limit &offset)
+DELETE /api/memorization/retention
+GET    /api/memorization/retention
+POST   /api/memorization/retention
 GET    /api/memorization/review/today
 GET    /api/memorization/surah/:surahId
 GET    /api/memorization/surahs
@@ -428,6 +431,7 @@ GET    /api/progress/freeflow
 GET    /api/progress/function-words
 DELETE /api/progress/function-words/:lemma/:pos/known
 POST   /api/progress/function-words/:lemma/:pos/known
+GET    /api/progress/pattern-grid
 GET    /api/progress/patterns
 DELETE /api/progress/patterns/:form/known
 POST   /api/progress/patterns/:form/known
@@ -461,6 +465,7 @@ the URL, which is how `/dashboard` went unnoticed after the nav shrank.
 /grammar
 /learning
 /memorization
+/patterns
 /progress
 /read
 /root
