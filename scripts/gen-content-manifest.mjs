@@ -99,6 +99,19 @@ if (check) {
         }
       }
     }
+    // The kind count. The total was gated from the start; the kind count was not, and
+    // silently drifted once already — KIND_LABELS in progress/page.tsx fell to 7 while
+    // the bank grew to 25, and nothing here would have caught the PROSE claim doing the
+    // same thing, only the label map (a separate gate, scripts/check-kind-labels.mjs).
+    // Scoped to "N kinds" / "N distinct kinds" so it doesn't collide with an unrelated
+    // small number that happens to precede the word "kinds" for some other reason.
+    const expectedKinds = String(Object.keys(manifest.exerciseBank.byKind).length);
+    const KINDS_CLAIM = /(\d{1,3})(?=[- ](?:distinct )?kinds)/g;
+    for (const m of flat.matchAll(KINDS_CLAIM)) {
+      if (m[1] !== expectedKinds) {
+        stale.push(`${rel}: says ${m[1]} kinds, bank holds ${expectedKinds}`);
+      }
+    }
   }
   if (stale.length > 0) {
     process.stderr.write(
