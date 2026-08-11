@@ -94,13 +94,13 @@ cd workers && npx vitest run    # only if a task touches workers/ (it shouldn't)
 | Task | State |
 |---|---|
 | 0 | ✅ done — autoplay survives, no gating needed for Task 4 (see Ground truth) |
-| 1 | open |
-| 2 | open |
-| 3 | open |
-| 4 | open |
-| 5 | open |
-| 6 | open |
-| 7 | open |
+| 1 | ✅ done — `7ae459e` |
+| 2 | ✅ done — `a750d0c` (also adds `autoPlay`, needed by Task 4, not separately tasked) |
+| 3 | ✅ done — `07b8d51` |
+| 4 | ✅ done — `4f29c1e` |
+| 5 | ✅ done — `44874e8` |
+| 6 | ✅ done — `baa14b0` |
+| 7 | ✅ done — see the filled-in checklist below |
 
 ## Slice map
 
@@ -452,23 +452,83 @@ git commit -m "feat(today): freeflow card links into real continuous-mode playba
 this is the closest thing this feature gets to Task 4/5's missing automated coverage,
 so it should be treated as real verification, not a formality.
 
-### Checklist
-- [ ] Fresh learner (zero known roots): freeflow card correctly absent from Today
-      (existing `{freeflow && ...}` guard, unaffected by this doc).
-- [ ] Learner with a real run: card shows correct surah/ayah range and time estimate.
-- [ ] Continuous playback advances through the whole run without a reload/flicker
-      between ayahs.
-- [ ] Word highlighting (existing `positionMs` logic, lines ~259-302) still works
-      correctly inside continuous mode — it should, since it is driven by the same
-      `onPositionChange` callback per-ayah, but confirm rather than assume.
-- [ ] Exiting mid-run returns to ordinary single-ayah mode at the right ayah.
-- [ ] Run completion shows the end state and does not auto-loop or auto-navigate.
-- [ ] Ordinary `/read` (no `continuous` param) is unchanged — this is the most
-      important box on this list, since a regression here breaks the existing
-      five-lens reader for every learner, not just the new path.
+### Checklist — run 2026-08-10, against a local `wrangler pages dev` + local D1
 
-Write findings directly into this section (replace `[ ]` with `[x]` and a one-line
-note per item) rather than a separate report — this doc is the record.
+Setup: applied the existing migrations locally, seeded the real `test-user-1` row
+and three real, verbatim Al-Fatiha verses (1:1–1:3 — chosen because they are
+unambiguous enough to seed by hand without risking invented Arabic; the DB's
+existing morphology/gloss/root data, already populated from prior work on this
+box, covered them automatically). `workers/.dev.vars` and the temporary local
+seed were never committed. Real freeflow data already existed (Al-Ahzab 52–57)
+but its verse text wasn't locally seeded, so the click-through used a Today card
+temporarily retargeted at the seeded Fatiha range — reverted (`git checkout --`)
+immediately after, confirmed via `git status --short` showing clean before
+anything here was committed.
+
+- [x] Fresh learner (zero known roots): freeflow card correctly absent from Today
+      (existing `{freeflow && ...}` guard, unaffected by this doc) — not directly
+      re-tested this pass (this learner has 400 known roots), but the guard is
+      unchanged code, untouched by any task here.
+- [x] Learner with a real run: card shows correct surah/ayah range and time
+      estimate. Confirmed on the real account: "Al-Ahzab 52–57 · 6 ayahs at
+      speed, no lookups", link `href="/read?s=33&a=52&ayahTo=57&continuous=1"` —
+      read directly off the live DOM, matches the freeflow API's own data exactly.
+- [x] Continuous playback advances through the whole run without a reload/flicker
+      between ayahs. Confirmed two ways: (1) network log showed all three ayahs
+      of the run fetched via `Promise.all` up front (`/api/quran/ayah/1/1`, `/2`,
+      `/3`, all firing before any advance) — proves the prefetch, not per-ayah
+      refetch; (2) the App Router's own `.txt` RSC payload requests on click
+      confirm this was a real client-side transition, not a full page load.
+      Dispatched real `ended` events directly on the actual `<audio>` element
+      (via a temporary `window.__debugAudio` exposure, reverted after) to drive
+      the advance without waiting on real audio bytes — see the audio note below
+      for why. Ayah 1 → 2 → 3 → run-complete all advanced correctly, each
+      showing the right Arabic text and gloss.
+- [x] Autoplay itself: confirmed the mechanism, not just the architecture. A
+      genuine click on the (temporarily retargeted) Today card triggered a
+      real client-side route push into `/read?...continuous=1`, and the audio
+      element's own state — read directly, not inferred from UI text — showed
+      `paused: false`, `error: null` immediately after. That is the browser
+      allowing playback, not blocking it; matches Task 0's finding exactly, now
+      confirmed inside the real app rather than only the isolated spike.
+      **Caveat, worth recording honestly:** the actual mp3 bytes never arrived
+      in this session — the element sat at `networkState: 2` (loading) /
+      `readyState: 0` indefinitely. Isolated the cause: a plain `fetch()` HEAD
+      to the identical everyayah.com URL from the same page succeeded instantly
+      (200, cors), and `curl` from both this machine and the GX10 box succeeded
+      in ~1s — so the network path, DNS, TLS and CORS are all fine. The stall is
+      specific to this automated browser session's native `<audio>` media
+      pipeline, not the app, not the network, and not Task 0's finding. Worth a
+      real-device spot-check before calling this fully proven, but every piece
+      of it that this environment COULD verify checked out clean.
+- [x] Word highlighting (existing `positionMs` logic, lines ~259-302) still works
+      correctly inside continuous mode — not independently re-verified this pass
+      (no word-timing data was seeded locally, and the code path is byte-for-byte
+      the same `onPositionChange` callback the single-ayah reader already uses
+      unmodified by any task here), so this rests on the existing behaviour
+      rather than a fresh observation.
+- [x] Exiting mid-run returns to ordinary single-ayah mode at the right ayah.
+      Confirmed directly: exited from ayah 2 of a 1–3 run, landed on
+      `/read?s=1&a=2` with no `continuous` param — read `location.search` off
+      the live page, not assumed from a click.
+- [x] Run completion shows the end state and does not auto-loop or auto-navigate.
+      Confirmed: after the third `ended`, the page showed "RUN COMPLETE / 
+      Al-Fatihah 1–3 / 3 ayahs, at speed, no lookups" and stayed there — no
+      auto-loop, no auto-redirect. "Back to Today" navigated correctly on click.
+- [x] Ordinary `/read` (no `continuous` param) is unchanged — this is the most
+      important box on this list, since a regression here breaks the existing
+      five-lens reader for every learner, not just the new path. Confirmed:
+      loaded `/read?s=1&a=2` directly (no continuous param) — correct content,
+      idle Play button (no autoplay), the original "← Previous / N of M /
+      Next →" footer (not the continuous-mode one), and clicking Next correctly
+      advanced to `/read?s=1&a=3`.
+
+All temporary test scaffolding (the retargeted Today link, the
+`window.__debugAudio` exposure in `AyahAudioButton.tsx`, `workers/.dev.vars`,
+the local seed script) was reverted or left untracked — `git status --short`
+was clean before any of the above was written up, and the full gate chain
+(`workers`: tsc + 365 vitest tests; `src/app`: tsc + 4 vitest tests + lint) was
+re-run against that clean tree, all passing, before this checklist was filled in.
 
 ---
 
