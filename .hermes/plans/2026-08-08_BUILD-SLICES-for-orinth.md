@@ -115,7 +115,7 @@ names. If a test needs data, insert it in the test.
 | 5 | ✅ done — `bf99f9f`, follow-up `8336667` |
 | 6 | ✅ done — `b68e98f` |
 | 7 | ✅ done — `34159bc` (production items), `c66c2d0` (UI) |
-| 8 | open |
+| 8 | ✅ done — `a95e584` |
 
 **Two process rules learned the hard way — they apply to every remaining task.**
 
