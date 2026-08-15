@@ -56,7 +56,7 @@ export function LetterPad({ value, onChange }: LetterPadProps) {
           <button
             key={letter}
             type="button"
-            className="text-naskh flex h-11 w-11 items-center justify-center rounded-md bg-ground-800 text-xl"
+            className="text-naskh flex min-h-11 w-full items-center justify-center rounded-md bg-ground-800 text-xl"
             lang="ar"
             onClick={() => onChange(value + letter)}
           >
@@ -64,12 +64,12 @@ export function LetterPad({ value, onChange }: LetterPadProps) {
           </button>
         ))}
       </div>
-      <div className="flex justify-center gap-1" dir="rtl">
+      <div className="grid grid-cols-4 gap-1" dir="rtl">
         {EXTRA.map((letter) => (
           <button
             key={letter}
             type="button"
-            className="text-naskh flex h-11 w-11 items-center justify-center rounded-md bg-ground-800 text-xl"
+            className="text-naskh flex min-h-11 w-full items-center justify-center rounded-md bg-ground-800 text-xl"
             lang="ar"
             onClick={() => onChange(value + letter)}
           >
@@ -78,7 +78,7 @@ export function LetterPad({ value, onChange }: LetterPadProps) {
         ))}
         <button
           type="button"
-          className="flex h-11 min-w-11 items-center justify-center rounded-md bg-ground-800 px-3 text-sm"
+          className="flex min-h-11 w-full items-center justify-center rounded-md bg-ground-800 px-2 text-sm"
           onClick={() => onChange(value.slice(0, -1))}
         >
           Delete
