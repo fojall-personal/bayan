@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -31,6 +32,15 @@ interface BandPayload {
     pairsKnown: number;
     pairsTarget: number;
   };
+  books?: Record<Band, BookLesson[]>;
+}
+
+interface BookLesson {
+  id: string;
+  title: string;
+  completed: boolean;
+  skipped: boolean;
+  available: boolean;
 }
 
 const ORDER: Band[] = ['foundation', 'ajurrumiyya', 'qatr', 'alfiyya', 'irab'];
@@ -101,6 +111,8 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
   const sheetCurrent = sheetBand === data.band;
   const sheetLocked = Boolean(sheetBand && !sheetCurrent && !sheetCleared);
   const sheetCopy = sheetBand ? BOOK[sheetBand] : null;
+  const sheetLessons = sheetBand && data.books ? data.books[sheetBand] ?? [] : [];
+  const nextLesson = sheetLessons.find((l) => !l.completed);
 
   const startSkip = async () => {
     setError(null);
@@ -181,6 +193,52 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
           )}
           {sheetCleared && !sheetCurrent && (
             <p className="mt-3 text-sm text-leaf-400">You have already left this band.</p>
+          )}
+          {sheetLessons.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs uppercase tracking-label text-ground-400">Lessons in this book</p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {sheetLessons.map((lesson) => {
+                  const canOpen = !sheetLocked;
+                  const isNext = !lesson.completed && nextLesson?.id === lesson.id;
+                  const chipClass = `flex min-h-11 min-w-0 flex-1 basis-[calc(50%-0.125rem)] touch-manipulation items-center justify-center rounded-md px-2 text-center text-[11px] leading-tight sm:basis-auto sm:flex-none sm:text-xs ${
+                    isNext
+                      ? 'bg-gold-500 text-ground-950'
+                      : lesson.completed
+                        ? 'bg-leaf-500/20 text-leaf-400'
+                        : canOpen
+                          ? 'bg-ground-800 text-ground-100'
+                          : 'bg-ground-500/20 text-ground-500'
+                  }`;
+                  if (!canOpen) {
+                    return (
+                      <span key={lesson.id} className={chipClass}>
+                        {lesson.title}
+                      </span>
+                    );
+                  }
+                  return (
+                    <Link
+                      key={lesson.id}
+                      href={`/learning?lesson=${encodeURIComponent(lesson.id)}`}
+                      className={chipClass}
+                    >
+                      {lesson.title}
+                    </Link>
+                  );
+                })}
+              </div>
+              {nextLesson && !sheetLocked && (
+                <Link href={`/learning?lesson=${encodeURIComponent(nextLesson.id)}`} className="mt-3 block">
+                  <Button className="w-full">Start {nextLesson.title}</Button>
+                </Link>
+              )}
+            </div>
+          )}
+          {sheetBand === 'irab' && (
+            <p className="mt-3 text-sm text-ground-400">
+              This band has no authored dars. Use the gold card on Today to parse.
+            </p>
           )}
           {sheetCurrent && (
             <ul className="mt-3 space-y-1">

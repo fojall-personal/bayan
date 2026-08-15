@@ -56,6 +56,15 @@ export const BAND_COPY: Record<
   },
 };
 
+/** Lessons that belong to that book's sheet, not the full unlock stack. */
+export const BOOK_LESSON_IDS: Record<Band, readonly string[]> = {
+  foundation: ['literacy-01', 'literacy-02', 'literacy-03', 'literacy-04', 'grammar-01'],
+  ajurrumiyya: ['grammar-01', 'grammar-02', 'grammar-03', 'grammar-05', 'grammar-06'],
+  qatr: ['grammar-04', 'grammar-07', 'grammar-08', 'grammar-09', 'grammar-10'],
+  alfiyya: ['grammar-11'],
+  irab: [],
+};
+
 /** Authored grammar ids unlocked at each band. literacy-% is always allowed. */
 export const BAND_GRAMMAR_IDS: Record<Band, readonly string[]> = {
   foundation: ['grammar-01'],
@@ -264,10 +273,7 @@ export function gateItems(
   }
   if (band === 'ajurrumiyya') {
     return [
-      done(
-        ['grammar-01', 'grammar-02', 'grammar-03', 'grammar-05', 'grammar-06'],
-        ctx.completedOrSkipped
-      ),
+      done([...BOOK_LESSON_IDS.ajurrumiyya], ctx.completedOrSkipped),
       {
         id: 'roots',
         label: 'Roots',
@@ -296,10 +302,7 @@ export function gateItems(
   }
   if (band === 'qatr') {
     return [
-      done(
-        ['grammar-04', 'grammar-07', 'grammar-08', 'grammar-09', 'grammar-10'],
-        ctx.completedOrSkipped
-      ),
+      done([...BOOK_LESSON_IDS.qatr], ctx.completedOrSkipped),
       {
         id: 'roots',
         label: 'Roots',
@@ -338,7 +341,7 @@ export function gateItems(
     const forms = ['II', 'III', 'IV', 'V', 'VIII', 'X'];
     const formCount = forms.filter((f) => ctx.patternsKnown.has(f)).length;
     return [
-      done(['grammar-11'], ctx.completedOrSkipped),
+      done([...BOOK_LESSON_IDS.alfiyya], ctx.completedOrSkipped),
       {
         id: 'elided',
         label: 'Elided فاعل',
