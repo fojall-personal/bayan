@@ -241,8 +241,12 @@ export function MixedSessionRunner() {
 
         {current.type === 'hifz' && (
           <div className="mt-4 space-y-4">
-            <div className="rounded-md bg-ground-950 p-4 text-center" dir="rtl" lang="ar">
-              <p className="text-arabic text-2xl leading-loose text-ground-50">
+            <div className="rounded-md bg-ground-950 p-4 text-center">
+              <p
+                className="text-arabic text-2xl leading-loose text-ground-50"
+                dir="rtl"
+                lang="ar"
+              >
                 {ayahText ?? '…'}
               </p>
             </div>
