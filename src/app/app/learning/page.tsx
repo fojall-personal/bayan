@@ -4,16 +4,10 @@ import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LearningPage } from '@/components/learning/LearningPage';
 import { Flashcards } from '@/components/learning/Flashcards';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
 import { Tabs } from '@/components/ui/Tabs';
-
-const PATH_NAMES: Record<string, string> = {
-  path1: 'Complete Beginner',
-  path2: 'Conversational Speaker',
-  path3: 'Advanced Reader',
-};
+import { BandStrip } from '@/components/today/BandStrip';
 
 export default function LearningPageRoute() {
   const [view, setView] = useState<'lesson' | 'flashcards'>('lesson');
@@ -76,23 +70,9 @@ export default function LearningPageRoute() {
         }
       />
 
-      {user?.current_path && (
-        <Card className="mb-8" flush>
-          <div className="flex items-baseline justify-between gap-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-label text-gold-400">
-                Your path
-              </div>
-              {/* `capitalize` was title-casing the whole sentence, and the label
-                * read "Path path2". Map the stored id to its real name. */}
-              <div className="mt-1.5 font-display text-lg text-ground-50">
-                {PATH_NAMES[user.current_path] ?? 'Personalised path'}
-              </div>
-            </div>
-            <p className="text-sm text-ground-400">Continue where you left off</p>
-          </div>
-        </Card>
-      )}
+      <div className="mb-8">
+        <BandStrip />
+      </div>
 
       {view === 'lesson' && user && <LearningPage userId={user.id} />}
       {view === 'flashcards' && user && <Flashcards userId={user.id} />}

@@ -1,0 +1,186 @@
+[
+  {
+    "id": "literacy-01",
+    "title": "The 28 letters",
+    "module": "literacy",
+    "level": 1,
+    "estimated_minutes": 12,
+    "prerequisites": [],
+    "content": {
+      "explanation": "Arabic has twenty-eight letters. This lesson asks you to name isolated glyphs in Amiri. The names are the closed set used in Madinah Book 1 lesson 1."
+    },
+    "exercises": [
+      {
+        "type": "multiple_choice",
+        "question": "Which letter is this? ب",
+        "options": ["bāʾ", "tāʾ", "thāʾ", "nūn"],
+        "correct": 0,
+        "explanation": "The glyph ب is bāʾ, the second letter of the Arabic alphabet."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which letter is this? م",
+        "options": ["mīm", "nūn", "rāʾ", "lām"],
+        "correct": 0,
+        "explanation": "The glyph م is mīm. It has a closed loop and sits on the line."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which letter is this? ك",
+        "options": ["kāf", "lām", "dāl", "ṭāʾ"],
+        "correct": 0,
+        "explanation": "The glyph ك is kāf. Isolated kāf has a mark inside the bowl."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which letter is this? ع",
+        "options": ["ʿayn", "ghayn", "ḥāʾ", "hāʾ"],
+        "correct": 0,
+        "explanation": "The glyph ع is ʿayn. It has no dot; ghayn is the dotted partner."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which letter is this? س",
+        "options": ["sīn", "shīn", "ṣād", "thāʾ"],
+        "correct": 0,
+        "explanation": "The glyph س is sīn. Three teeth and no dots distinguish it from shīn."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which letter is this? ر",
+        "options": ["rāʾ", "zāy", "dāl", "wāw"],
+        "correct": 0,
+        "explanation": "The glyph ر is rāʾ. It sits below the line and carries no dot."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which letter is this? ه",
+        "options": ["hāʾ", "ḥāʾ", "khāʾ", "ʿayn"],
+        "correct": 0,
+        "explanation": "The isolated glyph ه is hāʾ, a small loop. ḥāʾ is a larger open form."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which letter is this? ي",
+        "options": ["yāʾ", "alif maqṣūra", "bāʾ", "nūn"],
+        "correct": 0,
+        "explanation": "The glyph ي is yāʾ. Two dots below mark it; alif maqṣūra has none."
+      }
+    ]
+  },
+  {
+    "id": "literacy-02",
+    "title": "Letters join",
+    "module": "literacy",
+    "level": 1,
+    "estimated_minutes": 12,
+    "prerequisites": ["literacy-01"],
+    "content": {
+      "explanation": "Most Arabic letters change shape in the middle of a word. This lesson asks for the medial form of bāʾ, ʿayn, and hāʾ, following Madinah Book 1 lessons 2 and 3."
+    },
+    "exercises": [
+      {
+        "type": "multiple_choice",
+        "question": "Which is the medial form of ب?",
+        "options": ["ـبـ", "ـعـ", "ـهـ", "ـاـ"],
+        "correct": 0,
+        "explanation": "Medial bāʾ is a tooth with one dot below, joined on both sides."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which is the medial form of ع?",
+        "options": ["ـبـ", "ـعـ", "ـهـ", "ـنـ"],
+        "correct": 1,
+        "explanation": "Medial ʿayn is a small open bowl on the line, joined on both sides."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which is the medial form of ه?",
+        "options": ["ـبـ", "ـعـ", "ـهـ", "ـيـ"],
+        "correct": 2,
+        "explanation": "Medial hāʾ is a small closed loop, joined on both sides of the word."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which letter does not join to the left?",
+        "options": ["ب", "ع", "ه", "د"],
+        "correct": 3,
+        "explanation": "dāl never joins forward. The next letter starts a new isolated or initial form."
+      }
+    ]
+  },
+  {
+    "id": "literacy-03",
+    "title": "The three short vowels and sukūn",
+    "module": "literacy",
+    "level": 1,
+    "estimated_minutes": 12,
+    "prerequisites": ["literacy-02"],
+    "content": {
+      "explanation": "A consonant is read with one of three short vowels, or with sukūn for no vowel. This is the ḥarakāt sequence from al-ʿArabiyya bayna Yadayk, unit 1."
+    },
+    "exercises": [
+      {
+        "type": "multiple_choice",
+        "question": "The mark َ on بَ is which short vowel?",
+        "options": ["fatḥa", "ḍamma", "kasra", "sukūn"],
+        "correct": 0,
+        "explanation": "A small diagonal stroke above the letter is fatḥa, the short a vowel."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "The mark ُ on بُ is which short vowel?",
+        "options": ["fatḥa", "ḍamma", "kasra", "sukūn"],
+        "correct": 1,
+        "explanation": "A small wāw-shaped mark above the letter is ḍamma, the short u vowel."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "The mark ِ on بِ is which short vowel?",
+        "options": ["fatḥa", "ḍamma", "kasra", "sukūn"],
+        "correct": 2,
+        "explanation": "A small diagonal stroke below the letter is kasra, the short i vowel."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "The mark ْ on بْ means which of these?",
+        "options": ["fatḥa", "ḍamma", "kasra", "sukūn"],
+        "correct": 3,
+        "explanation": "A small circle above the letter is sukūn. It marks that the letter has no vowel."
+      }
+    ]
+  },
+  {
+    "id": "literacy-04",
+    "title": "Shadda, tanwīn, and hamza carriers",
+    "module": "literacy",
+    "level": 1,
+    "estimated_minutes": 12,
+    "prerequisites": ["literacy-03"],
+    "content": {
+      "explanation": "Shadda doubles a consonant. Tanwīn adds nūnation. Alif maqṣūra and hamza sit on a carrier. The fill item uses a word from 1:2."
+    },
+    "exercises": [
+      {
+        "type": "multiple_choice",
+        "question": "The mark ّ on a letter means which of these?",
+        "options": ["the letter is silent", "the letter is doubled", "the letter is long", "the letter is sun"],
+        "correct": 1,
+        "explanation": "Shadda doubles the consonant. The letter is read twice, once closed and once with its vowel."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "Which glyph is alif maqṣūra?",
+        "options": ["ا", "ى", "ي", "ة"],
+        "correct": 1,
+        "explanation": "Alif maqṣūra looks like yāʾ without dots. It carries a long ā at the end of some words."
+      },
+      {
+        "type": "fill_blank",
+        "question": "Type the first word of 1:2 without vowels. The vocalised form is الْحَمْدُ.",
+        "correct": "الحمد",
+        "explanation": "The word is al-ḥamdu from 1:2. Stripped of marks it is الحمد, the praise."
+      }
+    ]
+  }
+]

@@ -6,7 +6,8 @@ export interface UserProfile {
   created_at: string;
   goal: 'read_quran' | 'understand_arabic' | 'memorize_quran' | 'all';
   onboarding_completed: boolean;
-  current_path: string; // path1, path2, path3
+  current_path: string; // path1, path2, path3 — deprecated; new code reads current_band
+  current_band?: 'foundation' | 'ajurrumiyya' | 'qatr' | 'alfiyya' | 'irab';
 }
 
 export interface AssessmentResult {

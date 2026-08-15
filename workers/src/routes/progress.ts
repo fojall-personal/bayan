@@ -3,6 +3,24 @@ import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 import type { AssessmentResultsRow } from '../db/schema';
+import {
+  BAND_COPY,
+  BAND_ORDER,
+  FORMS_UNLOCKED,
+  NAHW_MC_KINDS,
+  PAIR_TARGET,
+  QATR_MC_KINDS,
+  ROLES_KINDS,
+  ROOT_TARGET,
+  bandAfterCalibration,
+  gateItems,
+  gateReady,
+  nextBand,
+  rollingAccuracy,
+  type Band,
+} from '../lib/band';
+import { ensureBand, persistBand } from '../lib/band-write';
+import { readUserBand } from '../lib/next-lesson';
 
 export const progressRoutes = new Hono<AppEnv>();
 
@@ -518,6 +536,20 @@ progressRoutes.post('/calibration', async (c) => {
     }
 
     const after = await ayahsReadable(db, userId);
+    const rootsKnown = await db.get<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM user_known_root WHERE user_id = ?`,
+      [userId]
+    );
+    const prior = await readUserBand(db, userId);
+    const current = prior.band ?? (await ensureBand(db, userId));
+    if (current) {
+      const next = bandAfterCalibration(current, rootsKnown?.n ?? 0);
+      if (next !== current) {
+        await persistBand(db, userId, next, 'calibration', current, {
+          rootsKnown: rootsKnown?.n ?? 0,
+        });
+      }
+    }
     return c.json({
       data: {
         rootsRecorded: valid.length,
@@ -800,12 +832,23 @@ progressRoutes.post('/patterns/:form/known', async (c) => {
     // Refuse a form the corpus does not attest — same discipline as roots and
     // function words: an unattested value can never mean anything, so accepting
     // one would inflate the count with nothing real.
-    const exists = await db.get<{ n: number }>(
-      `SELECT COUNT(*) AS n FROM quran_word_morphology WHERE verb_form = ?`,
-      [form]
-    );
+    const exists =
+      form === 'I'
+        ? await db.get<{ n: number }>(
+            `SELECT COUNT(*) AS n FROM quran_word_morphology
+              WHERE verb_form IS NULL AND pos = 'V'`
+          )
+        : await db.get<{ n: number }>(
+            `SELECT COUNT(*) AS n FROM quran_word_morphology WHERE verb_form = ?`,
+            [form]
+          );
     if (!exists || exists.n === 0) {
       return c.json({ error: `The corpus has no verb form "${form}"` }, 404);
+    }
+
+    const band = await ensureBand(db, userId);
+    if (band && !FORMS_UNLOCKED[band].includes(form)) {
+      return c.json({ error: `Form ${form} is locked until a later band` }, 403);
     }
 
     await db.run(
@@ -869,20 +912,32 @@ progressRoutes.get('/pattern-grid', async (c) => {
       occurrences: number;
       known: number;
     }>(
-      `SELECT m.verb_form,
-              COUNT(*) AS occurrences,
-              CASE WHEN k.verb_form IS NULL THEN 0 ELSE 1 END AS known
-         FROM quran_word_morphology m
-         LEFT JOIN user_known_pattern k
-           ON k.user_id = ? AND k.verb_form = m.verb_form
-        WHERE m.verb_form IS NOT NULL
-        GROUP BY m.verb_form
-        ORDER BY occurrences DESC`,
-      [userId]
+      `SELECT verb_form, occurrences, known FROM (
+         SELECT 'I' AS verb_form,
+                COUNT(*) AS occurrences,
+                CASE WHEN EXISTS (
+                  SELECT 1 FROM user_known_pattern
+                   WHERE user_id = ? AND verb_form = 'I'
+                ) THEN 1 ELSE 0 END AS known
+           FROM quran_word_morphology
+          WHERE verb_form IS NULL AND pos = 'V'
+         UNION ALL
+         SELECT m.verb_form,
+                COUNT(*) AS occurrences,
+                CASE WHEN k.verb_form IS NULL THEN 0 ELSE 1 END AS known
+           FROM quran_word_morphology m
+           LEFT JOIN user_known_pattern k
+             ON k.user_id = ? AND k.verb_form = m.verb_form
+          WHERE m.verb_form IS NOT NULL
+          GROUP BY m.verb_form
+       )
+       WHERE occurrences > 0
+       ORDER BY CASE WHEN verb_form = 'I' THEN 0 ELSE 1 END, occurrences DESC`,
+      [userId, userId]
     );
 
     const rootList = roots.map((r) => r.root);
-    const cells =
+    const attested =
       rootList.length === 0
         ? []
         : await db.query<{ root: string; verb_form: string; occurrences: number }>(
@@ -893,6 +948,18 @@ progressRoutes.get('/pattern-grid', async (c) => {
               GROUP BY root, verb_form`,
             rootList
           );
+    const formICells =
+      rootList.length === 0
+        ? []
+        : await db.query<{ root: string; verb_form: string; occurrences: number }>(
+            `SELECT root, 'I' AS verb_form, COUNT(*) AS occurrences
+               FROM quran_word_morphology
+              WHERE verb_form IS NULL AND pos = 'V'
+                AND root IN (${rootList.map(() => '?').join(',')})
+              GROUP BY root`,
+            rootList
+          );
+    const cells = [...formICells, ...attested];
 
     return c.json({
       data: {
@@ -910,12 +977,334 @@ progressRoutes.get('/pattern-grid', async (c) => {
       },
       basis:
         'Rows are your known roots, commonest first, capped at the requested limit. ' +
-        'Columns are every verb form attested anywhere in the Quran. A lit cell means ' +
-        'that root actually occurs in that form; a cell you know both halves of is a ' +
-        'word you could decode without ever having met it.',
+        'Columns are every verb form attested anywhere in the Quran. Form I is the ' +
+        'unmarked default: verb_form IS NULL AND pos = V. A lit cell means that root ' +
+        'actually occurs in that form; a cell you know both halves of is a word you ' +
+        'could decode without ever having met it.',
     });
   } catch (error) {
     console.error('Pattern grid error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+const SCRIPT_CHECK: Array<{
+  id: string;
+  prompt: string;
+  display: string;
+  options: string[];
+  correct: number;
+}> = [
+  { id: 'script-1', prompt: 'Which letter is this?', display: 'ب', options: ['ب (ba)', 'ت (ta)', 'ث (tha)', 'ن (nun)'], correct: 0 },
+  { id: 'script-2', prompt: 'Which letter is this?', display: 'م', options: ['م (mim)', 'ن (nun)', 'ر (ra)', 'ل (lam)'], correct: 0 },
+  { id: 'script-3', prompt: 'Which letter is this?', display: 'ك', options: ['ل (lam)', 'ك (kaf)', 'د (dal)', 'ط (ta)'], correct: 1 },
+  { id: 'script-4', prompt: 'Which letter is this?', display: 'ع', options: ['غ (ghayn)', 'ع (ayn)', 'ح (ha)', 'ه (ha)'], correct: 1 },
+  { id: 'script-5', prompt: 'Which letter is this?', display: 'س', options: ['ش (shin)', 'ص (sad)', 'س (sin)', 'ث (tha)'], correct: 2 },
+  { id: 'script-6', prompt: 'Which letter is this?', display: 'ر', options: ['ز (zay)', 'د (dal)', 'ر (ra)', 'و (waw)'], correct: 2 },
+  { id: 'script-7', prompt: 'Which letter is this?', display: 'ه', options: ['ه (ha)', 'ح (ha)', 'خ (kha)', 'ع (ayn)'], correct: 0 },
+  { id: 'script-8', prompt: 'Which letter is this?', display: 'ي', options: ['ى (alif maqsura)', 'ي (ya)', 'ب (ba)', 'ن (nun)'], correct: 1 },
+];
+
+async function topPairKnown(db: Database, userId: string, n: number): Promise<number> {
+  if (n <= 0) return 0;
+  const row = await db.get<{ n: number }>(
+    `WITH ranked AS (
+       SELECT m.lemma, m.pos,
+              ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC, m.lemma, m.pos) AS rn
+         FROM quran_word_morphology m
+        WHERE m.root IS NULL
+          AND m.lemma IS NOT NULL AND m.lemma <> ''
+          AND m.pos IS NOT NULL
+        GROUP BY m.lemma, m.pos
+     )
+     SELECT COUNT(*) AS n
+       FROM ranked r
+       JOIN user_known_function_word k
+         ON k.user_id = ? AND k.lemma = r.lemma AND k.pos = r.pos
+      WHERE r.rn <= ?`,
+    [userId, n]
+  );
+  return row?.n ?? 0;
+}
+
+async function rollingKindAccuracy(
+  db: Database,
+  userId: string,
+  kinds: readonly string[],
+  n = 20
+): Promise<{ current: number; met: boolean }> {
+  const placeholders = kinds.map(() => '?').join(',');
+  const rows = await db.query<{ correct: number }>(
+    `SELECT e.correct
+       FROM grammar_exercises e
+       JOIN grammar_exercise_bank b ON b.id = e.exercise_id
+      WHERE e.user_id = ? AND b.kind IN (${placeholders})
+      ORDER BY e.answered_at ASC`,
+    [userId, ...kinds]
+  );
+  return rollingAccuracy(rows, n);
+}
+
+async function rollingPrefixAccuracy(
+  db: Database,
+  userId: string,
+  prefix: string,
+  n = 20
+): Promise<{ current: number; met: boolean }> {
+  const rows = await db.query<{ correct: number }>(
+    `SELECT correct FROM grammar_exercises
+      WHERE user_id = ? AND exercise_id LIKE ?
+      ORDER BY answered_at ASC`,
+    [userId, `${prefix}%`]
+  );
+  return rollingAccuracy(rows, n);
+}
+
+async function loadGate(
+  db: Database,
+  userId: string,
+  band: Band
+): Promise<{ ready: boolean; items: ReturnType<typeof gateItems> }> {
+  const completed = await db.query<{ lesson_id: string }>(
+    `SELECT lesson_id FROM lesson_progress WHERE user_id = ? AND completed = 1`,
+    [userId]
+  );
+  const literacy = await db.query<{ id: string }>(
+    `SELECT id FROM lessons WHERE id LIKE 'literacy-%'`
+  );
+  const roots = await db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM user_known_root WHERE user_id = ?`,
+    [userId]
+  );
+  const pairTarget = PAIR_TARGET[band];
+  const pairs = await topPairKnown(db, userId, pairTarget);
+  const patterns = await db.query<{ verb_form: string }>(
+    `SELECT verb_form FROM user_known_pattern WHERE user_id = ?`,
+    [userId]
+  );
+  const assessment = await db.get<{ literacy_score: number }>(
+    `SELECT literacy_score FROM assessment_results
+      WHERE user_id = ? ORDER BY completed_at DESC LIMIT 1`,
+    [userId]
+  );
+  const scriptEvent = await db.get<{ evidence: string | null }>(
+    `SELECT evidence FROM band_events
+      WHERE user_id = ? AND source = 'skip-quiz'
+      ORDER BY created_at DESC LIMIT 1`,
+    [userId]
+  );
+  let scriptQuizPct: number | null = null;
+  if (scriptEvent?.evidence) {
+    try {
+      const ev = JSON.parse(scriptEvent.evidence) as { score?: number };
+      if (typeof ev.score === 'number') scriptQuizPct = ev.score;
+    } catch {
+      /* ignore */
+    }
+  }
+  const governor = await db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM grammar_exercise_bank WHERE kind = 'governor'`
+  );
+  const homograph = await db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM grammar_exercise_bank WHERE kind = 'homograph'`
+  );
+  const tashkil = await db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM grammar_exercises
+      WHERE user_id = ? AND exercise_id LIKE 'tashkil:%'`,
+    [userId]
+  );
+  const accuracy = {
+    nahw_mc: await rollingKindAccuracy(db, userId, NAHW_MC_KINDS),
+    qatr_mc: await rollingKindAccuracy(db, userId, QATR_MC_KINDS),
+    roles: await rollingKindAccuracy(db, userId, ROLES_KINDS),
+    elided_subject: await rollingPrefixAccuracy(db, userId, 'elided:'),
+    homograph: await rollingKindAccuracy(db, userId, ['homograph']),
+    governor: await rollingKindAccuracy(db, userId, ['governor']),
+    tashkil: await rollingPrefixAccuracy(db, userId, 'tashkil:'),
+  };
+  const items = gateItems(band, {
+    completedOrSkipped: new Set(completed.map((r) => r.lesson_id)),
+    literacyLessonIds: literacy.map((l) => l.id),
+    rootsKnown: roots?.n ?? 0,
+    topPairKnown: pairs,
+    pairTarget,
+    accuracy,
+    patternsKnown: new Set(patterns.map((p) => p.verb_form)),
+    assessmentLiteracy: assessment?.literacy_score ?? null,
+    scriptQuizPct,
+    governorKindExists: (governor?.n ?? 0) > 0,
+    homographKindExists: (homograph?.n ?? 0) > 0,
+    tashkilPersisted: (tashkil?.n ?? 0) > 0,
+  });
+  return { items, ready: gateReady(items) };
+}
+
+progressRoutes.get('/band', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  try {
+    const band = await ensureBand(db, userId);
+    if (!band) return c.json({ error: 'User not found' }, 404);
+    const meta = await readUserBand(db, userId);
+    const { items, ready } = await loadGate(db, userId, band);
+    const roots = await db.get<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM user_known_root WHERE user_id = ?`,
+      [userId]
+    );
+    const pairTarget = PAIR_TARGET[band];
+    const pairs = await topPairKnown(db, userId, pairTarget);
+    const idx = BAND_ORDER.indexOf(band);
+    const copy = BAND_COPY[band];
+    return c.json({
+      data: {
+        band,
+        source: meta.source,
+        enteredAt: meta.enteredAt,
+        bookTitle: copy.bookTitle,
+        bookSentence: copy.bookSentence,
+        compactLabel: copy.compactLabel,
+        gate: { items, ready },
+        cleared: BAND_ORDER.slice(0, Math.max(0, idx)),
+        targets: {
+          rootsKnown: roots?.n ?? 0,
+          rootsTarget: ROOT_TARGET[band],
+          pairsKnown: pairs,
+          pairsTarget: pairTarget,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Band get error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+progressRoutes.get('/band/skip-quiz', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+  try {
+    const band = await ensureBand(db, userId);
+    if (!band) return c.json({ error: 'User not found' }, 404);
+    if (band === 'irab') {
+      return c.json({ data: { items: [], band } });
+    }
+    if (band === 'foundation') {
+      return c.json({
+        data: {
+          band,
+          items: SCRIPT_CHECK.map(({ correct: _c, ...rest }) => rest),
+        },
+      });
+    }
+    const kinds =
+      band === 'ajurrumiyya'
+        ? ['pos_id', 'sentence_type', 'case_ending', 'definiteness']
+        : band === 'qatr'
+          ? ['negation', 'demonstrative', 'mood', 'idafa']
+          : ['elided_subject', 'subject_word', 'object', 'mubtada_khabar'];
+    const rows = await db.query<{
+      id: string;
+      prompt: string;
+      options: string;
+      word_arabic: string | null;
+    }>(
+      `SELECT id, prompt, options, word_arabic FROM grammar_exercise_bank
+        WHERE kind IN (${kinds.map(() => '?').join(',')})
+        ORDER BY RANDOM()
+        LIMIT 20`,
+      kinds
+    );
+    return c.json({
+      data: {
+        band,
+        items: rows.map((r) => ({
+          id: r.id,
+          prompt: r.prompt,
+          display: r.word_arabic,
+          options: JSON.parse(r.options || '[]') as string[],
+        })),
+      },
+    });
+  } catch (error) {
+    console.error('Skip-quiz get error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+progressRoutes.post('/band/advance', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+  try {
+    const body = (await c.req.json()) as {
+      evidence?: unknown;
+      answers?: unknown;
+    };
+    const evidence = body.evidence === 'skip-quiz' ? 'skip-quiz' : 'gate';
+    const band = await ensureBand(db, userId);
+    if (!band) return c.json({ error: 'User not found' }, 404);
+    const dest = nextBand(band);
+    if (!dest) {
+      return c.json({ error: 'No further band' }, 409);
+    }
+
+    if (evidence === 'skip-quiz') {
+      const answers = Array.isArray(body.answers) ? body.answers : [];
+      let correct = 0;
+      let total = 0;
+      if (band === 'foundation') {
+        total = SCRIPT_CHECK.length;
+        for (const item of SCRIPT_CHECK) {
+          const given = answers.find(
+            (a: { id?: string }) => a && typeof a === 'object' && a.id === item.id
+          ) as { given?: unknown } | undefined;
+          const value = given?.given;
+          const idx =
+            typeof value === 'number'
+              ? value
+              : typeof value === 'string' && /^\d+$/.test(value)
+                ? Number(value)
+                : item.options.indexOf(String(value ?? ''));
+          if (idx === item.correct) correct += 1;
+        }
+      } else {
+        for (const raw of answers) {
+          if (!raw || typeof raw !== 'object') continue;
+          const a = raw as { id?: string; given?: unknown };
+          if (!a.id) continue;
+          const row = await db.get<{ answer: string }>(
+            `SELECT answer FROM grammar_exercise_bank WHERE id = ?`,
+            [a.id]
+          );
+          if (!row) continue;
+          total += 1;
+          if (String(a.given ?? '') === String(row.answer)) correct += 1;
+        }
+      }
+      const score = total === 0 ? 0 : Math.round((correct / total) * 100);
+      if (score < 70) {
+        return c.json(
+          { error: 'Skip-quiz below 70%', data: { score, correct, total } },
+          409
+        );
+      }
+      await persistBand(db, userId, dest, 'skip-quiz', band, {
+        score,
+        correct,
+        total,
+      });
+      return c.json({ data: { band: dest, evidence: 'skip-quiz', score } });
+    }
+
+    const gateRes = await loadGate(db, userId, band);
+    if (!gateRes.ready) {
+      console.error('band/advance refuse: gate not ready');
+      return c.json({ error: 'Gate is not ready' }, 409);
+    }
+    await persistBand(db, userId, dest, 'gate', band, { evidence: 'gate' });
+    return c.json({ data: { band: dest, evidence: 'gate' } });
+  } catch (error) {
+    console.error('Band advance error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

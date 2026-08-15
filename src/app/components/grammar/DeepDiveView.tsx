@@ -47,13 +47,9 @@ const EMPTY_REASON: Record<string, string> = {
   // text, and the corpus tags the particle. Metaphor is the honest remaining gap — nothing
   // on the surface marks it.
   balagha:
-    'Every lesson here is checked against annotated data, and no available source records ' +
-    'what an ayah does rhetorically — the published Quranic rhetoric corpus covers two ' +
-    'verses. Three devices are the exception, because each leaves a mark in the text the ' +
-    'corpus already records: fronting (al-taqdīm), two words from one root (al-jinās), and ' +
-    'a comparison opened by كـ (al-tashbīh). All three have drills in the exercise bank. ' +
-    'Metaphor and metonymy have none, and will not until a source annotates them — nothing ' +
-    'on the surface of an ayah marks a metaphor.',
+    'Three devices are derivable from data we trust: taqdīm (fronting, 28 items), ' +
+    'al-jinās (1,707), al-tashbīh (58). The other 92 names in the ARDT exist as a ' +
+    'glossary, not as drills. ARDT v0.1.1, CC BY.',
   // Vocabulary lives in its own tab now. The deep-dive never had vocabulary lessons
   // because the curated word list (103 entries, grouped by root) is not a lesson format.
   // The Vocabulary tab in the grammar nav shows the full list with search and family

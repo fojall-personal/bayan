@@ -683,6 +683,9 @@ describe('known patterns (wazn)', () => {
   it('records a pattern known and undoes it', async () => {
     const t = H();
     t.db
+      .prepare(`UPDATE users SET current_band = 'qatr', band_source = 'manual' WHERE id = ?`)
+      .run(TEST_USER);
+    t.db
       .prepare(
         `INSERT INTO quran_word_morphology
            (surah_id, ayah_id, word_index, segment_index, form, lemma, root, pos, verb_form)
@@ -712,10 +715,11 @@ describe('known patterns (wazn)', () => {
     expect(after.n).toBe(0);
   });
 
-  it('Form I (unmarked, no verb_form value) cannot be marked known', async () => {
+  it('Form I (verb_form IS NULL AND pos = V) can be marked known', async () => {
     const t = H();
-    // Deliberately no verb_form column value at all — Form I is represented by
-    // its ABSENCE, not the literal string 'I'.
+    t.db
+      .prepare(`UPDATE users SET current_band = 'ajurrumiyya', band_source = 'manual' WHERE id = ?`)
+      .run(TEST_USER);
     t.db
       .prepare(
         `INSERT INTO quran_word_morphology
@@ -724,7 +728,7 @@ describe('known patterns (wazn)', () => {
       )
       .run();
     const { status } = await t.json('/api/progress/patterns/I/known', { method: 'POST' });
-    expect(status).toBe(404);
+    expect(status).toBe(200);
   });
 });
 

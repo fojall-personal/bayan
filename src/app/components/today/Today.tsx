@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { rootToArabic as rootArabic } from '@/lib/arabic-root';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
 import { getSurah } from '@/lib/surahs';
+import { BandStrip } from '@/components/today/BandStrip';
 
 interface Coverage {
   ayahsReadable: number;
@@ -77,6 +78,7 @@ export function Today() {
   const [reading, setReading] = useState<ReadingQueueItem[]>([]);
   const [freeflow, setFreeflow] = useState<FreeflowRun | null>(null);
   const [lesson, setLesson] = useState<NextLesson | null>(null);
+  const [band, setBand] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,7 +87,7 @@ export function Today() {
     setError(null);
     // Settled rather than all: a learner with no memorization rows should still
     // see their coverage and next lesson, not a single error for the whole page.
-    const [cov, dueRes, next, queue, flow] = await Promise.allSettled([
+    const [cov, dueRes, next, queue, flow, bandRes] = await Promise.allSettled([
       apiFetch<{ data: Coverage }>('/api/progress/coverage'),
       apiFetch<{ data: DueItem[] }>('/api/memorization/review/today'),
       apiFetch<{ data: { lesson: NextLesson | null } }>('/api/learning/next'),
@@ -95,6 +97,7 @@ export function Today() {
       apiFetch<{ data: { runs: FreeflowRun[] } }>(
         '/api/progress/freeflow?minWords=20'
       ),
+      apiFetch<{ data: { band: string } }>('/api/progress/band'),
     ]);
     if (cov.status === 'fulfilled') setCoverage(cov.value.data);
     else setError(apiErrorMessage(cov.reason));
@@ -102,6 +105,7 @@ export function Today() {
     if (next.status === 'fulfilled') setLesson(next.value.data?.lesson ?? null);
     if (queue.status === 'fulfilled') setReading(queue.value.data?.items ?? []);
     if (flow.status === 'fulfilled') setFreeflow(flow.value.data?.runs?.[0] ?? null);
+    if (bandRes.status === 'fulfilled') setBand(bandRes.value.data?.band ?? null);
     setLoading(false);
   }, []);
 
@@ -133,6 +137,8 @@ export function Today() {
         )}
       </div>
 
+      <BandStrip />
+
       {error && (
         <Card>
           <p className="mb-3 text-sm text-ground-300">{error}</p>
@@ -145,7 +151,7 @@ export function Today() {
       {/* Coverage starts empty, and a learner who already reads some Arabic should
           not have to click "I know this root" a hundred times to say so. Offered
           rather than forced, and only while it is still true. */}
-      {coverage && coverage.rootsKnown === 0 && (
+      {coverage && coverage.rootsKnown === 0 && band !== 'foundation' && (
         <Card className="border-gold-500/40">
           <p className="text-xs uppercase tracking-label text-gold-400">First</p>
           <h2 className="mt-1.5 text-xl font-semibold">Which roots do you already know?</h2>
@@ -164,7 +170,18 @@ export function Today() {
           session is the sitting that actually grades them. The next-root
           card stays gold when nothing is owed, so coverage still has a
           primary action. */}
-      {dueCount > 0 ? (
+      {band === 'foundation' ? (
+        <Card className="border-gold-500/40">
+          <p className="text-xs uppercase tracking-label text-gold-400">Next</p>
+          <h2 className="mt-1.5 text-xl font-semibold">Learn the letters</h2>
+          <p className="mt-1 text-sm text-ground-300">
+            {lesson ? lesson.title : 'Isolated letters, joining, then the short vowels.'}
+          </p>
+          <Link href="/learning" className="mt-4 block">
+            <Button className="w-full">Open the next lesson</Button>
+          </Link>
+        </Card>
+      ) : dueCount > 0 ? (
         <Card className="border-gold-500/40">
           <p className="text-xs uppercase tracking-label text-gold-400">Next</p>
           <h2 className="mt-1.5 text-xl font-semibold">
@@ -183,6 +200,17 @@ export function Today() {
               })
               .join(' · ')}
             {dueCount > 3 ? ` and ${dueCount - 3} more` : ''}
+          </p>
+          <Link href="/session" className="mt-4 block">
+            <Button className="w-full">Start session</Button>
+          </Link>
+        </Card>
+      ) : band === 'irab' ? (
+        <Card className="border-gold-500/40">
+          <p className="text-xs uppercase tracking-label text-gold-400">Next</p>
+          <h2 className="mt-1.5 text-xl font-semibold">Parse an ayah you have not studied</h2>
+          <p className="mt-1 text-sm text-ground-300">
+            Name the case and the token ʿāmil. Elision when the treebank reconstructs it.
           </p>
           <Link href="/session" className="mt-4 block">
             <Button className="w-full">Start session</Button>
@@ -217,12 +245,22 @@ export function Today() {
       <div>
         <h3 className="mb-3 text-xs uppercase tracking-label text-ground-400">Then</h3>
         <div className="space-y-3">
+          {band === 'foundation' && coverage && coverage.rootsKnown === 0 && (
+            <Link href="/calibrate" className="block">
+              <Card interactive>
+                <p className="font-semibold">I already read some Arabic</p>
+                <p className="mt-0.5 text-sm text-ground-300">
+                  Mark the roots you know. This is optional while you learn the letters.
+                </p>
+              </Card>
+            </Link>
+          )}
           {dueCount === 0 && (
             <Link href="/session" className="block">
               <Card interactive>
                 <p className="font-semibold">Run a mixed session</p>
                 <p className="mt-0.5 text-sm text-ground-300">
-                  Due vocabulary and the next lesson, interleaved under a 12-minute budget
+                  Due vocabulary and the next lesson, interleaved under a 25-minute budget
                 </p>
               </Card>
             </Link>
@@ -236,7 +274,7 @@ export function Today() {
               <p className="mt-0.5 text-sm text-ground-300">
                 {lesson
                   ? `Level ${lesson.level}${lesson.estimated_minutes ? ` · ${lesson.estimated_minutes} min` : ''}`
-                  : 'The authored path — ten lessons, each gated on the one before'}
+                  : 'The authored path — eleven lessons, each gated on the one before'}
               </p>
             </Card>
           </Link>

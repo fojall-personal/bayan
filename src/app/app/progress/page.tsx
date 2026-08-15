@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { apiFetch, apiErrorMessage } from '@/lib/api';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { BandStrip } from '@/components/today/BandStrip';
 
 interface ScoreEntry {
   literacy_score: number;
@@ -64,6 +65,7 @@ const KIND_LABELS: Record<string, string> = {
   homograph: 'Which مَا is this? (one spelling, two jobs)',
   mutashabihat: 'Which ayah is this? (near-identical verses)',
   elided_subject: 'Which pronoun is the unwritten فاعل',
+  governor: 'Name the governor (عامل)',
   // Lesson-driven attempts record their module instead of a bank kind.
   grammar: 'Lesson exercises — grammar',
   tajweed: 'Lesson exercises — tajweed',
@@ -100,6 +102,7 @@ const KIND_CHANNEL: Record<string, string> = {
   idafa: 'Governor & role',
   fronting: 'Governor & role',
   elided_subject: 'Governor & role',
+  governor: 'Governor & role',
   word_role: 'Governor & role',
   word_meaning: 'Vocabulary',
   find_word: 'Vocabulary',
@@ -169,6 +172,11 @@ export default function ProgressPage() {
 
   return (
     <div className="page-transition max-w-4xl mx-auto space-y-6">
+      <BandStrip />
+      <p className="text-xs text-ground-500">
+        These scales measure Modern Standard Arabic communication. Bayan teaches
+        Classical reading of the Quran. The row is a reading descriptor only.
+      </p>
       {/* Score history */}
       {error && (
         <Card>

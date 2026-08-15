@@ -389,6 +389,33 @@ for (const lesson of Array.isArray(lessons) ? lessons : []) {
   }
 }
 
+// ── Literacy lessons ────────────────────────────────────────────────────────
+{
+  const LETTERS = new Set('ابتثجحخدذرزسشصضطظعغفقكلمنهويأإآءؤئىةٱ'.split(''));
+  let literacy = [];
+  try {
+    literacy = JSON.parse(await readFile(join(root, 'content/literacy/lessons.json'), 'utf-8'));
+  } catch {
+    literacy = [];
+  }
+  if (Array.isArray(literacy) && literacy.length > 0) {
+    for (const lesson of literacy) {
+      const where = `literacy/${lesson.id ?? '(no id)'}`;
+      if (lesson.module !== 'literacy') fail(where, 'module must be literacy');
+      for (const [, text] of strings(lesson, where)) {
+        for (const ch of text) {
+          if (!ARABIC.test(ch)) continue;
+          if (/[ؐ-ًؚ-ٰٟۖ-ۭ]/.test(ch)) continue;
+          if (!LETTERS.has(ch) && ch !== 'ـ') {
+            fail(where, `example character ${ch} is outside the 28 letters + hamza carriers`);
+          }
+        }
+      }
+    }
+    notes.push(`literacy lessons: ${literacy.length}`);
+  }
+}
+
 // ── Report ──────────────────────────────────────────────────────────────────
 for (const n of notes) process.stdout.write(`  note  ${n}\n`);
 
