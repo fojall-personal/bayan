@@ -600,6 +600,22 @@ grammarRoutes.post('/tashkil', async (c) => {
     results.sort((a, b) => a.index - b.index);
     const correctCount = results.filter((r) => r.correct).length;
 
+    const userId = c.get('userId');
+    if (userId) {
+      for (const r of results) {
+        await db.run(
+          `INSERT INTO grammar_exercises (user_id, exercise_id, answer, correct)
+           VALUES (?, ?, ?, ?)`,
+          [
+            userId,
+            `tashkil:${surah}:${ayah}:${r.index}`,
+            String((answers as Record<string, unknown>)[String(r.index)] ?? ''),
+            r.correct ? 1 : 0,
+          ]
+        );
+      }
+    }
+
     return c.json({
       data: {
         results,

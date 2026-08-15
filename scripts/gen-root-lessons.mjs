@@ -319,10 +319,10 @@ for (let i = 0; i < roots.length; i += 1) {
     title: `The root ${arabic} (${spelled(bw)})`,
     module: 'grammar',
     level,
-    // Chained by frequency so they unlock in the order they pay off. The first has no
-    // prerequisite; each later one follows the previous, which keeps the path linear
-    // and means the pedagogy gate can walk it.
-    prerequisites: lessons.length === 0 ? [] : [lessons[lessons.length - 1].id],
+    // Frequency order already sequences them. A linear chain of 408 was an
+    // arbitrary silo. Empty prereqs keep the generated graph flat.
+    prerequisites: [],
+    category: 'vocabulary',
     estimated_minutes,
     content: {
       // Every number and every word in this paragraph is read from the corpus.

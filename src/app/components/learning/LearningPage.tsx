@@ -74,10 +74,25 @@ interface ReviewItem {
   explanation: string | null;
 }
 
+const LESSON_EYEBROW: Record<string, string> = {
+  'grammar-01': 'Nahw · definite article',
+  'grammar-02': 'Bināʾ al-Afʿāl · ṣarf · 1 of 1 in this band',
+  'grammar-03': 'Ajurrūmiyya · nahw · 1 of 3',
+  'grammar-04': 'Shadhā al-ʿArf · ṣarf',
+  'grammar-05': 'Ajurrūmiyya · nahw · 2 of 3',
+  'grammar-06': 'Ajurrūmiyya · nahw · 3 of 3',
+  'grammar-07': 'Nahw',
+  'grammar-08': 'Shadhā al-ʿArf · ṣarf',
+  'grammar-09': 'Nahw',
+  'grammar-10': 'Nahw',
+  'grammar-11': 'al-Balāgha al-Wāḍiḥa · balāgha',
+};
+
 export function LearningPage({ userId }: LearningPageProps) {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmSkip, setConfirmSkip] = useState(false);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string | number>>({});
   const [result, setResult] = useState<{
@@ -188,6 +203,16 @@ export function LearningPage({ userId }: LearningPageProps) {
     }
   };
 
+  const handleSkip = async () => {
+    if (!lesson) return;
+    try {
+      await apiPost(`/api/learning/lessons/${lesson.id}/submit`, { skipped: true });
+      handleNextLesson();
+    } catch (err) {
+      setError(apiErrorMessage(err));
+    }
+  };
+
   const handleNextLesson = () => {
     setLesson(null);
     setResult(null);
@@ -231,8 +256,30 @@ export function LearningPage({ userId }: LearningPageProps) {
       <div className="flex items-start justify-between">
         <div>
           <Badge variant="info">{lesson.module}</Badge>
+          {LESSON_EYEBROW[lesson.id] && (
+            <p className="mt-2 text-xs uppercase tracking-label text-gold-400">
+              {LESSON_EYEBROW[lesson.id]}
+            </p>
+          )}
           <h2 className="text-3xl font-bold mt-2">{lesson.title}</h2>
           <p className="text-gray-400 mt-1">Level {lesson.level}</p>
+          {!confirmSkip ? (
+            <Button variant="ghost" className="mt-2" onClick={() => setConfirmSkip(true)}>
+              I already know this
+            </Button>
+          ) : (
+            <div className="mt-2 space-y-2">
+              <p className="text-sm text-ground-300">
+                This marks the lesson skipped, not scored. You can open it later.
+              </p>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setConfirmSkip(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSkip}>Mark skipped</Button>
+              </div>
+            </div>
+          )}
         </div>
         {lesson.progress && (
           <div className="text-right">

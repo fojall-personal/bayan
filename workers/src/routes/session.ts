@@ -13,13 +13,15 @@ import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
 import type {
-  LessonProgressRow,
   LessonsRow,
   MemorizationRow,
   VocabularyMasteryRow,
 } from '../db/schema';
 import { isGrade, schedule, REQUEST_RETENTION, type Grade } from '../lib/space-repetition';
 import { hifzRetentionFor, precedingSpanWarmStart } from './memorization';
+import { ensureBand } from '../lib/band-write';
+import { PAIR_TARGET, type Band } from '../lib/band';
+import { selectNextAuthoredLesson } from '../lib/next-lesson';
 
 export const sessionRoutes = new Hono<AppEnv>();
 
@@ -31,7 +33,11 @@ export type SessionItemType =
   | 'intensive'
   | 'production'
   | 'elided'
-  | 'freeflow';
+  | 'freeflow'
+  | 'root_lesson'
+  | 'root_type'
+  | 'governor'
+  | 'irab_parse';
 
 export interface SessionItem {
   id: string;
@@ -54,6 +60,10 @@ export interface SessionPlan {
     production: number;
     elided: number;
     freeflow: number;
+    root_lesson: number;
+    root_type: number;
+    governor: number;
+    irab_parse: number;
   };
 }
 
@@ -73,8 +83,6 @@ const MAX_HIFZ = 4;
 const MAX_VOCAB = 5;
 const LESSON_SECONDS = 180;
 const LOOP_SECONDS = 180;
-const PATH_ORDER = ['literacy', 'grammar', 'vocabulary', 'tajweed'];
-
 function uid(): string {
   return crypto.randomUUID();
 }
@@ -90,6 +98,10 @@ function summarise(items: SessionItem[]): SessionPlan['summary'] {
     production: count('production'),
     elided: count('elided'),
     freeflow: count('freeflow'),
+    root_lesson: count('root_lesson'),
+    root_type: count('root_type'),
+    governor: count('governor'),
+    irab_parse: count('irab_parse'),
   };
 }
 
@@ -188,23 +200,13 @@ async function fetchDueVocab(db: Database, userId: string): Promise<SessionItem[
   }));
 }
 
-/** Same “next unlocked” rule as GET /api/learning/next. */
-async function fetchNextLesson(db: Database, userId: string): Promise<SessionItem | null> {
-  const allLessons = await db.query<LessonsRow>(
-    `SELECT * FROM lessons ORDER BY level ASC, id ASC`
-  );
-  const completed = await db.query<Pick<LessonProgressRow, 'lesson_id'>>(
-    `SELECT lesson_id FROM lesson_progress WHERE user_id = ? AND completed = 1`,
-    [userId]
-  );
-  const completedIds = new Set(completed.map((l) => l.lesson_id));
-
-  const next = allLessons.find((lesson) => {
-    if (!PATH_ORDER.includes(lesson.module) || completedIds.has(lesson.id)) return false;
-    const prereqs = JSON.parse(lesson.prerequisites || '[]') as string[];
-    return prereqs.every((p) => completedIds.has(p));
-  });
-
+/** Same authored pointer as GET /api/learning/next. */
+async function fetchNextLesson(
+  db: Database,
+  userId: string,
+  band: Band | null
+): Promise<SessionItem | null> {
+  const next = await selectNextAuthoredLesson(db, userId, band);
   if (!next) return null;
 
   return {
@@ -220,31 +222,77 @@ async function fetchNextLesson(db: Database, userId: string): Promise<SessionIte
   };
 }
 
-function loopItems(hasElided: boolean): SessionItem[] {
-  const items: SessionItem[] = [
-    {
-      id: 'fn:track',
+interface LoopOpts {
+  band: Band;
+  hasElided: boolean;
+  nextFnWord: { lemma: string; pos: string; occurrences: number } | null;
+  nextRootLesson: { id: string; title: string; root: string } | null;
+  nextRootArabic: string | null;
+  hasGovernor: boolean;
+  includeIrab: boolean;
+  hasIntensive: boolean;
+}
+
+function loopItems(opts: LoopOpts): SessionItem[] {
+  const { band } = opts;
+  if (band === 'foundation') return [];
+
+  const items: SessionItem[] = [];
+
+  if (opts.nextFnWord) {
+    items.push({
+      id: `fn:${opts.nextFnWord.lemma}:${opts.nextFnWord.pos}`,
       type: 'function_word',
-      label: 'Function words',
+      label: 'One function word',
       estimatedSeconds: LOOP_SECONDS,
-      payload: {},
-    },
-    {
+      payload: opts.nextFnWord,
+    });
+  }
+
+  if (opts.hasIntensive) {
+    items.push({
       id: 'intensive:queue',
       type: 'intensive',
       label: 'Just past your edge',
       estimatedSeconds: LOOP_SECONDS,
       payload: {},
-    },
-    {
+    });
+  }
+
+  if (opts.nextRootLesson) {
+    items.push({
+      id: `root_lesson:${opts.nextRootLesson.id}`,
+      type: 'root_lesson',
+      label: opts.nextRootLesson.title,
+      estimatedSeconds: LOOP_SECONDS,
+      payload: {
+        lessonId: opts.nextRootLesson.id,
+        title: opts.nextRootLesson.title,
+        root: opts.nextRootLesson.root,
+      },
+    });
+  }
+
+  if (band === 'qatr' || band === 'alfiyya' || band === 'irab') {
+    items.push({
       id: 'production:tashkil',
       type: 'production',
       label: 'Vowel the endings',
       estimatedSeconds: LOOP_SECONDS,
       payload: {},
-    },
-  ];
-  if (hasElided) {
+    });
+    if (opts.nextRootArabic) {
+      items.push({
+        id: 'root_type:pad',
+        type: 'root_type',
+        label: 'Type the root',
+        estimatedSeconds: LOOP_SECONDS,
+        payload: { expectedRoot: opts.nextRootArabic },
+      });
+    }
+  }
+
+  if ((band === 'alfiyya' || band === 'irab') && opts.hasElided) {
     items.push({
       id: 'elided:subj',
       type: 'elided',
@@ -253,13 +301,37 @@ function loopItems(hasElided: boolean): SessionItem[] {
       payload: {},
     });
   }
-  items.push({
-    id: 'freeflow:run',
-    type: 'freeflow',
-    label: 'Read a page you know',
-    estimatedSeconds: 300,
-    payload: {},
-  });
+
+  if ((band === 'alfiyya' || band === 'irab') && opts.hasGovernor) {
+    items.push({
+      id: 'governor:amil',
+      type: 'governor',
+      label: 'Name the ʿāmil',
+      estimatedSeconds: LOOP_SECONDS,
+      payload: {},
+    });
+  }
+
+  if (band === 'irab' && opts.includeIrab) {
+    items.push({
+      id: 'irab:parse',
+      type: 'irab_parse',
+      label: 'Parse an ayah you have not studied',
+      estimatedSeconds: LOOP_SECONDS,
+      payload: {},
+    });
+  }
+
+  if (band === 'qatr' || band === 'alfiyya' || band === 'irab') {
+    items.push({
+      id: 'freeflow:run',
+      type: 'freeflow',
+      label: 'Read a page you know',
+      estimatedSeconds: 300,
+      payload: {},
+    });
+  }
+
   return items;
 }
 
@@ -268,9 +340,11 @@ function mixItems(
   vocab: SessionItem[],
   lesson: SessionItem | null,
   loop: SessionItem[],
-  prefer: SessionReflection | null
+  prefer: SessionReflection | null,
+  band: Band | null
 ): SessionItem[] {
-  let ordered: SessionItem[] = [...hifz, ...loop, ...vocab];
+  const dueHifz = band === 'foundation' ? [] : hifz;
+  let ordered: SessionItem[] = [...dueHifz, ...loop, ...vocab];
   if (lesson) ordered.push(lesson);
 
   if (prefer === 'particles') {
@@ -317,6 +391,117 @@ async function lastReflection(db: Database, userId: string): Promise<SessionRefl
 async function hasElidedSubjects(db: Database): Promise<boolean> {
   const row = await db.get<{ n: number }>(
     `SELECT COUNT(*) AS n FROM quran_syntax WHERE is_implied = 1 AND rel = 'Subj'`
+  );
+  return (row?.n ?? 0) > 0;
+}
+
+async function fetchNextFunctionWord(
+  db: Database,
+  userId: string,
+  pairTarget: number,
+  includeEmptyCorpus = false
+): Promise<{ lemma: string; pos: string; occurrences: number } | null> {
+  if (pairTarget <= 0) return null;
+  const row = await db.get<{ lemma: string; pos: string; occurrences: number }>(
+    `WITH ranked AS (
+       SELECT m.lemma, m.pos, COUNT(*) AS occurrences,
+              ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC, m.lemma, m.pos) AS rn
+         FROM quran_word_morphology m
+        WHERE m.root IS NULL
+          AND m.lemma IS NOT NULL AND m.lemma <> ''
+          AND m.pos IS NOT NULL
+        GROUP BY m.lemma, m.pos
+     )
+     SELECT r.lemma, r.pos, r.occurrences
+       FROM ranked r
+       LEFT JOIN user_known_function_word k
+         ON k.user_id = ? AND k.lemma = r.lemma AND k.pos = r.pos
+      WHERE r.rn <= ? AND k.lemma IS NULL
+      ORDER BY r.rn
+      LIMIT 1`,
+    [userId, pairTarget]
+  );
+  if (row) return row;
+  if (!includeEmptyCorpus) return null;
+  const any = await db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM quran_word_morphology
+      WHERE root IS NULL AND lemma IS NOT NULL AND lemma <> ''`
+  );
+  if ((any?.n ?? 0) === 0) {
+    return { lemma: '', pos: '', occurrences: 0 };
+  }
+  return null;
+}
+
+async function fetchNextRootLesson(
+  db: Database,
+  userId: string
+): Promise<{ id: string; title: string; root: string; arabic: string } | null> {
+  const next = await db.get<{ root: string }>(
+    `SELECT m.root
+       FROM quran_word_morphology m
+       LEFT JOIN user_known_root k ON k.user_id = ? AND k.root = m.root
+      WHERE m.root IS NOT NULL AND k.root IS NULL
+      GROUP BY m.root
+      ORDER BY COUNT(*) DESC
+      LIMIT 1`,
+    [userId]
+  );
+  if (!next?.root) return null;
+  const lesson = await db.get<Pick<LessonsRow, 'id' | 'title'>>(
+    `SELECT id, title FROM lessons WHERE id = ?`,
+    [`root-${next.root}`]
+  );
+  if (!lesson) return null;
+  return { id: lesson.id, title: lesson.title, root: next.root, arabic: next.root };
+}
+
+async function hasIntensiveQueue(db: Database, userId: string): Promise<boolean> {
+  const row = await db.get<{ n: number }>(
+    `WITH known AS (
+       SELECT root FROM user_known_root WHERE user_id = ?
+     ),
+     ayah_state AS (
+       SELECT m.surah_id, m.ayah_id,
+              SUM(CASE WHEN m.root IS NOT NULL
+                        AND m.root NOT IN (SELECT root FROM known)
+                       THEN 1 ELSE 0 END) AS unknown_rooted,
+              SUM(CASE WHEN m.root IS NOT NULL THEN 1 ELSE 0 END) AS total_rooted
+         FROM quran_word_morphology m
+        GROUP BY m.surah_id, m.ayah_id
+     )
+     SELECT COUNT(*) AS n FROM ayah_state
+      WHERE unknown_rooted = 1 AND total_rooted >= 3`,
+    [userId]
+  );
+  return (row?.n ?? 0) > 0;
+}
+
+async function hasGovernorRow(db: Database): Promise<boolean> {
+  const bank = await db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM grammar_exercise_bank WHERE kind = 'governor'`
+  );
+  if ((bank?.n ?? 0) > 0) return true;
+  const live = await db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM quran_syntax
+      WHERE is_implied = 0 AND rel IN ('Obj', 'Subj', 'Poss')`
+  );
+  return (live?.n ?? 0) > 0;
+}
+
+async function hasIrabCandidate(db: Database, userId: string): Promise<boolean> {
+  const row = await db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n
+       FROM quran_verses v
+      WHERE NOT EXISTS (
+              SELECT 1 FROM memorization m
+               WHERE m.user_id = ?
+                 AND m.surah_id = v.surah
+                 AND v.ayah BETWEEN m.ayah_from AND m.ayah_to
+                 AND m.status = 'mastered'
+            )
+      LIMIT 1`,
+    [userId]
   );
   return (row?.n ?? 0) > 0;
 }
@@ -508,15 +693,38 @@ sessionRoutes.get('/plan', async (c) => {
       });
     }
 
-    const [hifz, vocab, lesson, prefer, elided] = await Promise.all([
-      fetchDueHifz(db, userId),
-      fetchDueVocab(db, userId),
-      fetchNextLesson(db, userId),
-      lastReflection(db, userId),
-      hasElidedSubjects(db),
-    ]);
+    const band = (await ensureBand(db, userId)) ?? 'foundation';
+    const [hifz, vocab, lesson, prefer, elided, nextFn, nextRoot, intensive, governor, irab] =
+      await Promise.all([
+        fetchDueHifz(db, userId),
+        fetchDueVocab(db, userId),
+        fetchNextLesson(db, userId, band),
+        lastReflection(db, userId),
+        hasElidedSubjects(db),
+        fetchNextFunctionWord(db, userId, PAIR_TARGET[band], true),
+        fetchNextRootLesson(db, userId),
+        hasIntensiveQueue(db, userId),
+        hasGovernorRow(db),
+        hasIrabCandidate(db, userId),
+      ]);
 
-    const items = mixItems(hifz, vocab, lesson, loopItems(elided), prefer);
+    const items = mixItems(
+      hifz,
+      vocab,
+      lesson,
+      loopItems({
+        band,
+        hasElided: elided,
+        nextFnWord: nextFn,
+        nextRootLesson: nextRoot,
+        nextRootArabic: nextRoot?.arabic ?? null,
+        hasGovernor: governor,
+        includeIrab: irab,
+        hasIntensive: intensive,
+      }),
+      prefer,
+      band
+    );
     const plannedSeconds = items.reduce((s, i) => s + i.estimatedSeconds, 0);
     const sessionId = uid();
 

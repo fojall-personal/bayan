@@ -80,6 +80,7 @@ const KINDS = [
   // auto-detected by edit distance rather than a curated list.
   { value: 'mutashabihat', label: 'Which ayah is this? (near-identical verses)' },
   { value: 'elided_subject', label: 'Which pronoun is the unwritten فاعل' },
+  { value: 'governor', label: 'Name the governor (عامل)' },
 ];
 
 /**
@@ -89,7 +90,7 @@ const KINDS = [
  */
 const WHOLE_AYAH_KINDS = new Set([
   'find_word', 'mubtada_khabar', 'subject_word', 'object', 'idafa', 'fronting', 'jinas',
-  'simile', 'mutashabihat', 'elided_subject',
+  'simile', 'mutashabihat', 'elided_subject', 'governor',
 ]);
 
 const LEVELS = [

@@ -26,6 +26,16 @@ export interface AssessmentResultsRow {
   path: string | null;
 }
 
+export interface BandEventsRow {
+  id: string;
+  user_id: string;
+  from_band: string | null;
+  to_band: string;
+  source: string;
+  evidence: string | null;
+  created_at: string;
+}
+
 export interface GrammarExerciseBankRow {
   id: string;
   kind: string;
@@ -72,6 +82,7 @@ export interface LessonProgressRow {
   last_practiced: string | null;
   next_review: string | null;
   streak: number;
+  skipped: number;
 }
 
 export interface LessonsRow {
@@ -280,6 +291,9 @@ export interface UsersRow {
   email: string | null;
   name: string | null;
   hifz_retention: number | null;
+  current_band: string | null;
+  band_source: string | null;
+  band_entered_at: string | null;
 }
 
 export interface VocabularyRow {

@@ -27,6 +27,13 @@ const check = process.argv.includes('--check');
 const authored = JSON.parse(
   await readFile(join(root, 'content/grammar/lessons.json'), 'utf-8')
 );
+let literacy = [];
+try {
+  literacy = JSON.parse(await readFile(join(root, 'content/literacy/lessons.json'), 'utf-8'));
+  if (!Array.isArray(literacy)) literacy = [];
+} catch {
+  literacy = [];
+}
 /**
  * Generated root-family lessons, appended after the authored ten.
  *
@@ -41,7 +48,7 @@ const generated = JSON.parse(
 
 const authoredList = Array.isArray(authored) ? authored : authored.lessons;
 const authoredIds = new Set(authoredList.map((l) => l.id));
-const lessons = [...authoredList, ...generated];
+const lessons = [...literacy, ...authoredList, ...generated];
 
 const q = (v) => `'${String(v).replace(/'/g, "''")}'`;
 // Stable key order, so an unrelated reordering in the JSON cannot produce a diff.
@@ -77,7 +84,9 @@ for (const l of lessons) {
   // one hides a lesson from every tab, the other puts a vocabulary lesson under a
   // grammar heading, which is how the payload reached 823 KB.
   const isAuthored = authoredIds.has(l.id);
-  if (isAuthored && !CATEGORIES.has(l.category)) {
+  if (l.module === 'literacy') {
+    /* literacy rows are not nahw/sarf/balagha */
+  } else if (isAuthored && !CATEGORIES.has(l.category)) {
     process.stderr.write(
       `✘ authored lesson ${l.id} has category "${l.category}" — must be nahw, sarf or balagha\n`
     );

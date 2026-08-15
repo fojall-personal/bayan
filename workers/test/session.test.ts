@@ -27,7 +27,11 @@ interface SessionItem {
     | 'intensive'
     | 'production'
     | 'elided'
-    | 'freeflow';
+    | 'freeflow'
+    | 'root_lesson'
+    | 'root_type'
+    | 'governor'
+    | 'irab_parse';
   label: string;
   estimatedSeconds: number;
   payload: Record<string, unknown>;
@@ -71,8 +75,15 @@ function insertDueVocab(word = 'كتب') {
   return word;
 }
 
+function setBand(band: string) {
+  H()
+    .db.prepare(`UPDATE users SET current_band = ?, band_source = 'manual' WHERE id = ?`)
+    .run(band, TEST_USER);
+}
+
 describe('GET /api/session/plan', () => {
   it('answers 200 with the daily loop when nothing is due', async () => {
+    setBand('alfiyya');
     const { status, body } = await H().json<{ data: SessionPlan }>('/api/session/plan');
     expect(status).toBe(200);
     expect(body.data).toBeDefined();
@@ -81,19 +92,51 @@ describe('GET /api/session/plan', () => {
     );
     expect(body.data.summary.hifz).toBe(0);
     expect(body.data.summary.vocabulary).toBe(0);
-    expect(body.data.summary.function_word).toBe(1);
     expect(body.data.summary.production).toBe(1);
     expect(body.data.summary.freeflow).toBe(1);
     expect(body.data.items.length).toBeGreaterThan(0);
   });
 
+  it('omits hifz, elided, and production from a foundation loop', async () => {
+    setBand('foundation');
+    insertDueHifz();
+    const { body } = await H().json<{ data: SessionPlan }>('/api/session/plan');
+    const types = body.data.items.map((i) => i.type);
+    expect(types).not.toContain('hifz');
+    expect(types).not.toContain('elided');
+    expect(types).not.toContain('production');
+    expect(types).not.toContain('root_lesson');
+  });
+
+  it('includes one root_lesson in ajurrumiyya when a next-root lesson exists', async () => {
+    setBand('ajurrumiyya');
+    H()
+      .db.prepare(
+        `INSERT INTO quran_word_morphology
+           (surah_id, ayah_id, word_index, segment_index, form, tag, pos, root)
+         VALUES (1, 1, 1, 1, 'qAla', 'V', 'V', 'qwl')`
+      )
+      .run();
+    H()
+      .db.prepare(
+        `INSERT INTO lessons (id, title, module, level, content, exercises, prerequisites, estimated_minutes)
+         VALUES ('root-qwl', 'The root qwl', 'grammar', 1, '{}', '[]', '[]', 10)`
+      )
+      .run();
+    const { body } = await H().json<{ data: SessionPlan }>('/api/session/plan');
+    expect(body.data.items.filter((i) => i.type === 'root_lesson')).toHaveLength(1);
+    expect(body.data.items.some((i) => i.type === 'lesson')).toBe(false);
+  });
+
   it('persists a loop-only plan so complete can find it', async () => {
+    setBand('alfiyya');
     await H().json<{ data: SessionPlan }>('/api/session/plan');
     const row = H().db.prepare('SELECT COUNT(*) AS n FROM user_sessions').get() as { n: number };
     expect(row.n).toBe(1);
   });
 
   it('includes due hifz spans when they exist', async () => {
+    setBand('alfiyya');
     insertDueHifz();
 
     const { status, body } = await H().json<{ data: SessionPlan }>('/api/session/plan');
@@ -143,6 +186,7 @@ describe('GET /api/session/plan', () => {
   });
 
   it('reuses today\'s open session instead of inserting another', async () => {
+    setBand('alfiyya');
     insertDueHifz();
     const first = await H().json<{ data: SessionPlan }>('/api/session/plan');
     const second = await H().json<{ data: SessionPlan }>('/api/session/plan');
@@ -152,6 +196,7 @@ describe('GET /api/session/plan', () => {
   });
 
   it('respects the time budget (does not return an unbounded list)', async () => {
+    setBand('alfiyya');
     const db = H().db;
     for (let i = 1; i <= 12; i++) {
       db.prepare(
@@ -168,6 +213,7 @@ describe('GET /api/session/plan', () => {
   });
 
   it('puts due hifz before the daily loop', async () => {
+    setBand('alfiyya');
     insertDueHifz();
     const { body } = await H().json<{ data: SessionPlan }>('/api/session/plan');
     const types = body.data.items.map((i) => i.type);
@@ -177,6 +223,7 @@ describe('GET /api/session/plan', () => {
   });
 
   it('reorders toward particles after that reflection', async () => {
+    setBand('alfiyya');
     insertDueHifz();
     const first = await H().json<{ data: SessionPlan }>('/api/session/plan');
     await H().json('/api/session/complete', {
@@ -194,6 +241,7 @@ describe('GET /api/session/plan', () => {
 
 describe('POST /api/session/complete', () => {
   it('records results, marks the session complete, and advances FSRS', async () => {
+    setBand('alfiyya');
     const memId = insertDueHifz();
     const { body: planBody } = await H().json<{ data: SessionPlan }>('/api/session/plan');
     const sessionId = planBody.data.sessionId;
@@ -269,6 +317,7 @@ describe('POST /api/session/complete', () => {
   });
 
   it('does not schedule a skipped item (seconds = 0)', async () => {
+    setBand('alfiyya');
     const memId = insertDueHifz();
     const { body: planBody } = await H().json<{ data: SessionPlan }>('/api/session/plan');
     const hifzItem = planBody.data.items.find((i) => i.type === 'hifz');
@@ -292,6 +341,7 @@ describe('POST /api/session/complete', () => {
   });
 
   it('does not re-apply FSRS when ReviewSession already scheduled the item', async () => {
+    setBand('alfiyya');
     const memId = insertDueHifz();
     const { body: planBody } = await H().json<{ data: SessionPlan }>('/api/session/plan');
     const hifzItem = planBody.data.items.find((i) => i.type === 'hifz');
@@ -323,6 +373,7 @@ describe('POST /api/session/complete', () => {
   });
 
   it('rejects results that are not an array with 400', async () => {
+    setBand('alfiyya');
     insertDueHifz();
     const { body: planBody } = await H().json<{ data: SessionPlan }>('/api/session/plan');
     const { status } = await H().json('/api/session/complete', {
@@ -347,6 +398,7 @@ describe('POST /api/session/complete', () => {
   });
 
   it('returns 409 when the session is already completed', async () => {
+    setBand('alfiyya');
     insertDueHifz();
     const { body: planBody } = await H().json<{ data: SessionPlan }>('/api/session/plan');
     const sessionId = planBody.data.sessionId;

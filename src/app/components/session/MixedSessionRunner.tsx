@@ -17,6 +17,7 @@ import { ReviewSession } from '@/components/memorization/ReviewSession';
 import { FunctionWords } from '@/components/vocabulary/FunctionWords';
 import { TashkilDrill } from '@/components/grammar/TashkilDrill';
 import { ElidedSubjectDrill } from '@/components/grammar/ElidedSubjectDrill';
+import { LetterPad } from '@/components/ui/LetterPad';
 
 type SessionItemType =
   | 'hifz'
@@ -26,7 +27,11 @@ type SessionItemType =
   | 'intensive'
   | 'production'
   | 'elided'
-  | 'freeflow';
+  | 'freeflow'
+  | 'root_lesson'
+  | 'root_type'
+  | 'governor'
+  | 'irab_parse';
 type Grade = 'again' | 'hard' | 'good' | 'easy';
 type Reflection = 'recall' | 'particles' | 'meaning' | 'production';
 
@@ -85,6 +90,10 @@ const TYPE_LABEL: Record<SessionItemType, string> = {
   production: 'Grammar production',
   elided: 'Implied subject',
   freeflow: 'Freeflow',
+  root_lesson: 'Root family',
+  root_type: 'Type the root',
+  governor: 'Name the ʿāmil',
+  irab_parse: 'Parse an ayah',
 };
 
 const REFLECTIONS: { id: Reflection; label: string }[] = [
@@ -107,6 +116,20 @@ function displayArabic(value: string): string {
   return rootToArabic(value) || value;
 }
 
+function gradePadRoot(given: string, expected: string): boolean {
+  const fold = (s: string) =>
+    s
+      .replace(/\s+/g, '')
+      .normalize('NFC')
+      .replace(/[\u064B-\u0652\u0670\u06D6-\u06ED\u0640]/g, '')
+      .replace(/[\u0622\u0623\u0625\u0671]/g, '\u0627')
+      .replace(/\u0624/g, '\u0648')
+      .replace(/\u0626/g, '\u064A')
+      .replace(/\u0649/g, '\u064A')
+      .replace(/\u0629/g, '\u0647');
+  return fold(given) === fold(expected);
+}
+
 function sourceLine(payload: Record<string, unknown>): string | null {
   const surah = asNumber(payload.sourceSurah);
   const ayah = asNumber(payload.sourceAyah);
@@ -127,6 +150,7 @@ export function MixedSessionRunner() {
   const [reflecting, setReflecting] = useState(false);
   const [startedAt] = useState(() => Date.now());
   const [revealed, setRevealed] = useState(false);
+  const [typedRoot, setTypedRoot] = useState('');
   const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [reading, setReading] = useState<ReadingQueueItem | null>(null);
 
@@ -396,7 +420,33 @@ export function MixedSessionRunner() {
 
       {current.type === 'function_word' && (
         <div className="space-y-4">
-          <FunctionWords />
+          {asString(current.payload.lemma) ? (
+            <Card>
+              <p className="text-xs uppercase tracking-label text-gold-400">
+                {TYPE_LABEL.function_word}
+              </p>
+              <p className="mt-3 text-center text-3xl" dir="rtl" lang="ar">
+                {String(current.payload.lemma)}
+              </p>
+              <p className="mt-2 text-center text-sm text-ground-300">
+                {String(current.payload.pos)} · {String(current.payload.occurrences)} times
+              </p>
+              <Button
+                className="mt-4 w-full"
+                onClick={async () => {
+                  await apiPost(
+                    `/api/progress/function-words/${encodeURIComponent(String(current.payload.lemma))}/${encodeURIComponent(String(current.payload.pos))}/known`,
+                    {}
+                  );
+                  recordAndAdvance({ itemId: current.id, seconds: current.estimatedSeconds });
+                }}
+              >
+                Mark known
+              </Button>
+            </Card>
+          ) : (
+            <FunctionWords />
+          )}
           <Button
             className="w-full"
             onClick={() =>
@@ -463,6 +513,97 @@ export function MixedSessionRunner() {
           <Link href={`/learning?lesson=${current.payload.lessonId}`} className="mt-4 block">
             <Button variant="secondary" className="w-full">
               Open lesson
+            </Button>
+          </Link>
+          <Button
+            className="mt-2 w-full"
+            onClick={() =>
+              recordAndAdvance({ itemId: current.id, seconds: current.estimatedSeconds })
+            }
+          >
+            Continue
+          </Button>
+        </Card>
+      )}
+
+      {current.type === 'root_lesson' && (
+        <Card>
+          <p className="text-xs uppercase tracking-label text-gold-400">{TYPE_LABEL.root_lesson}</p>
+          <h2 className="mt-1.5 text-xl font-semibold">{current.label}</h2>
+          <Link href={`/learning?lesson=${current.payload.lessonId}`} className="mt-4 block">
+            <Button variant="secondary" className="w-full">
+              Open root lesson
+            </Button>
+          </Link>
+          <Button
+            className="mt-2 w-full"
+            onClick={() =>
+              recordAndAdvance({ itemId: current.id, seconds: current.estimatedSeconds })
+            }
+          >
+            Continue
+          </Button>
+        </Card>
+      )}
+
+      {current.type === 'root_type' && (
+        <Card>
+          <p className="text-xs uppercase tracking-label text-gold-400">{TYPE_LABEL.root_type}</p>
+          <h2 className="mt-1.5 text-xl font-semibold">Type the root</h2>
+          <div className="mt-4">
+            <LetterPad value={typedRoot} onChange={setTypedRoot} />
+          </div>
+          <Button
+            className="mt-4 w-full"
+            onClick={() => {
+              const expected = asString(current.payload.expectedRoot) ?? '';
+              recordAndAdvance({
+                itemId: current.id,
+                correct: gradePadRoot(typedRoot, expected),
+                seconds: current.estimatedSeconds,
+              });
+              setTypedRoot('');
+            }}
+          >
+            Check
+          </Button>
+        </Card>
+      )}
+
+      {current.type === 'governor' && (
+        <Card>
+          <p className="text-xs uppercase tracking-label text-gold-400">{TYPE_LABEL.governor}</p>
+          <h2 className="mt-1.5 text-xl font-semibold">{current.label}</h2>
+          <p className="mt-2 text-sm text-ground-300">
+            Name the token ʿāmil. QAC GPL · treebank CC BY · Tanzil CC BY.
+          </p>
+          <Link href="/grammar" className="mt-4 block">
+            <Button variant="secondary" className="w-full">
+              Open governor drills
+            </Button>
+          </Link>
+          <Button
+            className="mt-2 w-full"
+            onClick={() =>
+              recordAndAdvance({ itemId: current.id, seconds: current.estimatedSeconds })
+            }
+          >
+            Continue
+          </Button>
+        </Card>
+      )}
+
+      {current.type === 'irab_parse' && (
+        <Card>
+          <p className="text-xs uppercase tracking-label text-gold-400">{TYPE_LABEL.irab_parse}</p>
+          <h2 className="mt-1.5 text-xl font-semibold">{current.label}</h2>
+          <p className="mt-2 text-sm text-ground-300">
+            Case, then governor. Elision when the treebank reconstructs a فاعل.
+            QAC GPL · treebank CC BY · Tanzil CC BY.
+          </p>
+          <Link href="/grammar" className="mt-4 block">
+            <Button variant="secondary" className="w-full">
+              Open grammar drills
             </Button>
           </Link>
           <Button

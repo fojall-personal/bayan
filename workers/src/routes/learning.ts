@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../lib/context';
 import { getDb } from '../lib/db';
 import type { Database } from '../lib/db';
-import type { LessonRow } from '../types';
 import { schedule, isGrade, GRADE_VALUES } from '../lib/space-repetition';
 import type {
   LessonProgressRow,
@@ -10,6 +9,8 @@ import type {
   UsersRow,
   VocabularyMasteryRow,
 } from '../db/schema';
+import { ensureBand } from '../lib/band-write';
+import { selectNextAuthoredLesson } from '../lib/next-lesson';
 
 export interface Exercise {
   type: 'multiple_choice' | 'fill_blank' | 'match' | string;
@@ -168,9 +169,8 @@ learningRoutes.get('/next', async (c) => {
   const db = getDb(c);
 
   try {
-    // Get user's current path
-    const user = await db.get<Pick<UsersRow, 'current_path'>>(
-      `SELECT current_path FROM users WHERE id = ?`,
+    const user = await db.get<Pick<UsersRow, 'id'>>(
+      `SELECT id FROM users WHERE id = ?`,
       [userId]
     );
 
@@ -178,36 +178,18 @@ learningRoutes.get('/next', async (c) => {
       return c.json({ error: 'User not found' }, 404);
     }
 
-    // Get all lessons ordered by level and ID
-    const allLessons = await db.query<LessonRow>(
-      `SELECT * FROM lessons ORDER BY level ASC, id ASC`
-    );
+    const band = await ensureBand(db, userId);
+    const nextLesson = await selectNextAuthoredLesson(db, userId, band);
 
-    // Parse prerequisites for each lesson
-    const lessonsWithPrereqs = allLessons.map((lesson) => ({
-      ...lesson,
-      prerequisites: JSON.parse(lesson.prerequisites || '[]') as string[],
-    }));
-
-    // Get completed lesson IDs
     const completedLessons = await db.query<Pick<LessonProgressRow, 'lesson_id'>>(
       `SELECT lesson_id FROM lesson_progress WHERE user_id = ? AND completed = 1`,
       [userId]
     );
     const completedIds = completedLessons.map((l) => l.lesson_id as string);
 
-    // Filter available lessons (prerequisites met)
-    const availableLessons = lessonsWithPrereqs.filter((lesson) => {
-      return lesson.prerequisites.every((prereq: string) =>
-        completedIds.includes(prereq)
-      );
-    });
-
-    // Get next uncompleted lesson in path order
-    const pathOrder: string[] = ['literacy', 'grammar', 'vocabulary', 'tajweed'];
-    const nextLesson = availableLessons.find(
-      (lesson) =>
-        pathOrder.includes(lesson.module) && !completedIds.includes(lesson.id)
+    const authoredCount = await db.get<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM lessons
+        WHERE id LIKE 'grammar-%' OR id LIKE 'literacy-%'`
     );
 
     if (!nextLesson) {
@@ -215,7 +197,7 @@ learningRoutes.get('/next', async (c) => {
         data: {
           message: 'All lessons in your path are complete!',
           lesson: null,
-          totalInPath: allLessons.length,
+          totalInPath: authoredCount?.n ?? 0,
           completedInPath: completedIds.length,
         },
       });
@@ -237,12 +219,13 @@ learningRoutes.get('/next', async (c) => {
         progress: progress
           ? {
               completed: (progress.completed as number) === 1,
+              skipped: Number(progress.skipped ?? 0) === 1,
               score: progress.score,
               attempts: progress.attempts,
               streak: progress.streak,
             }
           : null,
-        totalInPath: allLessons.length,
+        totalInPath: authoredCount?.n ?? 0,
         completedInPath: completedIds.length,
       },
     });
@@ -294,6 +277,7 @@ learningRoutes.get('/lessons/:id', async (c) => {
         progress: progress
           ? {
               completed: (progress.completed as number) === 1,
+              skipped: Number(progress.skipped ?? 0) === 1,
               score: progress.score,
               attempts: progress.attempts,
               streak: progress.streak,
@@ -312,7 +296,49 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
   const userId = c.get('userId');
   const lessonId = c.req.param('id');
   const db = getDb(c);
-  const { answers, score, exerciseIndex } = await c.req.json();
+  const body = await c.req.json();
+  const { answers, score, exerciseIndex, skipped } = body as {
+    answers?: unknown;
+    score?: unknown;
+    exerciseIndex?: unknown;
+    skipped?: unknown;
+  };
+
+  if (skipped === true) {
+    try {
+      const lesson = await db.get<LessonsRow>(
+        `SELECT * FROM lessons WHERE id = ?`,
+        [lessonId]
+      );
+      if (!lesson) {
+        return c.json({ error: 'Lesson not found' }, 404);
+      }
+      await db.run(
+        `INSERT INTO lesson_progress
+           (user_id, lesson_id, module, completed, score, attempts, last_practiced, next_review, streak, skipped)
+         VALUES (?, ?, ?, 1, 0, 1, datetime('now'), datetime('now', '+1 day'), 0, 1)
+         ON CONFLICT(user_id, lesson_id) DO UPDATE SET
+           completed = 1,
+           skipped = 1,
+           attempts = attempts + 1,
+           last_practiced = datetime('now')`,
+        [userId, lessonId, lesson.module]
+      );
+      return c.json({
+        data: {
+          score: null,
+          correct: 0,
+          total: 0,
+          completed: true,
+          skipped: true,
+          review: [],
+        },
+      });
+    } catch (error) {
+      console.error('Learning skip error:', error);
+      return c.json({ error: 'Internal server error' }, 500);
+    }
+  }
 
   try {
     // Get lesson to parse exercises
@@ -409,15 +435,16 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
     // Upsert lesson progress
     await db.run(
       `INSERT INTO lesson_progress
-         (user_id, lesson_id, module, completed, score, attempts, last_practiced, next_review, streak)
+         (user_id, lesson_id, module, completed, score, attempts, last_practiced, next_review, streak, skipped)
        VALUES (?, ?, ?, ?, ?, 1, datetime('now'), datetime('now', '+1 day'),
-         CASE WHEN ? = 1 THEN 1 ELSE 0 END)
+         CASE WHEN ? = 1 THEN 1 ELSE 0 END, 0)
        ON CONFLICT(user_id, lesson_id) DO UPDATE SET
          -- Completion is sticky and the score is a personal best. A failed
          -- retry previously overwrote both, so revisiting a passed lesson and
          -- slipping once un-completed it and wiped the score.
          completed = MAX(completed, ?),
          score = MAX(score, ?),
+         skipped = CASE WHEN ? = 1 THEN 0 ELSE skipped END,
          attempts = attempts + 1,
          last_practiced = datetime('now'),
          next_review = datetime('now', '+1 day'),
@@ -431,6 +458,7 @@ learningRoutes.post('/lessons/:id/submit', async (c) => {
         isCompleted ? 1 : 0,
         isCompleted ? 1 : 0,
         finalScore,
+        isCompleted ? 1 : 0,
         isCompleted ? 1 : 0,
       ]
     );

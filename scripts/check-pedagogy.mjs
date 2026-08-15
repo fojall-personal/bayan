@@ -72,19 +72,36 @@ const generatedLessons = JSON.parse(
   await readFile(join(root, 'content/grammar/root-lessons.json'), 'utf-8')
 ).lessons;
 
-const lessons = [...authoredLessons, ...generatedLessons];
+let literacyLessons = [];
+const literacyPath = join(root, 'content/literacy/lessons.json');
+if (existsSync(literacyPath)) {
+  literacyLessons = JSON.parse(await readFile(literacyPath, 'utf-8'));
+  if (!Array.isArray(literacyLessons)) literacyLessons = [];
+}
+
+const authoredGraph = [...literacyLessons, ...authoredLessons];
+const lessons = [...authoredGraph, ...generatedLessons];
 const byId = new Map(lessons.map((l) => [l.id, l]));
+const authoredIds = new Set(authoredGraph.map((l) => l.id));
+const generatedIds = new Set(generatedLessons.map((l) => l.id));
 
 // ── 1. Prerequisite integrity ───────────────────────────────────────────────
+// Two graphs: authored (literacy + grammar) and generated roots.
 for (const l of lessons) {
   const where = `grammar/${l.id}`;
+  const graph = authoredIds.has(l.id) ? authoredIds : generatedIds;
   for (const p of l.prerequisites ?? []) {
     if (!byId.has(p)) {
       fail(where, `prerequisite "${p}" does not exist`);
       continue;
     }
-    // A lesson may not depend on something harder than itself, or the ramp runs
-    // backwards: the learner is sent to a level-3 lesson to unlock a level-2 one.
+    if (authoredIds.has(l.id) && generatedIds.has(p)) {
+      fail(where, `authored lesson depends on generated ${p}`);
+      continue;
+    }
+    if (!graph.has(p) && !byId.has(p)) {
+      fail(where, `prerequisite "${p}" is outside its graph`);
+    }
     const pre = byId.get(p);
     if ((pre.level ?? 0) > (l.level ?? 0)) {
       fail(
@@ -141,27 +158,31 @@ for (const l of lessons) {
 //
 // The check that would have caught the real defect. Individually-valid lessons
 // can still compose into a dead end.
-const completable = new Set();
-for (let changed = true; changed; ) {
-  changed = false;
-  for (const l of lessons) {
-    if (completable.has(l.id)) continue;
-    const ready = (l.prerequisites ?? []).every((p) => completable.has(p));
-    const gradable = (l.exercises ?? []).some((e) => GRADABLE.has(e.type));
-    if (ready && gradable) {
-      completable.add(l.id);
-      changed = true;
+function walkGraph(graphLessons, label) {
+  const completable = new Set();
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const l of graphLessons) {
+      if (completable.has(l.id)) continue;
+      const ready = (l.prerequisites ?? []).every((p) => completable.has(p));
+      const gradable = (l.exercises ?? []).some((e) => GRADABLE.has(e.type));
+      if (ready && gradable) {
+        completable.add(l.id);
+        changed = true;
+      }
     }
   }
+  const blocked = graphLessons.filter((l) => !completable.has(l.id));
+  if (blocked.length) {
+    fail(
+      `${label}/path`,
+      `${blocked.length} of ${graphLessons.length} lessons can never be reached: ` +
+        blocked.map((l) => l.id).join(', ')
+    );
+  }
 }
-const blocked = lessons.filter((l) => !completable.has(l.id));
-if (blocked.length) {
-  fail(
-    'grammar/path',
-    `${blocked.length} of ${lessons.length} lessons can never be reached: ` +
-      blocked.map((l) => l.id).join(', ')
-  );
-}
+walkGraph(authoredGraph, 'authored');
+walkGraph(generatedLessons, 'generated');
 
 // ── 4. The level filter must have something at every level it offers ───────
 const levels = new Map();
@@ -261,6 +282,7 @@ notes.push(
   const CATEGORIES = new Set(['nahw', 'sarf', 'balagha']);
   const counts = new Map();
   for (const lesson of authoredLessons) {
+    if (lesson.module === 'literacy') continue;
     if (!CATEGORIES.has(lesson.category)) {
       fail(
         'category',
@@ -286,7 +308,7 @@ notes.push(
   notes.push(
     'lesson categories: ' +
       [...counts].sort().map(([k, v]) => `${k}=${v}`).join(' ') +
-      `, ${generatedLessons.length} generated uncategorised`
+      `, ${generatedLessons.length} generated root lessons`
   );
 }
 
@@ -333,6 +355,7 @@ notes.push(
     'sentence_type',
     'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting', 'jinas', 'simile',
     'elided_subject',
+    'governor',
   ]);
 
   const mapped = new Map();
@@ -348,6 +371,7 @@ notes.push(
   // by prefix in practiceHref — they map onto root identification by construction, and
   // enumerating sixty of them would be noise rather than a decision.
   for (const lesson of authoredLessons) {
+    if (lesson.module === 'literacy' || String(lesson.id).startsWith('literacy-')) continue;
     if (!mapped.has(lesson.id)) {
       fail(
         'practice',

@@ -41,6 +41,8 @@ export function PatternGrid() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [band, setBand] = useState<string | null>(null);
+  const [bookSentence, setBookSentence] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,6 +54,15 @@ export function PatternGrid() {
       setRoots(res.data.roots ?? []);
       setForms(res.data.forms ?? []);
       setCells(res.data.cells ?? []);
+      try {
+        const b = await apiFetch<{ data: { band: string; bookSentence: string } }>(
+          '/api/progress/band'
+        );
+        setBand(b.data.band);
+        setBookSentence(b.data.bookSentence);
+      } catch {
+        setBand(null);
+      }
     } catch (err) {
       setError(apiErrorMessage(err));
     }
@@ -62,8 +73,18 @@ export function PatternGrid() {
     load();
   }, [load]);
 
+  const unlocked =
+    band === 'foundation'
+      ? []
+      : band === 'ajurrumiyya'
+        ? ['I']
+        : band === 'qatr'
+          ? ['I', 'II', 'III', 'IV']
+          : null;
+
   const toggleForm = async (form: FormCol) => {
     if (busy) return;
+    if (unlocked && !unlocked.includes(form.verbForm)) return;
     setBusy(form.verbForm);
     // Optimistic, same pattern as the function-words screen — a toggle that waits
     // a round trip before showing anything feels broken.
@@ -102,9 +123,13 @@ export function PatternGrid() {
       <div>
         <h1 className="font-display text-3xl">Root × pattern</h1>
         <p className="mt-1 text-sm text-ground-300">
-          {forms.filter((f) => f.known).length} of {forms.length} forms known · a lit
-          cell is a word you could decode without ever having met it
+          {band === 'ajurrumiyya'
+            ? 'Bināʾ al-Afʿāl — Form I is the unmarked verb. Mark it when you can recognise كَتَبَ / يَكْتُبُ / اُكْتُبْ as the same root.'
+            : `${forms.filter((f) => f.known).length} of ${forms.length} forms known · a lit cell is a word you could decode without ever having met it`}
         </p>
+        {bookSentence && band !== 'ajurrumiyya' && (
+          <p className="mt-1 text-xs text-ground-400">{bookSentence}</p>
+        )}
       </div>
 
       {error && (
@@ -136,13 +161,18 @@ export function PatternGrid() {
                     <button
                       type="button"
                       onClick={() => toggleForm(f)}
-                      disabled={busy === f.verbForm}
+                      disabled={
+                        busy === f.verbForm ||
+                        Boolean(unlocked && !unlocked.includes(f.verbForm))
+                      }
                       aria-pressed={f.known}
                       title={`Form ${f.verbForm} — ${f.occurrences.toLocaleString()} occurrences in the Quran. Click to mark ${f.known ? 'unknown' : 'known'}.`}
                       className={`min-w-11 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
-                        f.known
-                          ? 'bg-leaf-500/20 text-leaf-400'
-                          : 'bg-ground-800 text-ground-400 hover:bg-ground-700'
+                        unlocked && !unlocked.includes(f.verbForm)
+                          ? 'text-ground-700'
+                          : f.known
+                            ? 'bg-leaf-500/20 text-leaf-400'
+                            : 'bg-ground-800 text-ground-400 hover:bg-ground-700'
                       }`}
                     >
                       {f.verbForm}

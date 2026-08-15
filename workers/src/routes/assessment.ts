@@ -7,6 +7,9 @@ import { calculateCompositeScore, assignLearningPath, generateAssessmentResult }
 import type {
   AssessmentResultsRow,
 } from '../db/schema';
+import { assignBand } from '../lib/band';
+import { persistBand } from '../lib/band-write';
+import { readUserBand } from '../lib/next-lesson';
 
 export const assessmentRoutes = new Hono<AppEnv>();
 
@@ -50,10 +53,20 @@ assessmentRoutes.post('/submit', async (c) => {
       ]
     );
 
-    // Update user's learning path
+    const roots = await db.get<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM user_known_root WHERE user_id = ?`,
+      [userId]
+    );
+    const band = assignBand({
+      source: 'placement',
+      scores,
+      rootsKnown: roots?.n ?? 0,
+    });
+    const prior = await readUserBand(db, userId);
+    await persistBand(db, userId, band, 'placement', prior.band, scores);
     await db.run(
-      `UPDATE users SET current_path = ?, onboarding_completed = 1, updated_at = datetime('now') WHERE id = ?`,
-      [result.path, userId]
+      `UPDATE users SET onboarding_completed = 1, updated_at = datetime('now') WHERE id = ?`,
+      [userId]
     );
 
     // Return the full stored row. The old response was a summary that the

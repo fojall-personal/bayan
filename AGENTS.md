@@ -425,6 +425,9 @@ POST   /api/memorization/retention
 GET    /api/memorization/review/today
 GET    /api/memorization/surah/:surahId
 GET    /api/memorization/surahs
+GET    /api/progress/band
+POST   /api/progress/band/advance
+GET    /api/progress/band/skip-quiz
 GET    /api/progress/calibration                    (GET twelve sampled roots, POST records answers + opt-in band)
 POST   /api/progress/calibration                    (GET twelve sampled roots, POST records answers + opt-in band)
 GET    /api/progress/coverage                       (ayahs readable from known roots; 400 roots is half the Quran)

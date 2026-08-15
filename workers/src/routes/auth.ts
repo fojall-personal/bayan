@@ -5,6 +5,9 @@ import type { Database } from '../lib/db';
 import type {
   UsersRow,
 } from '../db/schema';
+import { assignBand } from '../lib/band';
+import { persistBand } from '../lib/band-write';
+import { readUserBand } from '../lib/next-lesson';
 
 export const authRoutes = new Hono<AppEnv>();
 
@@ -33,8 +36,12 @@ authRoutes.get('/profile', async (c) => {
     const db = getDb(c);
 
     try {
-      const user = await db.get<Pick<UsersRow, 'id' | 'goal' | 'onboarding_completed' | 'current_path' | 'created_at'>>(
-        `SELECT id, goal, onboarding_completed, current_path, created_at FROM users WHERE id = ?`,
+      const user = await db.get<
+        Pick<UsersRow, 'id' | 'goal' | 'onboarding_completed' | 'current_path' | 'created_at'> & {
+          current_band?: string | null;
+        }
+      >(
+        `SELECT id, goal, onboarding_completed, current_path, current_band, created_at FROM users WHERE id = ?`,
         [userId]
       );
 
@@ -78,25 +85,28 @@ authRoutes.post('/onboarding', async (c) => {
   }
 
   try {
-    // Determine initial learning path based on self-assessment
-    let currentPath = 'path1'; // Default: beginner
-    if (readingAbility === 'yes' && memorizedSurahs !== '0') {
-      currentPath = 'path3'; // Advanced
-    } else if (readingAbility === 'partial') {
-      currentPath = 'path2'; // Conversational
-    }
+    const band = assignBand({
+      source: 'onboarding',
+      readingAbility: typeof readingAbility === 'string' ? readingAbility : undefined,
+      rootsKnown: 0,
+    });
+    const prior = await readUserBand(db, userId);
 
     await db.run(
       `UPDATE users SET
          goal = ?,
-         current_path = ?,
          onboarding_completed = 1,
          updated_at = datetime('now')
        WHERE id = ?`,
-      [goal, currentPath, userId]
+      [goal, userId]
     );
+    await persistBand(db, userId, band, 'onboarding', prior.band, {
+      readingAbility,
+      memorizedSurahs,
+      challenge,
+    });
 
-    return c.json({ data: { success: true, currentPath } });
+    return c.json({ data: { success: true, currentBand: band } });
   } catch (error) {
     console.error('Onboarding error:', error);
     return c.json({ error: 'Internal server error' }, 500);
