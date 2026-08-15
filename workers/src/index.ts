@@ -15,6 +15,7 @@ import { grammarRoutes } from './routes/grammar';
 import { tutorRoutes } from './routes/tutor';
 import { certificateRoutes } from './routes/certificate';
 import { vocabularyRoutes } from './routes/vocabulary';
+import { sessionRoutes } from './routes/session';
 
 const app = new Hono<AppEnv>();
 
@@ -175,5 +176,6 @@ app.route('/api/grammar', grammarRoutes);
 app.route('/api/tutor', tutorRoutes);
 app.route('/api/certificate', certificateRoutes);
 app.route('/api/vocabulary', vocabularyRoutes);
+app.route('/api/session', sessionRoutes);
 
 export default app;

@@ -1,10 +1,11 @@
-import { DailySession } from '@/components/session/DailySession';
+import { MixedSessionRunner } from '@/components/session/MixedSessionRunner';
 
 export const metadata = {
   title: 'Today’s session — Bayan',
-  description: 'Review, function words, reading, grammar, and freeflow — in one guided flow.',
+  description:
+    'A mixed, time-boxed practice session: due hifz, vocabulary, and the next lesson — chosen for you.',
 };
 
 export default function SessionPage() {
-  return <DailySession />;
+  return <MixedSessionRunner />;
 }

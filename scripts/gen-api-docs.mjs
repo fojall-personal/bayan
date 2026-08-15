@@ -87,6 +87,8 @@ const NOTES = {
   '/api/progress/coverage': 'ayahs readable from known roots; 400 roots is half the Quran',
   '/api/progress/roots/:root/known': 'POST records, DELETE undoes; POST returns the delta',
   '/api/progress/calibration': 'GET twelve sampled roots, POST records answers + opt-in band',
+  '/api/session/plan': 'mixed due hifz + vocab + next lesson; reuses today\'s open row',
+  '/api/session/complete': 'journals results and applies FSRS grades',
 };
 
 const width = Math.max(...list.map((e) => e.path.length));

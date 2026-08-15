@@ -439,6 +439,8 @@ DELETE /api/progress/roots/:root/known              (POST records, DELETE undoes
 POST   /api/progress/roots/:root/known              (POST records, DELETE undoes; POST returns the delta)
 GET    /api/progress/scores
 GET    /api/quran/ayah/:surah/:ayah                 (one ayah: text, words + gloss + parse + known flag, tajweed)
+POST   /api/session/complete                        (journals results and applies FSRS grades)
+GET    /api/session/plan                            (mixed due hifz + vocab + next lesson; reuses today's open row)
 GET    /api/tajweed/mastery
 GET    /api/tajweed/verses/:surahId
 POST   /api/tutor/chat
