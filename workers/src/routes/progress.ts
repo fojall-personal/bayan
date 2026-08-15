@@ -6,6 +6,7 @@ import type { AssessmentResultsRow } from '../db/schema';
 import {
   BAND_COPY,
   BAND_ORDER,
+  BOOK_LESSON_IDS,
   FORMS_UNLOCKED,
   NAHW_MC_KINDS,
   PAIR_TARGET,
@@ -1139,6 +1140,57 @@ async function loadGate(
   return { items, ready: gateReady(items) };
 }
 
+export interface BookLesson {
+  id: string;
+  title: string;
+  completed: boolean;
+  skipped: boolean;
+  available: boolean;
+}
+
+async function loadBooks(
+  db: Database,
+  userId: string
+): Promise<Record<Band, BookLesson[]>> {
+  const ids = [...new Set(BAND_ORDER.flatMap((b) => [...BOOK_LESSON_IDS[b]]))];
+  const empty = Object.fromEntries(BAND_ORDER.map((b) => [b, [] as BookLesson[]])) as Record<
+    Band,
+    BookLesson[]
+  >;
+  if (ids.length === 0) return empty;
+
+  const lessons = await db.query<{ id: string; title: string; prerequisites: string }>(
+    `SELECT id, title, prerequisites FROM lessons WHERE id IN (${ids.map(() => '?').join(',')})`,
+    ids
+  );
+  const byId = new Map(lessons.map((l) => [l.id, l]));
+  const progress = await db.query<{ lesson_id: string; completed: number; skipped: number }>(
+    `SELECT lesson_id, completed, skipped FROM lesson_progress WHERE user_id = ?`,
+    [userId]
+  );
+  const done = new Set(progress.filter((p) => p.completed === 1).map((p) => p.lesson_id));
+  const skipped = new Set(progress.filter((p) => p.skipped === 1).map((p) => p.lesson_id));
+
+  const available = (id: string): boolean => {
+    const lesson = byId.get(id);
+    if (!lesson) return false;
+    const prereqs = JSON.parse(lesson.prerequisites || '[]') as string[];
+    return prereqs.every((p) => done.has(p));
+  };
+
+  const books = { ...empty };
+  for (const band of BAND_ORDER) {
+    books[band] = BOOK_LESSON_IDS[band].map((id) => ({
+      id,
+      title: byId.get(id)?.title ?? id,
+      completed: done.has(id),
+      skipped: skipped.has(id),
+      available: available(id),
+    }));
+  }
+  return books;
+}
+
 progressRoutes.get('/band', async (c) => {
   const userId = c.get('userId');
   const db = getDb(c);
@@ -1156,6 +1208,7 @@ progressRoutes.get('/band', async (c) => {
     const pairs = await topPairKnown(db, userId, pairTarget);
     const idx = BAND_ORDER.indexOf(band);
     const copy = BAND_COPY[band];
+    const books = await loadBooks(db, userId);
     return c.json({
       data: {
         band,
@@ -1172,6 +1225,7 @@ progressRoutes.get('/band', async (c) => {
           pairsKnown: pairs,
           pairsTarget: pairTarget,
         },
+        books,
       },
     });
   } catch (error) {

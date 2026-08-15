@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   assignBand,
   bandAfterCalibration,
+  BOOK_LESSON_IDS,
   gateItems,
   gateReady,
   gradeTypedRoot,
@@ -120,6 +121,18 @@ describe('rollingAccuracy', () => {
   });
 });
 
+describe('BOOK_LESSON_IDS', () => {
+  it('lists the five authored Qatr lessons in sheet order', () => {
+    expect([...BOOK_LESSON_IDS.qatr]).toEqual([
+      'grammar-04',
+      'grammar-07',
+      'grammar-08',
+      'grammar-09',
+      'grammar-10',
+    ]);
+  });
+});
+
 describe('gateItems foundation deferred', () => {
   it('defers literacy and script when no rows and no assessment', () => {
     const items = gateItems('foundation', {
@@ -182,6 +195,42 @@ describe('GET /api/progress/band', () => {
     expect(status).toBe(200);
     expect(body.data.band).toBe('foundation');
     expect(body.data.gate.ready).toBe(false);
+  });
+
+  it('lists each book\'s authored lesson ids; Qatr is grammar-04/07/08/09/10', async () => {
+    const db = H().db;
+    db.prepare(
+      `INSERT INTO lessons (id, title, module, level, content, exercises, prerequisites, estimated_minutes)
+       VALUES
+         ('grammar-02', 'Past', 'grammar', 1, '{}', '[]', '[]', 10),
+         ('grammar-04', 'Present', 'grammar', 2, '{}', '[]', '["grammar-02"]', 10)`
+    ).run();
+    db.prepare(
+      `INSERT INTO lesson_progress (user_id, lesson_id, module, completed, score)
+       VALUES (?, 'grammar-02', 'grammar', 1, 80)`
+    ).run(TEST_USER);
+
+    const { status, body } = await H().json<{
+      data: {
+        books: Record<
+          string,
+          Array<{ id: string; title: string; completed: boolean; available: boolean }>
+        >;
+      };
+    }>('/api/progress/band');
+    expect(status).toBe(200);
+    expect(body.data.books.qatr.map((l) => l.id)).toEqual([
+      'grammar-04',
+      'grammar-07',
+      'grammar-08',
+      'grammar-09',
+      'grammar-10',
+    ]);
+    expect(body.data.books.irab).toEqual([]);
+    const present = body.data.books.qatr.find((l) => l.id === 'grammar-04');
+    expect(present?.title).toBe('Present');
+    expect(present?.available).toBe(true);
+    expect(present?.completed).toBe(false);
   });
 });
 
