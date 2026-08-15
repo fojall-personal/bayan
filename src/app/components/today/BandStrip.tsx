@@ -108,7 +108,7 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
   return (
     <div className="space-y-2">
       {toast && <p className="text-sm text-leaf-400">{toast}</p>}
-      <div className="flex flex-nowrap items-center justify-between gap-1">
+      <div className="grid grid-cols-5 gap-1">
         {ORDER.map((id) => {
           const current = id === data.band;
           const cleared = data.cleared.includes(id);
@@ -123,7 +123,7 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
                 setOpen(id);
                 setQuiz([]);
               }}
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-xs tracking-label ${
+              className={`flex min-h-11 min-w-0 items-center justify-center rounded-md px-0.5 text-center text-[11px] leading-tight sm:text-xs ${
                 current
                   ? 'bg-gold-500 text-ground-950'
                   : cleared
@@ -131,6 +131,7 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
                     : 'bg-ground-500/20 text-ground-500'
               }`}
               aria-label={LABELS[id]}
+              aria-current={current ? 'step' : undefined}
             >
               {LABELS[id]}
             </button>
@@ -138,7 +139,7 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
         })}
       </div>
       {data.targets.rootsTarget > 0 && (
-        <p className="text-xs text-ground-400">
+        <p className="text-xs leading-snug text-ground-400">
           Particles {data.targets.pairsKnown} / {data.targets.pairsTarget} · Roots{' '}
           {data.targets.rootsKnown} / {data.targets.rootsTarget}
         </p>
@@ -153,7 +154,7 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
               {data.gate.items.map((item) => (
                 <li
                   key={item.id}
-                  className={`text-sm ${item.deferred ? 'text-ground-500' : 'text-ground-200'}`}
+                  className={`break-words text-sm ${item.deferred ? 'text-ground-500' : 'text-ground-200'}`}
                 >
                   {item.met ? '✓ ' : ''}
                   {item.label}: {item.current} / {item.target}
@@ -181,6 +182,7 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
                       <Button
                         key={opt}
                         variant={answers[q.id] === i ? 'primary' : 'secondary'}
+                        className="h-auto min-h-11 w-full whitespace-normal py-2"
                         onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: i }))}
                       >
                         {opt}

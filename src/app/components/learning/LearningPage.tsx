@@ -253,18 +253,18 @@ export function LearningPage({ userId }: LearningPageProps) {
         ← Back to Today
       </Link>
       {/* Lesson Header */}
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <Badge variant="info">{lesson.module}</Badge>
           {LESSON_EYEBROW[lesson.id] && (
-            <p className="mt-2 text-xs uppercase tracking-label text-gold-400">
+            <p className="mt-2 text-xs leading-snug text-gold-400">
               {LESSON_EYEBROW[lesson.id]}
             </p>
           )}
-          <h2 className="text-3xl font-bold mt-2">{lesson.title}</h2>
+          <h2 className="mt-2 break-words text-3xl font-bold">{lesson.title}</h2>
           <p className="text-gray-400 mt-1">Level {lesson.level}</p>
           {!confirmSkip ? (
-            <Button variant="ghost" className="mt-2" onClick={() => setConfirmSkip(true)}>
+            <Button variant="ghost" className="mt-2 w-full sm:w-auto" onClick={() => setConfirmSkip(true)}>
               I already know this
             </Button>
           ) : (
@@ -272,11 +272,11 @@ export function LearningPage({ userId }: LearningPageProps) {
               <p className="text-sm text-ground-300">
                 This marks the lesson skipped, not scored. You can open it later.
               </p>
-              <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => setConfirmSkip(false)}>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button variant="secondary" className="w-full sm:w-auto" onClick={() => setConfirmSkip(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleSkip}>Mark skipped</Button>
+                <Button className="w-full sm:w-auto" onClick={handleSkip}>Mark skipped</Button>
               </div>
             </div>
           )}

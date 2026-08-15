@@ -173,7 +173,7 @@ export default function ProgressPage() {
   return (
     <div className="page-transition max-w-4xl mx-auto space-y-6">
       <BandStrip />
-      <p className="text-xs text-ground-500">
+      <p className="text-xs leading-snug text-ground-500">
         These scales measure Modern Standard Arabic communication. Bayan teaches
         Classical reading of the Quran. The row is a reading descriptor only.
       </p>
