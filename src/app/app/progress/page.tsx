@@ -63,6 +63,7 @@ const KIND_LABELS: Record<string, string> = {
   simile: 'Which word opens a comparison (al-tashbīh)',
   homograph: 'Which مَا is this? (one spelling, two jobs)',
   mutashabihat: 'Which ayah is this? (near-identical verses)',
+  elided_subject: 'Which pronoun is the unwritten فاعل',
   // Lesson-driven attempts record their module instead of a bank kind.
   grammar: 'Lesson exercises — grammar',
   tajweed: 'Lesson exercises — tajweed',
@@ -98,6 +99,7 @@ const KIND_CHANNEL: Record<string, string> = {
   object: 'Governor & role',
   idafa: 'Governor & role',
   fronting: 'Governor & role',
+  elided_subject: 'Governor & role',
   word_role: 'Governor & role',
   word_meaning: 'Vocabulary',
   find_word: 'Vocabulary',

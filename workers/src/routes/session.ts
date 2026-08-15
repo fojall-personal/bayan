@@ -23,7 +23,15 @@ import { hifzRetentionFor, precedingSpanWarmStart } from './memorization';
 
 export const sessionRoutes = new Hono<AppEnv>();
 
-export type SessionItemType = 'hifz' | 'vocabulary' | 'lesson';
+export type SessionItemType =
+  | 'hifz'
+  | 'vocabulary'
+  | 'lesson'
+  | 'function_word'
+  | 'intensive'
+  | 'production'
+  | 'elided'
+  | 'freeflow';
 
 export interface SessionItem {
   id: string;
@@ -41,6 +49,11 @@ export interface SessionPlan {
     hifz: number;
     vocabulary: number;
     lesson: number;
+    function_word: number;
+    intensive: number;
+    production: number;
+    elided: number;
+    freeflow: number;
   };
 }
 
@@ -49,12 +62,17 @@ interface ItemResult {
   grade?: unknown;
   correct?: boolean;
   seconds?: number;
+  /** ReviewSession already wrote FSRS; do not apply again. */
+  scheduled?: boolean;
 }
 
-const TARGET_SECONDS = 720;
+export type SessionReflection = 'recall' | 'particles' | 'meaning' | 'production';
+
+const TARGET_SECONDS = 1500;
 const MAX_HIFZ = 4;
 const MAX_VOCAB = 5;
 const LESSON_SECONDS = 180;
+const LOOP_SECONDS = 180;
 const PATH_ORDER = ['literacy', 'grammar', 'vocabulary', 'tajweed'];
 
 function uid(): string {
@@ -62,10 +80,16 @@ function uid(): string {
 }
 
 function summarise(items: SessionItem[]): SessionPlan['summary'] {
+  const count = (t: SessionItemType) => items.filter((i) => i.type === t).length;
   return {
-    hifz: items.filter((i) => i.type === 'hifz').length,
-    vocabulary: items.filter((i) => i.type === 'vocabulary').length,
-    lesson: items.filter((i) => i.type === 'lesson').length,
+    hifz: count('hifz'),
+    vocabulary: count('vocabulary'),
+    lesson: count('lesson'),
+    function_word: count('function_word'),
+    intensive: count('intensive'),
+    production: count('production'),
+    elided: count('elided'),
+    freeflow: count('freeflow'),
   };
 }
 
@@ -196,37 +220,105 @@ async function fetchNextLesson(db: Database, userId: string): Promise<SessionIte
   };
 }
 
-/**
- * Round-robin hifz / vocab / lesson, then cut at the time budget.
- * The first item always fits so a single long lesson is not dropped.
- */
+function loopItems(hasElided: boolean): SessionItem[] {
+  const items: SessionItem[] = [
+    {
+      id: 'fn:track',
+      type: 'function_word',
+      label: 'Function words',
+      estimatedSeconds: LOOP_SECONDS,
+      payload: {},
+    },
+    {
+      id: 'intensive:queue',
+      type: 'intensive',
+      label: 'Just past your edge',
+      estimatedSeconds: LOOP_SECONDS,
+      payload: {},
+    },
+    {
+      id: 'production:tashkil',
+      type: 'production',
+      label: 'Vowel the endings',
+      estimatedSeconds: LOOP_SECONDS,
+      payload: {},
+    },
+  ];
+  if (hasElided) {
+    items.push({
+      id: 'elided:subj',
+      type: 'elided',
+      label: 'The unwritten فاعل',
+      estimatedSeconds: LOOP_SECONDS,
+      payload: {},
+    });
+  }
+  items.push({
+    id: 'freeflow:run',
+    type: 'freeflow',
+    label: 'Read a page you know',
+    estimatedSeconds: 300,
+    payload: {},
+  });
+  return items;
+}
+
 function mixItems(
   hifz: SessionItem[],
   vocab: SessionItem[],
-  lesson: SessionItem | null
+  lesson: SessionItem | null,
+  loop: SessionItem[],
+  prefer: SessionReflection | null
 ): SessionItem[] {
-  const queues: SessionItem[][] = [hifz.slice(), vocab.slice(), lesson ? [lesson] : []];
-  const interleaved: SessionItem[] = [];
-  let added = true;
-  while (added) {
-    added = false;
-    for (const q of queues) {
-      const next = q.shift();
-      if (next) {
-        interleaved.push(next);
-        added = true;
-      }
-    }
+  let ordered: SessionItem[] = [...hifz, ...loop, ...vocab];
+  if (lesson) ordered.push(lesson);
+
+  if (prefer === 'particles') {
+    ordered = [
+      ...ordered.filter((i) => i.type === 'function_word'),
+      ...ordered.filter((i) => i.type !== 'function_word'),
+    ];
+  } else if (prefer === 'meaning') {
+    ordered = [
+      ...ordered.filter((i) => i.type === 'intensive' || i.type === 'vocabulary'),
+      ...ordered.filter((i) => i.type !== 'intensive' && i.type !== 'vocabulary'),
+    ];
+  } else if (prefer === 'production') {
+    ordered = [
+      ...ordered.filter((i) => i.type === 'production' || i.type === 'elided'),
+      ...ordered.filter((i) => i.type !== 'production' && i.type !== 'elided'),
+    ];
   }
 
   const selected: SessionItem[] = [];
   let used = 0;
-  for (const item of interleaved) {
+  for (const item of ordered) {
     if (used + item.estimatedSeconds > TARGET_SECONDS && selected.length > 0) break;
     selected.push(item);
     used += item.estimatedSeconds;
   }
   return selected;
+}
+
+async function lastReflection(db: Database, userId: string): Promise<SessionReflection | null> {
+  const row = await db.get<{ reflection: string | null }>(
+    `SELECT reflection FROM user_sessions
+      WHERE user_id = ? AND completed_at IS NOT NULL
+      ORDER BY completed_at DESC LIMIT 1`,
+    [userId]
+  );
+  const value = row?.reflection;
+  if (value === 'recall' || value === 'particles' || value === 'meaning' || value === 'production') {
+    return value;
+  }
+  return null;
+}
+
+async function hasElidedSubjects(db: Database): Promise<boolean> {
+  const row = await db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM quran_syntax WHERE is_implied = 1 AND rel = 'Subj'`
+  );
+  return (row?.n ?? 0) > 0;
 }
 
 async function todaysOpenSession(
@@ -381,7 +473,7 @@ async function applyResults(
   const applied = { hifz: 0, vocabulary: 0, lesson: 0 };
 
   for (const result of results) {
-    if (result.seconds === 0) continue;
+    if (result.seconds === 0 || result.scheduled) continue;
     const item = byId.get(result.itemId);
     if (!item) continue;
 
@@ -416,13 +508,15 @@ sessionRoutes.get('/plan', async (c) => {
       });
     }
 
-    const [hifz, vocab, lesson] = await Promise.all([
+    const [hifz, vocab, lesson, prefer, elided] = await Promise.all([
       fetchDueHifz(db, userId),
       fetchDueVocab(db, userId),
       fetchNextLesson(db, userId),
+      lastReflection(db, userId),
+      hasElidedSubjects(db),
     ]);
 
-    const items = mixItems(hifz, vocab, lesson);
+    const items = mixItems(hifz, vocab, lesson, loopItems(elided), prefer);
     const plannedSeconds = items.reduce((s, i) => s + i.estimatedSeconds, 0);
     const sessionId = uid();
 
@@ -451,6 +545,7 @@ sessionRoutes.post('/complete', async (c) => {
     sessionId?: string;
     results?: unknown;
     actualSeconds?: number;
+    reflection?: unknown;
   };
   try {
     body = await c.req.json();
@@ -458,7 +553,14 @@ sessionRoutes.post('/complete', async (c) => {
     return c.json({ error: 'Expected a JSON body' }, 400);
   }
 
-  const { sessionId, results, actualSeconds } = body;
+  const { sessionId, results, actualSeconds, reflection } = body;
+  const savedReflection =
+    reflection === 'recall' ||
+    reflection === 'particles' ||
+    reflection === 'meaning' ||
+    reflection === 'production'
+      ? reflection
+      : null;
   if (!sessionId || typeof sessionId !== 'string') {
     return c.json({ error: 'sessionId is required' }, 400);
   }
@@ -489,11 +591,12 @@ sessionRoutes.post('/complete', async (c) => {
 
     await db.run(
       `UPDATE user_sessions
-       SET results = ?, actual_seconds = ?, completed_at = datetime('now')
+       SET results = ?, actual_seconds = ?, reflection = ?, completed_at = datetime('now')
        WHERE id = ?`,
       [
         JSON.stringify(results),
         typeof actualSeconds === 'number' ? actualSeconds : null,
+        savedReflection,
         sessionId,
       ]
     );

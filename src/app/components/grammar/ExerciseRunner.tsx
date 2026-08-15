@@ -79,6 +79,7 @@ const KINDS = [
   // Two near-identical ayahs, one word apart — the classic hifz confusion,
   // auto-detected by edit distance rather than a curated list.
   { value: 'mutashabihat', label: 'Which ayah is this? (near-identical verses)' },
+  { value: 'elided_subject', label: 'Which pronoun is the unwritten فاعل' },
 ];
 
 /**
@@ -88,7 +89,7 @@ const KINDS = [
  */
 const WHOLE_AYAH_KINDS = new Set([
   'find_word', 'mubtada_khabar', 'subject_word', 'object', 'idafa', 'fronting', 'jinas',
-  'simile', 'mutashabihat',
+  'simile', 'mutashabihat', 'elided_subject',
 ]);
 
 const LEVELS = [

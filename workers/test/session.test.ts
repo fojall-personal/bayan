@@ -19,7 +19,15 @@ const H = () => (h ??= harness());
 
 interface SessionItem {
   id: string;
-  type: 'hifz' | 'vocabulary' | 'lesson';
+  type:
+    | 'hifz'
+    | 'vocabulary'
+    | 'lesson'
+    | 'function_word'
+    | 'intensive'
+    | 'production'
+    | 'elided'
+    | 'freeflow';
   label: string;
   estimatedSeconds: number;
   payload: Record<string, unknown>;
@@ -29,7 +37,16 @@ interface SessionPlan {
   sessionId: string;
   items: SessionItem[];
   plannedSeconds: number;
-  summary: { hifz: number; vocabulary: number; lesson: number };
+  summary: {
+    hifz: number;
+    vocabulary: number;
+    lesson: number;
+    function_word: number;
+    intensive: number;
+    production: number;
+    elided: number;
+    freeflow: number;
+  };
 }
 
 function insertDueHifz(id = crypto.randomUUID(), ayah = 1) {
@@ -55,22 +72,25 @@ function insertDueVocab(word = 'كتب') {
 }
 
 describe('GET /api/session/plan', () => {
-  it('answers 200 with an empty plan when nothing is due', async () => {
+  it('answers 200 with the daily loop when nothing is due', async () => {
     const { status, body } = await H().json<{ data: SessionPlan }>('/api/session/plan');
     expect(status).toBe(200);
     expect(body.data).toBeDefined();
     expect(body.data.sessionId).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     );
-    expect(body.data.items).toEqual([]);
-    expect(body.data.plannedSeconds).toBe(0);
-    expect(body.data.summary).toEqual({ hifz: 0, vocabulary: 0, lesson: 0 });
+    expect(body.data.summary.hifz).toBe(0);
+    expect(body.data.summary.vocabulary).toBe(0);
+    expect(body.data.summary.function_word).toBe(1);
+    expect(body.data.summary.production).toBe(1);
+    expect(body.data.summary.freeflow).toBe(1);
+    expect(body.data.items.length).toBeGreaterThan(0);
   });
 
-  it('does not persist an empty plan', async () => {
+  it('persists a loop-only plan so complete can find it', async () => {
     await H().json<{ data: SessionPlan }>('/api/session/plan');
     const row = H().db.prepare('SELECT COUNT(*) AS n FROM user_sessions').get() as { n: number };
-    expect(row.n).toBe(0);
+    expect(row.n).toBe(1);
   });
 
   it('includes due hifz spans when they exist', async () => {
@@ -117,11 +137,9 @@ describe('GET /api/session/plan', () => {
 
     const { status, body } = await H().json<{ data: SessionPlan }>('/api/session/plan');
     expect(status).toBe(200);
-    if (body.data.summary.hifz === 0 && body.data.summary.vocabulary === 0) {
-      expect(body.data.summary.lesson).toBe(1);
-      expect(body.data.items[0].type).toBe('lesson');
-      expect(body.data.items[0].payload.lessonId).toBe('grammar-test-01');
-    }
+    expect(body.data.summary.lesson).toBe(1);
+    const lesson = body.data.items.find((i) => i.type === 'lesson');
+    expect(lesson?.payload.lessonId).toBe('grammar-test-01');
   });
 
   it('reuses today\'s open session instead of inserting another', async () => {
@@ -145,23 +163,32 @@ describe('GET /api/session/plan', () => {
     }
 
     const { body } = await H().json<{ data: SessionPlan }>('/api/session/plan');
-    expect(body.data.items.length).toBeLessThanOrEqual(10);
-    expect(body.data.plannedSeconds).toBeLessThanOrEqual(720 + 180);
+    expect(body.data.items.length).toBeLessThanOrEqual(16);
+    expect(body.data.plannedSeconds).toBeLessThanOrEqual(1500 + 180);
   });
 
-  it('interleaves hifz and vocabulary rather than concatenating them', async () => {
-    insertDueHifz(crypto.randomUUID(), 1);
-    insertDueHifz(crypto.randomUUID(), 2);
-    insertDueVocab('علم');
-    insertDueVocab('كتب');
-
+  it('puts due hifz before the daily loop', async () => {
+    insertDueHifz();
     const { body } = await H().json<{ data: SessionPlan }>('/api/session/plan');
     const types = body.data.items.map((i) => i.type);
-    const firstHifz = types.indexOf('hifz');
-    const firstVocab = types.indexOf('vocabulary');
-    expect(firstHifz).toBeGreaterThanOrEqual(0);
-    expect(firstVocab).toBeGreaterThanOrEqual(0);
-    expect(Math.abs(firstHifz - firstVocab)).toBe(1);
+    expect(types[0]).toBe('hifz');
+    expect(types).toContain('function_word');
+    expect(types).toContain('production');
+  });
+
+  it('reorders toward particles after that reflection', async () => {
+    insertDueHifz();
+    const first = await H().json<{ data: SessionPlan }>('/api/session/plan');
+    await H().json('/api/session/complete', {
+      method: 'POST',
+      body: JSON.stringify({
+        sessionId: first.body.data.sessionId,
+        results: [],
+        reflection: 'particles',
+      }),
+    });
+    const second = await H().json<{ data: SessionPlan }>('/api/session/plan');
+    expect(second.body.data.items[0].type).toBe('function_word');
   });
 });
 
@@ -264,6 +291,28 @@ describe('POST /api/session/complete', () => {
     expect(after.revision_count).toBe(0);
   });
 
+  it('does not re-apply FSRS when ReviewSession already scheduled the item', async () => {
+    const memId = insertDueHifz();
+    const { body: planBody } = await H().json<{ data: SessionPlan }>('/api/session/plan');
+    const hifzItem = planBody.data.items.find((i) => i.type === 'hifz');
+
+    const { body } = await H().json<{ data: { applied: { hifz: number } } }>(
+      '/api/session/complete',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          sessionId: planBody.data.sessionId,
+          results: [{ itemId: hifzItem!.id, grade: 'good', seconds: 60, scheduled: true }],
+        }),
+      }
+    );
+    expect(body.data.applied.hifz).toBe(0);
+    const after = H()
+      .db.prepare('SELECT revision_count FROM memorization WHERE id = ?')
+      .get(memId) as { revision_count: number };
+    expect(after.revision_count).toBe(0);
+  });
+
   it('rejects a missing sessionId with 400', async () => {
     const { status, body } = await H().json<{ error: string }>('/api/session/complete', {
       method: 'POST',
@@ -312,5 +361,49 @@ describe('POST /api/session/complete', () => {
       body: JSON.stringify({ sessionId, results: [] }),
     });
     expect(status).toBe(409);
+  });
+});
+
+describe('GET /api/grammar/elided', () => {
+  it('returns null when the syntax table has no implied subjects', async () => {
+    const { status, body } = await H().json<{ data: null }>('/api/grammar/elided');
+    expect(status).toBe(200);
+    expect(body.data).toBeNull();
+  });
+
+  it('returns a treebank token as the answer, not an invented pronoun', async () => {
+    const db = H().db;
+    db.prepare(
+      `INSERT INTO quran_verses (surah, ayah, text_uthmani, text_simple, translation, tajweed_tags)
+       VALUES (1, 5, 'إِيَّاكَ نَعْبُدُ', 'اياك نعبد', null, '[]')`
+    ).run();
+    db.prepare(
+      `INSERT INTO quran_syntax (sentence_id, token_index, head_index, surah_id, ayah_id,
+         word_index, segment_index, rel, rel_ar, constituent, derived_noun, token, is_implied)
+       VALUES (1, 1, NULL, 1, 5, 2, 1, 'root', 'root', NULL, NULL, 'نَعْبُدُ', 0)`
+    ).run();
+    db.prepare(
+      `INSERT INTO quran_syntax (sentence_id, token_index, head_index, surah_id, ayah_id,
+         word_index, segment_index, rel, rel_ar, constituent, derived_noun, token, is_implied)
+       VALUES (1, 2, 1, 1, 5, 0, 1, 'Subj', 'فاعل', NULL, NULL, '(نحْنُ)', 1)`
+    ).run();
+
+    const { status, body } = await H().json<{
+      data: { answer: string; options: string[]; id: string };
+    }>('/api/grammar/elided');
+    expect(status).toBe(200);
+    expect(body.data.answer).toBe('نحْنُ');
+    expect(body.data.options).toContain('نحْنُ');
+    expect(body.data.id).toMatch(/^elided:1:5:/);
+
+    const posted = await H().json('/api/grammar/exercise', {
+      method: 'POST',
+      body: JSON.stringify({
+        exerciseId: body.data.id,
+        answer: 'نحْنُ',
+        correct: true,
+      }),
+    });
+    expect(posted.status).toBe(200);
   });
 });
