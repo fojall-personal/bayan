@@ -258,6 +258,17 @@ export interface UserKnownRootRow {
   strength: number;
 }
 
+export interface UserSessionsRow {
+  id: string;
+  user_id: string;
+  planned_items: string;
+  results: string | null;
+  planned_seconds: number;
+  actual_seconds: number | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
 export interface UsersRow {
   id: string;
   goal: string;

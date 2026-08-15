@@ -28,7 +28,7 @@ export const memorizationRoutes = new Hono<AppEnv>();
  * is the SUGGESTED value a settings screen offers, not something applied
  * silently; an existing learner's schedule must not shift on its own.
  */
-async function hifzRetentionFor(db: Database, userId: string): Promise<number> {
+export async function hifzRetentionFor(db: Database, userId: string): Promise<number> {
   const row = await db.get<{ hifz_retention: number | null }>(
     `SELECT hifz_retention FROM users WHERE id = ?`,
     [userId]
@@ -44,7 +44,7 @@ async function hifzRetentionFor(db: Database, userId: string): Promise<number> {
  * span never reviewed, both mean false — chaining can't be claimed without
  * evidence of it.
  */
-async function precedingSpanWarmStart(
+export async function precedingSpanWarmStart(
   db: Database,
   userId: string,
   surahId: number,

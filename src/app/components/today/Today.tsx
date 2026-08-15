@@ -160,9 +160,10 @@ export function Today() {
       )}
 
       {/* ── The one primary action ──────────────────────────────────────────
-          Chosen, not offered alongside seven equals. Reviews first because FSRS
-          decides when they are due and a missed review costs retention; the next
-          root only when nothing is owed. */}
+          Reviews first because FSRS decides when they are due. The mixed
+          session is the sitting that actually grades them. The next-root
+          card stays gold when nothing is owed, so coverage still has a
+          primary action. */}
       {dueCount > 0 ? (
         <Card className="border-gold-500/40">
           <p className="text-xs uppercase tracking-label text-gold-400">Next</p>
@@ -183,8 +184,8 @@ export function Today() {
               .join(' · ')}
             {dueCount > 3 ? ` and ${dueCount - 3} more` : ''}
           </p>
-          <Link href="/memorization" className="mt-4 block">
-            <Button className="w-full">Start review</Button>
+          <Link href="/session" className="mt-4 block">
+            <Button className="w-full">Start session</Button>
           </Link>
         </Card>
       ) : nextRoot ? (
@@ -216,17 +217,16 @@ export function Today() {
       <div>
         <h3 className="mb-3 text-xs uppercase tracking-label text-ground-400">Then</h3>
         <div className="space-y-3">
-          {/* The same five surfaces below, composed into one guided flow instead
-              of five separate taps. One more line in this list, not a rival tile
-              grid — the stepper itself has exactly one "Continue" at a time. */}
-          <Link href="/session" className="block">
-            <Card interactive>
-              <p className="font-semibold">Run today&apos;s full session</p>
-              <p className="mt-0.5 text-sm text-ground-300">
-                Review, function words, reading, grammar, freeflow — guided, in order
-              </p>
-            </Card>
-          </Link>
+          {dueCount === 0 && (
+            <Link href="/session" className="block">
+              <Card interactive>
+                <p className="font-semibold">Run a mixed session</p>
+                <p className="mt-0.5 text-sm text-ground-300">
+                  Due vocabulary and the next lesson, interleaved under a 12-minute budget
+                </p>
+              </Card>
+            </Link>
+          )}
           {/* Always present. Rendering this only when the API returns a next
               lesson made the lesson path unreachable once every lesson was done,
               or whenever that call failed — and "Learn" is no longer in the nav. */}
