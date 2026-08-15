@@ -41,6 +41,30 @@ const LABELS: Record<Band, string> = {
   alfiyya: 'Alfiyya',
   irab: 'Iʿrāb',
 };
+const BOOK: Record<Band, { title: string; sentence: string }> = {
+  foundation: {
+    title: 'Script',
+    sentence: 'Before the nahw books. Letters, joining, the three short vowels.',
+  },
+  ajurrumiyya: {
+    title: 'al-Ajurrūmiyya',
+    sentence:
+      'Jumlah ismiyya, the three cases, iḍāfa. Sun/moon and māḍī sit beside this book, they are not chapters of it.',
+  },
+  qatr: {
+    title: 'Qaṭr al-Nadā',
+    sentence:
+      'Next nahw book-equivalent: produced case endings, mood, particles. Nawāsikh are unauthored.',
+  },
+  alfiyya: {
+    title: 'Alfiyyat Ibn Mālik',
+    sentence: 'Skill checklist: name the token ʿāmil, recover the elided fāʿil.',
+  },
+  irab: {
+    title: 'Iʿrāb al-Qurʾān',
+    sentence: 'Capstone: open an ayah you have not studied and parse it without help.',
+  },
+};
 
 interface BandStripProps {
   showSkip?: boolean;
@@ -75,6 +99,8 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
   const sheetBand = open;
   const sheetCleared = sheetBand ? data.cleared.includes(sheetBand) : false;
   const sheetCurrent = sheetBand === data.band;
+  const sheetLocked = Boolean(sheetBand && !sheetCurrent && !sheetCleared);
+  const sheetCopy = sheetBand ? BOOK[sheetBand] : null;
 
   const startSkip = async () => {
     setError(null);
@@ -112,18 +138,15 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
         {ORDER.map((id) => {
           const current = id === data.band;
           const cleared = data.cleared.includes(id);
-          const locked = !current && !cleared;
           return (
             <button
               key={id}
               type="button"
-              disabled={locked}
               onClick={() => {
-                if (locked) return;
-                setOpen(id);
+                setOpen((prev) => (prev === id ? null : id));
                 setQuiz([]);
               }}
-              className={`flex min-h-11 min-w-0 items-center justify-center rounded-md px-0.5 text-center text-[11px] leading-tight sm:text-xs ${
+              className={`relative z-10 flex min-h-11 min-w-0 touch-manipulation items-center justify-center rounded-md px-0.5 text-center text-[11px] leading-tight sm:text-xs ${
                 current
                   ? 'bg-gold-500 text-ground-950'
                   : cleared
@@ -132,6 +155,7 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
               }`}
               aria-label={LABELS[id]}
               aria-current={current ? 'step' : undefined}
+              aria-pressed={open === id}
             >
               {LABELS[id]}
             </button>
@@ -145,10 +169,19 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
         </p>
       )}
 
-      {sheetBand && (sheetCurrent || sheetCleared) && (
+      {sheetBand && sheetCopy && (
         <Card>
-          <p className="text-xs uppercase tracking-label text-gold-400">{data.bookTitle}</p>
-          <p className="mt-1 text-sm text-ground-200">{data.bookSentence}</p>
+          <p className="text-xs uppercase tracking-label text-gold-400">{sheetCopy.title}</p>
+          <p className="mt-1 text-sm text-ground-200">{sheetCopy.sentence}</p>
+          {sheetLocked && (
+            <p className="mt-3 text-sm text-ground-400">
+              This band is still closed. Finish the gold band, or open a skip check
+              from that band&apos;s sheet.
+            </p>
+          )}
+          {sheetCleared && !sheetCurrent && (
+            <p className="mt-3 text-sm text-leaf-400">You have already left this band.</p>
+          )}
           {sheetCurrent && (
             <ul className="mt-3 space-y-1">
               {data.gate.items.map((item) => (
