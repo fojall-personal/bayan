@@ -135,7 +135,12 @@ grammarRoutes.post('/exercise', async (c) => {
       : await db.get<{ module: string }>(`SELECT module FROM lessons WHERE id = ?`, [
           exerciseId,
         ]);
-    const category = fromBank?.kind ?? fromLesson?.module ?? null;
+    const category =
+      fromBank?.kind ??
+      fromLesson?.module ??
+      (typeof exerciseId === 'string' && exerciseId.startsWith('elided:')
+        ? 'elided_subject'
+        : null);
 
     // Fail loudly on an id that matches nothing.
     //
@@ -244,6 +249,97 @@ const CORPUS_ATTRIBUTION = {
   licence: 'GNU GPL',
 };
 
+const TREEBANK_ATTRIBUTION = {
+  source: 'Extended Quranic Treebank (Nashir et al., Data in Brief 62:111940, 2025)',
+  url: 'https://doi.org/10.1016/j.dib.2025.111940',
+  licence: 'CC BY 4.0',
+};
+
+/** Closed set the treebank actually reconstructs. Never invent a pronoun. */
+const ELIDED_PRONOUNS = ['هُوَ', 'هِيَ', 'أَنْتَ', 'أَنْتُمْ', 'أنا', 'نحْنُ', 'هم'];
+
+function bareElidedToken(token: string): string {
+  return token.replace(/[()*]/g, '').trim();
+}
+
+export interface ElidedSubjectItem {
+  id: string;
+  kind: 'elided_subject';
+  prompt: string;
+  word: string;
+  answer: string;
+  options: string[];
+  explanation: string;
+  source: string;
+  ayahText: string | null;
+}
+
+/**
+ * One elided-subject item, live from quran_syntax.
+ *
+ * The answer is the treebank's own reconstructed token. Distractors are other
+ * tokens that same table actually reconstructs — a closed set, not invented
+ * grammar. There is no morphology row to concur with (the token was never
+ * written), so this is the bound: we only ask what the treebank already states.
+ */
+async function sampleElidedSubject(
+  db: Database,
+  limit: number
+): Promise<ElidedSubjectItem[]> {
+  const rows = await db.query<{
+    sentence_id: number;
+    token_index: number;
+    surah_id: number;
+    ayah_id: number;
+    token: string;
+    head_word: number | null;
+    ayah_text: string | null;
+  }>(
+    `SELECT e.sentence_id, e.token_index, e.surah_id, e.ayah_id, e.token,
+            h.word_index AS head_word,
+            q.text_uthmani AS ayah_text
+       FROM quran_syntax e
+       LEFT JOIN quran_syntax h
+         ON h.sentence_id = e.sentence_id AND h.token_index = e.head_index
+       LEFT JOIN quran_verses q ON q.surah = e.surah_id AND q.ayah = e.ayah_id
+      WHERE e.is_implied = 1
+        AND e.rel = 'Subj'
+        AND e.token IS NOT NULL
+        AND e.token NOT IN ('', '(*)')
+      ORDER BY RANDOM()
+      LIMIT ?`,
+    [limit]
+  );
+
+  return rows.flatMap((row) => {
+    const answer = bareElidedToken(row.token);
+    if (!answer) return [];
+    const others = ELIDED_PRONOUNS.filter((p) => p !== answer);
+    const options = [answer, ...others.slice(0, 3)];
+    // Deterministic-enough shuffle from the location so the same item
+    // does not always put the answer first.
+    const seed = row.surah_id * 1000 + row.ayah_id + row.token_index;
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = (seed + i * 17) % (i + 1);
+      [options[i], options[j]] = [options[j], options[i]];
+    }
+    return [
+      {
+        id: `elided:${row.surah_id}:${row.ayah_id}:${row.token_index}`,
+        kind: 'elided_subject' as const,
+        prompt:
+          'This verb has an unwritten subject (فاعل محذوف). Which pronoun does the treebank reconstruct?',
+        word: answer,
+        answer,
+        options,
+        explanation: `The treebank reconstructs ${answer} as the elided فاعل at ${row.surah_id}:${row.ayah_id}. The pronoun is not on the page.`,
+        source: `${row.surah_id}:${row.ayah_id}`,
+        ayahText: row.ayah_text,
+      },
+    ];
+  });
+}
+
 // GET /api/grammar/root/:root — the family for one root, in Arabic script.
 // Buckwalter in, Arabic out; the corpus stores ASCII and a learner cannot read it.
 grammarRoutes.get('/root/:root', async (c) => {
@@ -319,6 +415,8 @@ grammarRoutes.get('/exercises', async (c) => {
       // Two near-identical ayahs, one word apart — auto-detected by edit distance.
       // See scripts/find-mutashabihat.mjs and gen-mutashabihat-exercises.mjs.
       'mutashabihat',
+      // Implied فاعل — served live from quran_syntax, not the CSV generator.
+      'elided_subject',
     ];
     if (!allowed.includes(kind)) {
       return c.json({ error: `kind must be one of ${allowed.join(', ')}` }, 400);
@@ -328,6 +426,26 @@ grammarRoutes.get('/exercises', async (c) => {
   }
 
   try {
+    if (kind === 'elided_subject') {
+      const items = await sampleElidedSubject(db, limit);
+      return c.json({
+        data: items.map((item) => ({
+          id: item.id,
+          kind: item.kind,
+          level: 1,
+          word: item.word,
+          prompt: item.prompt,
+          answer: item.answer,
+          options: item.options,
+          explanation: item.explanation,
+          source: item.source,
+          root: null,
+          ayahText: item.ayahText,
+        })),
+        attribution: TREEBANK_ATTRIBUTION,
+      });
+    }
+
     const rows = await db.query<Pick<GrammarExerciseBankRow, 'id' | 'kind' | 'level' | 'word_arabic' | 'prompt' | 'answer' | 'options' | 'explanation' | 'surah_id' | 'ayah_id' | 'root'>>(
       `SELECT id, kind, level, word_arabic, prompt, answer, options, explanation,
               surah_id, ayah_id, root
@@ -356,6 +474,21 @@ grammarRoutes.get('/exercises', async (c) => {
     });
   } catch (error) {
     console.error('Exercise bank error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// GET /api/grammar/elided — one implied-فاعل item, live from the treebank table.
+grammarRoutes.get('/elided', async (c) => {
+  const db = getDb(c);
+  try {
+    const items = await sampleElidedSubject(db, 1);
+    if (items.length === 0) {
+      return c.json({ data: null, attribution: TREEBANK_ATTRIBUTION });
+    }
+    return c.json({ data: items[0], attribution: TREEBANK_ATTRIBUTION });
+  } catch (error) {
+    console.error('Elided subject error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

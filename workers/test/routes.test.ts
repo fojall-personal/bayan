@@ -44,6 +44,7 @@ const GETS: [path: string, note: string][] = [
   ['/api/memorization/curriculum?level=2&limit=5', 'filtered'],
   ['/api/memorization/review/today', 'nothing due'],
   ['/api/session/plan', 'empty mixed session plan'],
+  ['/api/grammar/elided', 'no syntax rows, empty item'],
   ['/api/memorization/retention', 'default retention, empty preview'],
   ['/api/memorization/surah/1', 'nothing tracked for this surah'],
   ['/api/progress/scores', 'no assessments'],

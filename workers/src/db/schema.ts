@@ -267,6 +267,7 @@ export interface UserSessionsRow {
   actual_seconds: number | null;
   started_at: string;
   completed_at: string | null;
+  reflection: string | null;
 }
 
 export interface UsersRow {

@@ -401,6 +401,7 @@ GET    /api/auth/profile
 GET    /api/auth/whoami
 GET    /api/certificate/export
 GET    /api/grammar/deepdive/:category
+GET    /api/grammar/elided                          (one implied-فاعل item, live from quran_syntax)
 POST   /api/grammar/exercise
 GET    /api/grammar/exercises                       (38,995-item graded bank; ?level=1-5 &kind=)
 GET    /api/grammar/mastery
@@ -439,8 +440,8 @@ DELETE /api/progress/roots/:root/known              (POST records, DELETE undoes
 POST   /api/progress/roots/:root/known              (POST records, DELETE undoes; POST returns the delta)
 GET    /api/progress/scores
 GET    /api/quran/ayah/:surah/:ayah                 (one ayah: text, words + gloss + parse + known flag, tajweed)
-POST   /api/session/complete                        (journals results and applies FSRS grades)
-GET    /api/session/plan                            (mixed due hifz + vocab + next lesson; reuses today's open row)
+POST   /api/session/complete                        (journals results, applies FSRS, stores reflection)
+GET    /api/session/plan                            (mixed due items + daily loop; reuses today's open row)
 GET    /api/tajweed/mastery
 GET    /api/tajweed/verses/:surahId
 POST   /api/tutor/chat
