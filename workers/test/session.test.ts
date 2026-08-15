@@ -106,6 +106,8 @@ describe('GET /api/session/plan', () => {
     expect(types).not.toContain('elided');
     expect(types).not.toContain('production');
     expect(types).not.toContain('root_lesson');
+    expect(types).not.toContain('governor');
+    expect(types).not.toContain('irab_parse');
   });
 
   it('includes one root_lesson in ajurrumiyya when a next-root lesson exists', async () => {
@@ -457,5 +459,97 @@ describe('GET /api/grammar/elided', () => {
       }),
     });
     expect(posted.status).toBe(200);
+  });
+});
+
+function seedGovernorFixture() {
+  const db = H().db;
+  db.prepare(
+    `INSERT INTO quran_verses (surah, ayah, text_uthmani, text_simple, translation, tajweed_tags)
+     VALUES (1, 2, 'يَعْبُدُ رَبَّهُ يَوْمَئِذٍ كِتَابٌ', 'x', null, '[]')`
+  ).run();
+  const morph = db.prepare(
+    `INSERT INTO quran_word_morphology
+       (surah_id, ayah_id, word_index, segment_index, form, pos, case_case)
+     VALUES (1, 2, ?, 1, 'x', ?, ?)`
+  );
+  morph.run(1, 'V', null);
+  morph.run(2, 'N', 'ACC');
+  morph.run(3, 'N', null);
+  morph.run(4, 'N', null);
+  const syn = db.prepare(
+    `INSERT INTO quran_syntax (sentence_id, token_index, head_index, surah_id, ayah_id,
+       word_index, segment_index, rel, rel_ar, constituent, derived_noun, token, is_implied)
+     VALUES (20, ?, ?, 1, 2, ?, 1, ?, NULL, NULL, NULL, ?, 0)`
+  );
+  syn.run(0, null, 1, 'root', 'يَعْبُدُ');
+  syn.run(1, 0, 2, 'Obj', 'رَبَّهُ');
+}
+
+describe('GET /api/grammar/governor', () => {
+  it('returns null when no concur-safe ʿāmil exists', async () => {
+    const { status, body } = await H().json<{ data: null }>('/api/grammar/governor');
+    expect(status).toBe(200);
+    expect(body.data).toBeNull();
+  });
+
+  it('names the verb as ʿāmil of an accusative object', async () => {
+    seedGovernorFixture();
+    const { status, body } = await H().json<{
+      data: { answer: string; options: string[]; id: string; prompt: string };
+    }>('/api/grammar/governor');
+    expect(status).toBe(200);
+    expect(body.data.answer).toBe('يَعْبُدُ');
+    expect(body.data.options).toContain('يَعْبُدُ');
+    expect(body.data.id).toBe('governor:1:2:2');
+
+    const posted = await H().json('/api/grammar/exercise', {
+      method: 'POST',
+      body: JSON.stringify({
+        exerciseId: body.data.id,
+        answer: 'يَعْبُدُ',
+        correct: true,
+      }),
+    });
+    expect(posted.status).toBe(200);
+  });
+});
+
+describe('GET/POST /api/grammar/irab-parse', () => {
+  it('returns null when no unread ayah has a concur-safe ʿāmil', async () => {
+    const { status, body } = await H().json<{ data: null }>('/api/grammar/irab-parse');
+    expect(status).toBe(200);
+    expect(body.data).toBeNull();
+  });
+
+  it('grades case and governor on a cold ayah', async () => {
+    seedGovernorFixture();
+    const got = await H().json<{
+      data: {
+        surah: number;
+        ayah: number;
+        words: { wordIndex: number; caseCase: string; governor: string }[];
+      };
+    }>('/api/grammar/irab-parse');
+    expect(got.status).toBe(200);
+    expect(got.body.data.surah).toBe(1);
+    expect(got.body.data.ayah).toBe(2);
+    const word = got.body.data.words.find((w) => w.wordIndex === 2);
+    expect(word?.caseCase).toBe('ACC');
+    expect(word?.governor).toBe('يَعْبُدُ');
+
+    const graded = await H().json<{
+      data: { caseCorrect: number; governorCorrect: number };
+    }>('/api/grammar/irab-parse', {
+      method: 'POST',
+      body: JSON.stringify({
+        surah: 1,
+        ayah: 2,
+        answers: [{ wordIndex: 2, caseCase: 'ACC', governor: 'يَعْبُدُ' }],
+      }),
+    });
+    expect(graded.status).toBe(200);
+    expect(graded.body.data.caseCorrect).toBe(1);
+    expect(graded.body.data.governorCorrect).toBe(1);
   });
 });

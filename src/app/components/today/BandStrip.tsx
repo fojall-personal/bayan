@@ -33,6 +33,12 @@ interface BandPayload {
     pairsTarget: number;
   };
   books?: Record<Band, BookLesson[]>;
+  capstone?: {
+    ayahs: number;
+    casePct: number;
+    governorPct: number;
+    elisionPct: number | null;
+  };
 }
 
 interface BookLesson {
@@ -113,6 +119,8 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
   const sheetCopy = sheetBand ? BOOK[sheetBand] : null;
   const sheetLessons = sheetBand && data.books ? data.books[sheetBand] ?? [] : [];
   const nextLesson = sheetLessons.find((l) => !l.completed);
+  const chipTitle = (title: string) =>
+    title.split(' — ')[0].replace(/\s*\([^)]*\)\s*$/, '');
 
   const startSkip = async () => {
     setError(null);
@@ -213,7 +221,7 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
                   if (!canOpen) {
                     return (
                       <span key={lesson.id} className={chipClass}>
-                        {lesson.title}
+                        {chipTitle(lesson.title)}
                       </span>
                     );
                   }
@@ -222,15 +230,16 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
                       key={lesson.id}
                       href={`/learning?lesson=${encodeURIComponent(lesson.id)}`}
                       className={chipClass}
+                      title={lesson.title}
                     >
-                      {lesson.title}
+                      {chipTitle(lesson.title)}
                     </Link>
                   );
                 })}
               </div>
               {nextLesson && !sheetLocked && (
                 <Link href={`/learning?lesson=${encodeURIComponent(nextLesson.id)}`} className="mt-3 block">
-                  <Button className="w-full">Start {nextLesson.title}</Button>
+                  <Button className="w-full">Start {chipTitle(nextLesson.title)}</Button>
                 </Link>
               )}
             </div>
@@ -238,6 +247,15 @@ export function BandStrip({ showSkip = true }: BandStripProps) {
           {sheetBand === 'irab' && (
             <p className="mt-3 text-sm text-ground-400">
               This band has no authored dars. Use the gold card on Today to parse.
+            </p>
+          )}
+          {sheetBand === 'irab' && data.capstone && (
+            <p className="mt-2 text-sm text-ground-200">
+              Cold-parse {data.capstone.ayahs} / 10 ayahs · case {data.capstone.casePct}% ·
+              governor {data.capstone.governorPct}%
+              {data.capstone.elisionPct !== null
+                ? ` · elision ${data.capstone.elisionPct}%`
+                : ''}
             </p>
           )}
           {sheetCurrent && (

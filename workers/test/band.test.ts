@@ -129,6 +129,7 @@ describe('BOOK_LESSON_IDS', () => {
       'grammar-08',
       'grammar-09',
       'grammar-10',
+      'grammar-12',
     ]);
   });
 });
@@ -225,6 +226,7 @@ describe('GET /api/progress/band', () => {
       'grammar-08',
       'grammar-09',
       'grammar-10',
+      'grammar-12',
     ]);
     expect(body.data.books.irab).toEqual([]);
     const present = body.data.books.qatr.find((l) => l.id === 'grammar-04');

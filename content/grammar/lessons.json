@@ -637,6 +637,74 @@
     "category": "nahw"
   },
   {
+    "id": "grammar-12",
+    "title": "Nawāsikh — kāna and inna (النواسخ)",
+    "module": "grammar",
+    "level": 2,
+    "prerequisites": ["grammar-03", "grammar-05"],
+    "estimated_minutes": 20,
+    "content": {
+      "explanation": "A nominal sentence is مبتدأ (nominative) + خبر (nominative). A nāsikh (ناسخ) enters that sentence and changes those cases. كَانَ and its sisters keep the ism nominative and put the khabar in the accusative. إِنَّ and its sisters put the ism in the accusative and keep the khabar nominative. The verse citations below are Tanzil Uthmani.",
+      "examples": [
+        {
+          "arabic": "كَانَ ٱلنَّاسُ أُمَّةً وَٰحِدَةً",
+          "transliteration": "kāna al-nāsu ummatan wāḥidatan",
+          "meaning": "Mankind was one community",
+          "rule": "2:213. كَانَ: ٱلنَّاسُ is the ism (nominative), أُمَّةً the khabar (accusative)."
+        },
+        {
+          "arabic": "إِنَّ ٱللَّهَ عَلَىٰ كُلِّ شَىْءٍ قَدِيرٌ",
+          "transliteration": "inna Allāha ʿalā kulli shayʾin qadīrun",
+          "meaning": "Allah is over all things competent",
+          "rule": "2:20. إِنَّ: ٱللَّهَ is the ism (accusative), قَدِيرٌ the khabar (nominative)."
+        },
+        {
+          "arabic": "إِنَّمَا ٱللَّهُ إِلَٰهٌ وَٰحِدٌ",
+          "transliteration": "innamā Allāhu ilāhun wāḥidun",
+          "meaning": "Allah is but one God",
+          "rule": "4:171. إِنَّمَا is a sister of إِنَّ; here ٱللَّهُ stays nominative because mā prevents government."
+        }
+      ],
+      "rules": [
+        {
+          "name": "كَانَ and its sisters",
+          "description": "They copy the nominal sentence and make the khabar accusative. The ism stays nominative."
+        },
+        {
+          "name": "إِنَّ and its sisters",
+          "description": "They make the ism accusative. The khabar stays nominative."
+        }
+      ]
+    },
+    "exercises": [
+      {
+        "type": "multiple_choice",
+        "question": "What does كَانَ do to the khabar of a nominal sentence?",
+        "options": [
+          "Puts it in the accusative",
+          "Puts it in the genitive",
+          "Deletes it",
+          "Leaves both words unchanged"
+        ],
+        "correct": 0,
+        "explanation": "كَانَ keeps the ism nominative and puts the khabar in the accusative. 2:213 أُمَّةً is that khabar."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "What does إِنَّ do to the ism of a nominal sentence?",
+        "options": [
+          "Puts it in the accusative",
+          "Puts it in the genitive",
+          "Makes it jussive",
+          "Removes the case ending"
+        ],
+        "correct": 0,
+        "explanation": "إِنَّ puts the ism in the accusative and leaves the khabar nominative. 2:20 ٱللَّهَ is that ism."
+      }
+    ],
+    "category": "nahw"
+  },
+  {
     "id": "grammar-11",
     "title": "Balagha — Rhetorical Devices (البلاغة)",
     "module": "grammar",

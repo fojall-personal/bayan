@@ -86,6 +86,7 @@ const LESSON_EYEBROW: Record<string, string> = {
   'grammar-09': 'Nahw',
   'grammar-10': 'Nahw',
   'grammar-11': 'al-Balāgha al-Wāḍiḥa · balāgha',
+  'grammar-12': 'Qaṭr · nawāsikh',
 };
 
 export function LearningPage({ userId }: LearningPageProps) {

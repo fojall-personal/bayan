@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Layout, Beaker, Feather, BookOpen } from 'lucide-react';
 import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
+import { ArdtGlossary } from '@/components/grammar/ArdtGlossary';
 
 interface Lesson {
   id: string;
@@ -156,7 +157,7 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
           so this state could not arise — Rhetoric looked as full as Syntax while
           containing no rhetoric at all. An empty grid would replace one wrong impression
           with another, so the reason is stated. */}
-      {lessons.length === 0 && (
+      {lessons.length === 0 && category !== 'balagha' && (
         <Card>
           <h2 className="text-lg font-bold mb-2">No {info.name} lessons yet</h2>
           <p className="text-gray-400 mb-3">{EMPTY_REASON[category]}</p>
@@ -165,6 +166,7 @@ export function DeepDiveView({ category }: DeepDiveViewProps) {
           </Link>
         </Card>
       )}
+      {category === 'balagha' && <ArdtGlossary />}
 
       {/* Lesson selection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

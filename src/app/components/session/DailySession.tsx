@@ -152,7 +152,7 @@ export function DailySession() {
       {/* ── 2. Function words ──────────────────────────────────────────── */}
       {step === 'words' && (
         <div className="space-y-4">
-          <FunctionWords />
+          <FunctionWords compact />
           <Card>
             <Button onClick={advance} className="w-full">
               Continue — intensive reading

@@ -45,6 +45,8 @@ const GETS: [path: string, note: string][] = [
   ['/api/memorization/review/today', 'nothing due'],
   ['/api/session/plan', 'empty mixed session plan'],
   ['/api/grammar/elided', 'no syntax rows, empty item'],
+  ['/api/grammar/governor', 'no syntax rows, empty item'],
+  ['/api/grammar/irab-parse', 'no unread ayah with a concur-safe ʿāmil'],
   ['/api/memorization/retention', 'default retention, empty preview'],
   ['/api/memorization/surah/1', 'nothing tracked for this surah'],
   ['/api/progress/scores', 'no assessments'],
