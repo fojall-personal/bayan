@@ -26,7 +26,7 @@ export function shouldEmitGovernor(input) {
   return false;
 }
 
-const selfTest = process.argv.includes('--self-test');
+const selfTest = process.argv.includes('--self-test') || process.argv.includes('--check');
 if (selfTest) {
   const emit = shouldEmitGovernor({
     rel: 'Obj',

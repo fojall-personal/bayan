@@ -30,11 +30,24 @@ interface Item {
   known: boolean;
 }
 
-/** How many to show. The top 50 pairs are 94% of all function-word occurrences. */
+type Band = 'foundation' | 'ajurrumiyya' | 'qatr' | 'alfiyya' | 'irab';
+
+const BAND_EYEBROW: Record<Band, string> = {
+  foundation: 'Script has no particle target.',
+  ajurrumiyya: 'Ajurrūmiyya target: the 20 most frequent (lemma, pos) pairs.',
+  qatr: 'Qaṭr target: the 50 most frequent (lemma, pos) pairs.',
+  alfiyya: 'Alfiyya keeps the Qaṭr particle target of 50 pairs.',
+  irab: 'Iʿrāb keeps the particle target of 50 pairs.',
+};
+
+/** Fallback when the band is unknown. The top 50 pairs are 94% of occurrences. */
 const SHOWN = 50;
 
-export function FunctionWords() {
+export function FunctionWords({ compact = false }: { compact?: boolean }) {
   const [items, setItems] = useState<Item[]>([]);
+  const [pairTarget, setPairTarget] = useState(SHOWN);
+  const [band, setBand] = useState<Band | null>(null);
+  const [showLater, setShowLater] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -44,10 +57,21 @@ export function FunctionWords() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch<{ data: { items: Item[] } }>(
+      const fw = await apiFetch<{ data: { items: Item[] } }>(
         '/api/progress/function-words'
       );
-      setItems(res.data.items ?? []);
+      setItems(fw.data.items ?? []);
+      try {
+        const bandRes = await apiFetch<{
+          data: { band: Band; targets: { pairsTarget: number } };
+        }>('/api/progress/band');
+        setBand(bandRes.data.band);
+        setPairTarget(
+          bandRes.data.targets.pairsTarget > 0 ? bandRes.data.targets.pairsTarget : SHOWN
+        );
+      } catch {
+        setPairTarget(SHOWN);
+      }
     } catch (err) {
       setError(apiErrorMessage(err));
     }
@@ -104,22 +128,58 @@ export function FunctionWords() {
 
   // All counted over the full set, not the shown slice: knowing a word ranked 60th
   // must move both numbers or neither, or the header contradicts itself.
-  const shown = items.slice(0, SHOWN);
+  const target = items.slice(0, pairTarget);
+  const later = items.slice(pairTarget);
   const known = items.filter((i) => i.known);
   const sum = (xs: Item[]) => xs.reduce((n, i) => n + i.occurrences, 0);
   const totalOccurrences = sum(items);
   const knownOccurrences = sum(known);
 
+  const row = (item: Item) => {
+    const key = `${item.lemma}:${item.pos}`;
+    return (
+      <button
+        key={key}
+        type="button"
+        onClick={() => toggle(item)}
+        disabled={busy === key}
+        aria-pressed={item.known}
+        className={`flex min-h-11 w-full touch-manipulation items-center justify-between gap-3 rounded-lg border p-3 text-left transition-colors disabled:opacity-50 ${
+          item.known
+            ? 'border-leaf-500/50 bg-leaf-500/10'
+            : 'border-ground-800 hover:border-ground-700 hover:bg-ground-800/50'
+        }`}
+      >
+        <div className="flex items-baseline gap-3">
+          <span className="text-naskh text-2xl text-ground-50" dir="rtl" lang="ar">
+            {buckwalterToArabic(item.lemma)}
+          </span>
+          <span className="text-xs uppercase tracking-label text-ground-400">
+            {posName(item.pos)}
+          </span>
+        </div>
+        <div className="shrink-0 text-right">
+          <span className="text-xs text-ground-400">{item.occurrences.toLocaleString()}×</span>
+          {unlocked?.key === key && unlocked.ayahs > 0 && (
+            <span className="ml-2 text-xs text-leaf-400">+{unlocked.ayahs} ayahs</span>
+          )}
+        </div>
+      </button>
+    );
+  };
+
   return (
-    <div className="page-transition mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="font-display text-3xl">Function words</h1>
-        <p className="mt-1 text-sm text-ground-300">
-          {known.length} of {items.length} known ·{' '}
-          {knownOccurrences.toLocaleString()} of {totalOccurrences.toLocaleString()}{' '}
-          occurrences covered
-        </p>
-      </div>
+    <div className={compact ? 'space-y-4' : 'page-transition mx-auto max-w-2xl space-y-6'}>
+      {!compact && (
+        <div>
+          <h1 className="font-display text-3xl">Function words</h1>
+          <p className="mt-1 text-sm text-ground-300">
+            {known.length} of {items.length} known ·{' '}
+            {knownOccurrences.toLocaleString()} of {totalOccurrences.toLocaleString()}{' '}
+            occurrences covered
+          </p>
+        </div>
+      )}
 
       {error && (
         <Card>
@@ -133,53 +193,30 @@ export function FunctionWords() {
       <Card>
         <p className="text-sm text-ground-300">
           These have no root, so coverage used to assume you knew them — 35.5% of every
-          word in the Quran. The fifty below are 94% of all function-word occurrences.
-          Mark the ones you know.
+          word in the Quran. Mark the ones you know.
         </p>
+        {band && (
+          <p className="mt-2 text-xs uppercase tracking-label text-gold-400">
+            {BAND_EYEBROW[band]}
+          </p>
+        )}
       </Card>
 
-      <div className="space-y-2">
-        {shown.map((item) => {
-          const key = `${item.lemma}:${item.pos}`;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => toggle(item)}
-              disabled={busy === key}
-              aria-pressed={item.known}
-              className={`flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition-colors disabled:opacity-50 ${
-                item.known
-                  ? 'border-leaf-500/50 bg-leaf-500/10'
-                  : 'border-ground-800 hover:border-ground-700 hover:bg-ground-800/50'
-              }`}
-            >
-              <div className="flex items-baseline gap-3">
-                <span
-                  className="text-naskh text-2xl text-ground-50"
-                  dir="rtl"
-                  lang="ar"
-                >
-                  {buckwalterToArabic(item.lemma)}
-                </span>
-                <span className="text-xs uppercase tracking-label text-ground-400">
-                  {posName(item.pos)}
-                </span>
-              </div>
-              <div className="shrink-0 text-right">
-                <span className="text-xs text-ground-400">
-                  {item.occurrences.toLocaleString()}×
-                </span>
-                {unlocked?.key === key && unlocked.ayahs > 0 && (
-                  <span className="ml-2 text-xs text-leaf-400">
-                    +{unlocked.ayahs} ayahs
-                  </span>
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      <div className="space-y-2">{target.map(row)}</div>
+      {later.length > 0 && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="flex min-h-11 w-full touch-manipulation items-center justify-between rounded-md px-1 text-left text-xs uppercase tracking-label text-ground-400"
+            aria-expanded={showLater}
+            onClick={() => setShowLater((open) => !open)}
+          >
+            <span>Later · {later.length} pairs past this band</span>
+            <span>{showLater ? 'Hide' : 'Show'}</span>
+          </button>
+          {showLater && later.map(row)}
+        </div>
+      )}
     </div>
   );
 }

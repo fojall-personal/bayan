@@ -17,6 +17,8 @@ import { ReviewSession } from '@/components/memorization/ReviewSession';
 import { FunctionWords } from '@/components/vocabulary/FunctionWords';
 import { TashkilDrill } from '@/components/grammar/TashkilDrill';
 import { ElidedSubjectDrill } from '@/components/grammar/ElidedSubjectDrill';
+import { GovernorDrill } from '@/components/grammar/GovernorDrill';
+import { IrabParseDrill } from '@/components/grammar/IrabParseDrill';
 import { LetterPad } from '@/components/ui/LetterPad';
 
 type SessionItemType =
@@ -445,7 +447,7 @@ export function MixedSessionRunner() {
               </Button>
             </Card>
           ) : (
-            <FunctionWords />
+            <FunctionWords compact />
           )}
           <Button
             className="w-full"
@@ -574,22 +576,13 @@ export function MixedSessionRunner() {
         <Card>
           <p className="text-xs uppercase tracking-label text-gold-400">{TYPE_LABEL.governor}</p>
           <h2 className="mt-1.5 text-xl font-semibold">{current.label}</h2>
-          <p className="mt-2 text-sm text-ground-300">
-            Name the token ʿāmil. QAC GPL · treebank CC BY · Tanzil CC BY.
-          </p>
-          <Link href="/grammar" className="mt-4 block">
-            <Button variant="secondary" className="w-full">
-              Open governor drills
-            </Button>
-          </Link>
-          <Button
-            className="mt-2 w-full"
-            onClick={() =>
-              recordAndAdvance({ itemId: current.id, seconds: current.estimatedSeconds })
-            }
-          >
-            Continue
-          </Button>
+          <div className="mt-4">
+            <GovernorDrill
+              onDone={() =>
+                recordAndAdvance({ itemId: current.id, seconds: current.estimatedSeconds })
+              }
+            />
+          </div>
         </Card>
       )}
 
@@ -597,23 +590,13 @@ export function MixedSessionRunner() {
         <Card>
           <p className="text-xs uppercase tracking-label text-gold-400">{TYPE_LABEL.irab_parse}</p>
           <h2 className="mt-1.5 text-xl font-semibold">{current.label}</h2>
-          <p className="mt-2 text-sm text-ground-300">
-            Case, then governor. Elision when the treebank reconstructs a فاعل.
-            QAC GPL · treebank CC BY · Tanzil CC BY.
-          </p>
-          <Link href="/grammar" className="mt-4 block">
-            <Button variant="secondary" className="w-full">
-              Open grammar drills
-            </Button>
-          </Link>
-          <Button
-            className="mt-2 w-full"
-            onClick={() =>
-              recordAndAdvance({ itemId: current.id, seconds: current.estimatedSeconds })
-            }
-          >
-            Continue
-          </Button>
+          <div className="mt-4">
+            <IrabParseDrill
+              onDone={() =>
+                recordAndAdvance({ itemId: current.id, seconds: current.estimatedSeconds })
+              }
+            />
+          </div>
         </Card>
       )}
 

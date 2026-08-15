@@ -11,6 +11,8 @@ import {
   type MorphRow,
 } from '../lib/root-families';
 import { stripFinalHarakat } from '../lib/tashkil';
+import { gradeIrabParse, loadIrabParse, pickIrabParse, sampleGovernor } from '../lib/governor';
+import { sampleHomograph } from '../lib/homograph';
 import type {
   GrammarExerciseBankRow,
   GrammarMasteryRow,
@@ -140,7 +142,17 @@ grammarRoutes.post('/exercise', async (c) => {
       fromLesson?.module ??
       (typeof exerciseId === 'string' && exerciseId.startsWith('elided:')
         ? 'elided_subject'
-        : null);
+        : typeof exerciseId === 'string' && exerciseId.startsWith('governor:')
+          ? 'governor'
+          : typeof exerciseId === 'string' && exerciseId.startsWith('homograph:')
+            ? 'homograph'
+            : typeof exerciseId === 'string' && exerciseId.startsWith('irab_parse:case:')
+              ? 'case_ending'
+              : typeof exerciseId === 'string' && exerciseId.startsWith('irab_parse:governor:')
+                ? 'governor'
+                : typeof exerciseId === 'string' && exerciseId.startsWith('irab_parse:elision:')
+                  ? 'elided_subject'
+                  : null);
 
     // Fail loudly on an id that matches nothing.
     //
@@ -417,6 +429,8 @@ grammarRoutes.get('/exercises', async (c) => {
       'mutashabihat',
       // Implied فاعل — served live from quran_syntax, not the CSV generator.
       'elided_subject',
+      // Token ʿāmil — live from quran_syntax + morphology (same emit rule as F1).
+      'governor',
     ];
     if (!allowed.includes(kind)) {
       return c.json({ error: `kind must be one of ${allowed.join(', ')}` }, 400);
@@ -446,6 +460,26 @@ grammarRoutes.get('/exercises', async (c) => {
       });
     }
 
+    if (kind === 'governor') {
+      const items = await sampleGovernor(db, limit);
+      return c.json({
+        data: items.map((item) => ({
+          id: item.id,
+          kind: item.kind,
+          level: 1,
+          word: item.word,
+          prompt: item.prompt,
+          answer: item.answer,
+          options: item.options,
+          explanation: item.explanation,
+          source: item.source,
+          root: null,
+          ayahText: item.ayahText,
+        })),
+        attribution: TREEBANK_ATTRIBUTION,
+      });
+    }
+
     const rows = await db.query<Pick<GrammarExerciseBankRow, 'id' | 'kind' | 'level' | 'word_arabic' | 'prompt' | 'answer' | 'options' | 'explanation' | 'surah_id' | 'ayah_id' | 'root'>>(
       `SELECT id, kind, level, word_arabic, prompt, answer, options, explanation,
               surah_id, ayah_id, root
@@ -455,6 +489,25 @@ grammarRoutes.get('/exercises', async (c) => {
        LIMIT ?`,
       [...params, limit]
     );
+
+    if (kind === 'homograph' && rows.length === 0) {
+      const items = await sampleHomograph(db, limit);
+      return c.json({
+        data: items.map((item) => ({
+          id: item.id,
+          kind: item.kind,
+          level: 1,
+          word: item.word,
+          prompt: item.prompt,
+          answer: item.answer,
+          options: item.options,
+          explanation: item.explanation,
+          source: item.source,
+          root: null,
+        })),
+        attribution: CORPUS_ATTRIBUTION,
+      });
+    }
 
     return c.json({
       data: rows.map((r) => ({
@@ -474,6 +527,115 @@ grammarRoutes.get('/exercises', async (c) => {
     });
   } catch (error) {
     console.error('Exercise bank error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// GET /api/grammar/governor — one token-ʿāmil item, live from the treebank.
+grammarRoutes.get('/governor', async (c) => {
+  const db = getDb(c);
+  try {
+    const items = await sampleGovernor(db, 1);
+    if (items.length === 0) {
+      return c.json({ data: null, attribution: TREEBANK_ATTRIBUTION });
+    }
+    return c.json({ data: items[0], attribution: TREEBANK_ATTRIBUTION });
+  } catch (error) {
+    console.error('Governor error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// GET /api/grammar/irab-parse — one cold ayah, not mastered in ḥifẓ.
+grammarRoutes.get('/irab-parse', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+  try {
+    const item = await pickIrabParse(db, userId);
+    return c.json({ data: item, attribution: TREEBANK_ATTRIBUTION });
+  } catch (error) {
+    console.error('Irab-parse get error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// POST /api/grammar/irab-parse — grade case + governor (+ elision) and persist.
+grammarRoutes.post('/irab-parse', async (c) => {
+  const userId = c.get('userId');
+  const db = getDb(c);
+  try {
+    const body = (await c.req.json()) as {
+      surah?: unknown;
+      ayah?: unknown;
+      answers?: unknown;
+      elision?: unknown;
+    };
+    const surah = Number(body.surah);
+    const ayah = Number(body.ayah);
+    if (!Number.isInteger(surah) || surah < 1 || surah > 114 || !Number.isInteger(ayah) || ayah < 1) {
+      return c.json({ error: 'Expected surah 1–114 and a positive ayah' }, 400);
+    }
+    const item = await loadIrabParse(db, surah, ayah);
+    if (!item) {
+      return c.json({ error: 'No concur-safe parse for that ayah' }, 404);
+    }
+    const answers = Array.isArray(body.answers)
+      ? body.answers
+          .filter((a): a is { wordIndex: number; caseCase?: string; governor?: string } =>
+            Boolean(a && typeof a === 'object' && Number.isInteger((a as { wordIndex?: unknown }).wordIndex))
+          )
+          .map((a) => ({
+            wordIndex: a.wordIndex,
+            caseCase: typeof a.caseCase === 'string' ? a.caseCase : undefined,
+            governor: typeof a.governor === 'string' ? a.governor : undefined,
+          }))
+      : [];
+    const elision = typeof body.elision === 'string' ? body.elision : undefined;
+    const result = await gradeIrabParse(db, item, { surah, ayah, answers, elision });
+    for (const w of result.words) {
+      if (w.caseOk !== null) {
+        await db.run(
+          `INSERT INTO grammar_exercises (id, user_id, exercise_id, answer, correct, answered_at)
+           VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+          [
+            crypto.randomUUID(),
+            userId,
+            `irab_parse:case:${surah}:${ayah}:${w.wordIndex}`,
+            answers.find((a) => a.wordIndex === w.wordIndex)?.caseCase ?? '',
+            w.caseOk ? 1 : 0,
+          ]
+        );
+      }
+      if (w.governorOk !== null) {
+        await db.run(
+          `INSERT INTO grammar_exercises (id, user_id, exercise_id, answer, correct, answered_at)
+           VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+          [
+            crypto.randomUUID(),
+            userId,
+            `irab_parse:governor:${surah}:${ayah}:${w.wordIndex}`,
+            answers.find((a) => a.wordIndex === w.wordIndex)?.governor ?? '',
+            w.governorOk ? 1 : 0,
+          ]
+        );
+      }
+    }
+    if (result.elisionCorrect !== null) {
+      await db.run(
+        `INSERT INTO grammar_exercises (id, user_id, exercise_id, answer, correct, answered_at)
+         VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+        [
+          crypto.randomUUID(),
+          userId,
+          `irab_parse:elision:${surah}:${ayah}`,
+          elision ?? '',
+          result.elisionCorrect,
+        ]
+      );
+    }
+    return c.json({ data: result, attribution: TREEBANK_ATTRIBUTION });
+  } catch (error) {
+    console.error('Irab-parse post error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

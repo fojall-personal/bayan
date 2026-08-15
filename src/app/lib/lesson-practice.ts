@@ -154,6 +154,13 @@ export const LESSON_PRACTICE: Record<string, LessonPractice | null> = {
 
   // "Which particle negates this" is now a question the bank asks — 651 of them, from
   // the 2,688 NEG-tagged segments.
+  'grammar-12': {
+    kind: 'case_ending',
+    label: "Case endings (i'rab)",
+    because:
+      'Nawāsikh change the case of the ism and the khabar. The corpus records that case.',
+  },
+
   'grammar-10': {
     kind: 'negation',
     label: 'Which word negates',

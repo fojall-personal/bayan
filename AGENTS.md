@@ -404,6 +404,9 @@ GET    /api/grammar/deepdive/:category
 GET    /api/grammar/elided                          (one implied-فاعل item, live from quran_syntax)
 POST   /api/grammar/exercise
 GET    /api/grammar/exercises                       (38,995-item graded bank; ?level=1-5 &kind=)
+GET    /api/grammar/governor
+GET    /api/grammar/irab-parse
+POST   /api/grammar/irab-parse
 GET    /api/grammar/mastery
 POST   /api/grammar/parse
 GET    /api/grammar/root/:root                      (corpus-derived root family, Arabic script)

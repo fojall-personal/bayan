@@ -60,7 +60,7 @@ export const BAND_COPY: Record<
 export const BOOK_LESSON_IDS: Record<Band, readonly string[]> = {
   foundation: ['literacy-01', 'literacy-02', 'literacy-03', 'literacy-04', 'grammar-01'],
   ajurrumiyya: ['grammar-01', 'grammar-02', 'grammar-03', 'grammar-05', 'grammar-06'],
-  qatr: ['grammar-04', 'grammar-07', 'grammar-08', 'grammar-09', 'grammar-10'],
+  qatr: ['grammar-04', 'grammar-07', 'grammar-08', 'grammar-09', 'grammar-10', 'grammar-12'],
   alfiyya: ['grammar-11'],
   irab: [],
 };
@@ -80,6 +80,7 @@ export const BAND_GRAMMAR_IDS: Record<Band, readonly string[]> = {
     'grammar-08',
     'grammar-09',
     'grammar-10',
+    'grammar-12',
   ],
   alfiyya: [
     'grammar-01',
@@ -92,6 +93,7 @@ export const BAND_GRAMMAR_IDS: Record<Band, readonly string[]> = {
     'grammar-08',
     'grammar-09',
     'grammar-10',
+    'grammar-12',
     'grammar-11',
   ],
   irab: [
@@ -105,6 +107,7 @@ export const BAND_GRAMMAR_IDS: Record<Band, readonly string[]> = {
     'grammar-08',
     'grammar-09',
     'grammar-10',
+    'grammar-12',
     'grammar-11',
   ],
 };
@@ -403,6 +406,7 @@ export const LESSON_EYEBROW: Record<string, string> = {
   'grammar-09': 'Nahw',
   'grammar-10': 'Nahw',
   'grammar-11': 'al-Balāgha al-Wāḍiḥa · balāgha',
+  'grammar-12': 'Qaṭr · nawāsikh',
 };
 
 export const LESSON_COMPLETE_COPY: Record<string, string> = {

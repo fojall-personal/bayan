@@ -1106,8 +1106,21 @@ async function loadGate(
   const governor = await db.get<{ n: number }>(
     `SELECT COUNT(*) AS n FROM grammar_exercise_bank WHERE kind = 'governor'`
   );
+  const governorLive = await db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM quran_syntax
+      WHERE is_implied = 0 AND rel IN ('Obj', 'Subj', 'Poss')`
+  );
   const homograph = await db.get<{ n: number }>(
     `SELECT COUNT(*) AS n FROM grammar_exercise_bank WHERE kind = 'homograph'`
+  );
+  const homographLive = await db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM (
+       SELECT lemma FROM quran_word_morphology
+        WHERE root IS NULL AND lemma IS NOT NULL AND lemma <> '' AND pos IS NOT NULL
+        GROUP BY lemma
+       HAVING COUNT(DISTINCT pos) >= 2
+       LIMIT 1
+     )`
   );
   const tashkil = await db.get<{ n: number }>(
     `SELECT COUNT(*) AS n FROM grammar_exercises
@@ -1119,8 +1132,8 @@ async function loadGate(
     qatr_mc: await rollingKindAccuracy(db, userId, QATR_MC_KINDS),
     roles: await rollingKindAccuracy(db, userId, ROLES_KINDS),
     elided_subject: await rollingPrefixAccuracy(db, userId, 'elided:'),
-    homograph: await rollingKindAccuracy(db, userId, ['homograph']),
-    governor: await rollingKindAccuracy(db, userId, ['governor']),
+    homograph: await rollingPrefixAccuracy(db, userId, 'homograph:'),
+    governor: await rollingPrefixAccuracy(db, userId, 'governor:'),
     tashkil: await rollingPrefixAccuracy(db, userId, 'tashkil:'),
   };
   const items = gateItems(band, {
@@ -1133,8 +1146,8 @@ async function loadGate(
     patternsKnown: new Set(patterns.map((p) => p.verb_form)),
     assessmentLiteracy: assessment?.literacy_score ?? null,
     scriptQuizPct,
-    governorKindExists: (governor?.n ?? 0) > 0,
-    homographKindExists: (homograph?.n ?? 0) > 0,
+    governorKindExists: (governor?.n ?? 0) > 0 || (governorLive?.n ?? 0) > 0,
+    homographKindExists: (homograph?.n ?? 0) > 0 || (homographLive?.n ?? 0) > 0,
     tashkilPersisted: (tashkil?.n ?? 0) > 0,
   });
   return { items, ready: gateReady(items) };
@@ -1191,6 +1204,50 @@ async function loadBooks(
   return books;
 }
 
+async function loadCapstone(
+  db: Database,
+  userId: string
+): Promise<{
+  ayahs: number;
+  casePct: number;
+  governorPct: number;
+  elisionPct: number | null;
+}> {
+  const rows = await db.query<{ exercise_id: string; correct: number }>(
+    `SELECT exercise_id, correct FROM grammar_exercises
+      WHERE user_id = ? AND exercise_id LIKE 'irab_parse:%'`,
+    [userId]
+  );
+  const ayahs = new Set<string>();
+  let caseHit = 0;
+  let caseN = 0;
+  let govHit = 0;
+  let govN = 0;
+  let elHit = 0;
+  let elN = 0;
+  for (const r of rows) {
+    const parts = r.exercise_id.split(':');
+    if (parts.length >= 4) ayahs.add(`${parts[2]}:${parts[3]}`);
+    if (r.exercise_id.startsWith('irab_parse:case:')) {
+      caseN += 1;
+      if (r.correct === 1) caseHit += 1;
+    } else if (r.exercise_id.startsWith('irab_parse:governor:')) {
+      govN += 1;
+      if (r.correct === 1) govHit += 1;
+    } else if (r.exercise_id.startsWith('irab_parse:elision:')) {
+      elN += 1;
+      if (r.correct === 1) elHit += 1;
+    }
+  }
+  const pct = (h: number, n: number) => (n > 0 ? Math.round((h / n) * 100) : 0);
+  return {
+    ayahs: ayahs.size,
+    casePct: pct(caseHit, caseN),
+    governorPct: pct(govHit, govN),
+    elisionPct: elN > 0 ? pct(elHit, elN) : null,
+  };
+}
+
 progressRoutes.get('/band', async (c) => {
   const userId = c.get('userId');
   const db = getDb(c);
@@ -1209,6 +1266,7 @@ progressRoutes.get('/band', async (c) => {
     const idx = BAND_ORDER.indexOf(band);
     const copy = BAND_COPY[band];
     const books = await loadBooks(db, userId);
+    const capstone = await loadCapstone(db, userId);
     return c.json({
       data: {
         band,
@@ -1226,6 +1284,7 @@ progressRoutes.get('/band', async (c) => {
           pairsTarget: pairTarget,
         },
         books,
+        capstone,
       },
     });
   } catch (error) {
