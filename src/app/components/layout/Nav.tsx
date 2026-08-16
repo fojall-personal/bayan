@@ -47,7 +47,9 @@ function BayanLogo() {
  * "what now" rather than "how am I doing". Read absorbs Tajweed: the coloured
  * reader IS how you read here, so it is a view of the text rather than a separate
  * discipline. Progress keeps the record. Advanced is reachable from Memorize, next
- * to the practice its tools belong to.
+ * to the practice its tools belong to. The fifth tile is a corpus lookup; the
+ * label is Look up, because the page answers a word, a root, a location, or a
+ * named tajweed rule.
  *
  * Six also fits a phone without scrolling, which keeps the mobile menu meaningful.
  */
@@ -56,7 +58,7 @@ const LINKS = [
   { href: '/read', label: 'Read' },
   { href: '/memorization', label: 'Memorize' },
   { href: '/grammar', label: 'Grammar' },
-  { href: '/tutor', label: 'Tutor' },
+  { href: '/tutor', label: 'Look up' },
   { href: '/progress', label: 'Progress' },
 ];
 

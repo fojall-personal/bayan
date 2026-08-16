@@ -666,7 +666,7 @@ are the actual activities, and they carry the same visual weight as the other fo
 
 <h2>Proposed — one home, four activities, one record</h2>
 <div class="row" style="gap:8px">
-${[['Today','gold-500'],['Read','ground-800'],['Memorize','ground-800'],['Grammar','ground-800'],['Tutor','ground-800'],['Progress','ground-800']]
+${[['Today','gold-500'],['Read','ground-800'],['Memorize','ground-800'],['Grammar','ground-800'],['Look up','ground-800'],['Progress','ground-800']]
   .map(([n,c]) => `<span style="background:${c==='gold-500'?colour('gold-500'):colour('ground-800')};
    color:${c==='gold-500'?colour('ground-950'):colour('ground-50')};
    border:1px solid ${colour('ground-700')};padding:6px 12px;
@@ -1408,7 +1408,7 @@ rewritten to rank by accuracy over answered questions.</p>
   <div style="border-left:2px solid ${colour('ground-800')};padding-left:12px;margin:12px 0">
     <p style="margin:0;font-size:.8rem;color:var(--muted)">You · 3 days ago</p>
     <p style="margin:2px 0 10px;font-size:.9rem">What is the difference between إِنَّ and أَنَّ?</p>
-    <p style="margin:0;font-size:.8rem;color:var(--muted)">Tutor</p>
+    <p style="margin:0;font-size:.8rem;color:var(--muted)">Look up</p>
     <p style="margin:2px 0 0;font-size:.9rem">Both introduce a nominal clause and put
     its subject in the accusative…</p>
   </div>
