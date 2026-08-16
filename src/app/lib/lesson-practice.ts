@@ -4,7 +4,7 @@
  * ── Why this is a map and not a rule ────────────────────────────────────────
  *
  * The ten authored lessons carry 21 exercises between them — 2.1 each, against a gate
- * floor of 2. The derived bank next to them is a 39,991-item graded bank, every one
+ * floor of 2. The derived bank next to them is a 41,709-item graded bank, every one
  * traceable to a corpus row. Connecting the two multiplies the practice available without
  * adding a line of hand-authored Arabic, which matters because hand-authored Arabic is how
  * a moon letter ended up in the sun-letter list.
@@ -56,7 +56,8 @@ export type PracticeKind =
   | 'derived_noun'
   | 'fronting'
   | 'jinas'
-  | 'simile';
+  | 'simile'
+  | 'case_marker';
 
 export interface LessonPractice {
   kind: PracticeKind;
@@ -155,10 +156,10 @@ export const LESSON_PRACTICE: Record<string, LessonPractice | null> = {
   // "Which particle negates this" is now a question the bank asks — 651 of them, from
   // the 2,688 NEG-tagged segments.
   'grammar-12': {
-    kind: 'case_ending',
-    label: "Case endings (i'rab)",
+    kind: 'case_marker',
+    label: 'What marks this case (ضمة / واو / ألف)',
     because:
-      'Nawāsikh change the case of the ism and the khabar. The corpus records that case.',
+      'Nawāsikh change the case of the ism and the khabar. The marker kind asks which ending carries that case.',
   },
 
   'grammar-10': {

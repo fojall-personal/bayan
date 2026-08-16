@@ -634,7 +634,7 @@ ${box('Lesson 6 — The Idafa Construction', 'Level 2 · 20 min · unlocked by C
 ${/* Phrased as "N-item bank" on purpose: that is the shape gen-content-manifest.mjs
      matches, so this number now fails the build when it drifts. It said 4,950 through
      eight regenerations of the bank because "drawn from 4,950" matched no pattern. */ ''}
-${box('20 grammar exercises at level 3', 'Verb form, case ending, word meaning · from a 39,991-item bank')}
+${box('20 grammar exercises at level 3', 'Verb form, case ending, word meaning · from a 41,709-item bank')}
 ${box('Add an ayah to memorize', 'Curriculum suggests An-Nas 3 next · 908 ordered units')}
   </div>
 </div>
@@ -1306,8 +1306,8 @@ await writeFile(join(OUT, 'preview/spec-grammar-mastery.html'), shell(
 below are fixed: <code>choose()</code> posts every answer, the handler asks the BANK for the
 kind before falling back to lessons, and /progress reads per-kind mastery. Kept as the
 record of how three bugs hid each other, in the same spirit as the banners on
-<code>modules/</code>. The figures are as they were then — the bank now holds 39,991 items
-across 27 kinds.</p>
+<code>modules/</code>. The figures are as they were then — the bank now holds 41,709 items
+across 30 kinds.</p>
 
 <p style="max-width:66ch">The derived grammar bank is the largest thing in the
 app: <strong>4,950 exercises</strong> across seven kinds and five levels, every item

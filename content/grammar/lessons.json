@@ -700,6 +700,18 @@
         ],
         "correct": 0,
         "explanation": "إِنَّ puts the ism in the accusative and leaves the khabar nominative. 2:20 ٱللَّهَ is that ism."
+      },
+      {
+        "type": "multiple_choice",
+        "question": "In 4:171 إِنَّمَا ٱللَّهُ إِلَٰهٌ وَٰحِدٌ, why is ٱللَّهُ nominative?",
+        "options": [
+          "مَا prevents إِنَّ from governing",
+          "إِنَّمَا always takes the genitive",
+          "ٱللَّهُ is the khabar of كَانَ",
+          "The ism of إِنَّ is always nominative"
+        ],
+        "correct": 0,
+        "explanation": "إِنَّمَا is a sister of إِنَّ, but the extra مَا stops government. 4:171 ٱللَّهُ stays nominative."
       }
     ],
     "category": "nahw"

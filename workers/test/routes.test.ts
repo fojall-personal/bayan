@@ -1486,6 +1486,9 @@ describe('the exercise bank exposes all generated kinds', () => {
     // From the treebank's syntax layer.
     'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting', 'jinas', 'simile',
     'elided_subject',
+    'governor',
+    'homograph',
+    'case_marker',
   ];
 
   it('accepts every kind the generator emits', async () => {

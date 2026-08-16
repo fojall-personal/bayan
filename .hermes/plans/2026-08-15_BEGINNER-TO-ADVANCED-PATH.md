@@ -1197,11 +1197,11 @@ Locked in Key Decisions (2026-08-15):
 - Foundation omits typed ḥifẓ (`mixItems` skip; A3).
 - Human pass of the 11 authored lessons is skipped for now. C2 is unlock copy only. A2–D1 do not wait on `reviewedAt`.
 
-Still open. The named PR must not ship a silent default:
+Locked 2026-08-16:
 
-7. **Is the 28-item `fronting` bank enough to teach taqdīm?** Recommended: teach with 28 and say so. Decide before F3.
+7. **The 28-item `fronting` bank is the whole attested set.** Teach with those 28 and say so on the filter label. Do not invent more taqdīm items.
 
-8. **Cold-start of `irab_parse`: how “unfamiliar”?** Recommended: not in `memorization` as `status = 'mastered'`. Decide before F2.
+8. **Cold iʿrāb = not mastered in hifz.** `pickIrabParse` excludes ayahs inside a `memorization` span with `status = 'mastered'`. reviewing / learning still count as unfamiliar.
 
 ---
 

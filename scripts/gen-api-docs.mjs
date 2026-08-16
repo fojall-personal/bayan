@@ -79,7 +79,7 @@ const list = endpoints
 /** Notes worth keeping beside a path. Only for things a reader cannot infer. */
 const NOTES = {
   '/api/grammar/root/:root': 'corpus-derived root family, Arabic script',
-  '/api/grammar/exercises': '39,991-item graded bank; ?level=1-5 &kind=',
+  '/api/grammar/exercises': '41,709-item graded bank; ?level=1-5 &kind=',
   '/api/tutor/history': 'last 50 turns; the chat restores the most recent three',
   '/api/tutor/suggested-exercises': 'weak lessons by accuracy over answered questions',
   '/api/memorization/curriculum': '908 ordered units; ?level=1-6 &limit &offset',
