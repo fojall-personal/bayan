@@ -121,7 +121,7 @@ const ayat = textRaw
   .trim()
   .split('\n')
   .map((line) => {
-    const [surah, ayah, text] = line.split('|');
+    const [surah, ayah, text] = line.replace(/\r$/, '').split('|');
     const norm = normaliseArabic(text);
     return {
       surah: Number(surah),

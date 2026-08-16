@@ -37,7 +37,8 @@ export type SessionItemType =
   | 'root_lesson'
   | 'root_type'
   | 'governor'
-  | 'irab_parse';
+  | 'irab_parse'
+  | 'mutashabihat';
 
 export interface SessionItem {
   id: string;
@@ -64,6 +65,7 @@ export interface SessionPlan {
     root_type: number;
     governor: number;
     irab_parse: number;
+    mutashabihat: number;
   };
 }
 
@@ -102,6 +104,7 @@ function summarise(items: SessionItem[]): SessionPlan['summary'] {
     root_type: count('root_type'),
     governor: count('governor'),
     irab_parse: count('irab_parse'),
+    mutashabihat: count('mutashabihat'),
   };
 }
 
@@ -231,6 +234,7 @@ interface LoopOpts {
   hasGovernor: boolean;
   includeIrab: boolean;
   hasIntensive: boolean;
+  hasMutashabihat: boolean;
 }
 
 function loopItems(opts: LoopOpts): SessionItem[] {
@@ -238,6 +242,16 @@ function loopItems(opts: LoopOpts): SessionItem[] {
   if (band === 'foundation') return [];
 
   const items: SessionItem[] = [];
+
+  if (opts.hasMutashabihat) {
+    items.push({
+      id: 'mutashabihat:pair',
+      type: 'mutashabihat',
+      label: 'Which ayah is this?',
+      estimatedSeconds: LOOP_SECONDS,
+      payload: {},
+    });
+  }
 
   if (opts.nextFnWord) {
     items.push({
@@ -478,6 +492,13 @@ async function hasIntensiveQueue(db: Database, userId: string): Promise<boolean>
   return (row?.n ?? 0) > 0;
 }
 
+async function hasMutashabihatRow(db: Database): Promise<boolean> {
+  const row = await db.get<{ n: number }>(
+    `SELECT 1 AS n FROM grammar_exercise_bank WHERE kind = 'mutashabihat' LIMIT 1`
+  );
+  return row != null;
+}
+
 async function hasGovernorRow(db: Database): Promise<boolean> {
   const bank = await db.get<{ n: number }>(
     `SELECT COUNT(*) AS n FROM grammar_exercise_bank WHERE kind = 'governor'`
@@ -695,7 +716,7 @@ sessionRoutes.get('/plan', async (c) => {
     }
 
     const band = (await ensureBand(db, userId)) ?? 'foundation';
-    const [hifz, vocab, lesson, prefer, elided, nextFn, nextRoot, intensive, governor, irab] =
+    const [hifz, vocab, lesson, prefer, elided, nextFn, nextRoot, intensive, governor, irab, mutashabihat] =
       await Promise.all([
         fetchDueHifz(db, userId),
         fetchDueVocab(db, userId),
@@ -707,6 +728,7 @@ sessionRoutes.get('/plan', async (c) => {
         hasIntensiveQueue(db, userId),
         hasGovernorRow(db),
         hasIrabCandidate(db, userId),
+        hasMutashabihatRow(db),
       ]);
 
     const items = mixItems(
@@ -722,6 +744,7 @@ sessionRoutes.get('/plan', async (c) => {
         hasGovernor: governor,
         includeIrab: irab,
         hasIntensive: intensive,
+        hasMutashabihat: mutashabihat,
       }),
       prefer,
       band

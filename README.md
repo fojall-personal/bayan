@@ -51,7 +51,7 @@ What works today, honestly:
 | Database | Cloudflare D1, with `wrangler d1 migrations` |
 | Storage | Cloudflare R2 |
 | Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
-| Tests | Vitest (375 test blocks) + ESLint + `tsc`, all gated in CI |
+| Tests | Vitest (377 test blocks) + ESLint + `tsc`, all gated in CI |
 | CI/CD | GitHub Actions → Cloudflare Pages |
 | Cost | $0/month — a hard constraint, see plan §5 |
 
@@ -210,7 +210,7 @@ defect:
 | `sync-pages-config.mjs --check` | a missing Pages binding — the state that once made every data route 500 |
 
 ```bash
-cd workers   && npx tsc --noEmit && npm test    # 375 vitest test blocks
+cd workers   && npx tsc --noEmit && npm test    # 377 vitest test blocks
 cd src/app   && npx tsc --noEmit && npm run lint
 ```
 

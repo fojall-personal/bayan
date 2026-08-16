@@ -78,19 +78,25 @@ function levelFor(pct) {
 const targetCounter = new Map(); // "surah:ayah" -> how many items already target it
 const items = [];
 
+function cleanText(s) {
+  return String(s ?? '').replace(/\r/g, '');
+}
+
 function buildItem(target, other, pct) {
   const key = `${target.surah}:${target.ayah}`;
   const n = (targetCounter.get(key) ?? 0) + 1;
   targetCounter.set(key, n);
 
-  const firstWord = target.text.trim().split(/\s+/)[0] ?? target.text;
+  const targetText = cleanText(target.text);
+  const otherText = cleanText(other.text);
+  const firstWord = targetText.trim().split(/\s+/)[0] ?? targetText;
 
   // Deterministic shuffle of the two options, keyed on the item's own location —
   // same reasoning as homograph: random ordering breaks --check reproducibility,
   // and a fixed order would teach position instead of recognition.
   const seed = target.surah * 1000003 + target.ayah * 1009 + other.surah * 97 + other.ayah;
   const swap = mix32(seed) % 2 === 1;
-  const options = swap ? [other.text, target.text] : [target.text, other.text];
+  const options = swap ? [otherText, targetText] : [targetText, otherText];
 
   items.push({
     id: `mutashabihat-${target.surah}-${target.ayah}-${other.surah}-${other.ayah}`,
@@ -100,11 +106,11 @@ function buildItem(target, other, pct) {
     prompt:
       `Which of these is the real text of ${target.surah}:${target.ayah}? ` +
       `The other is from a very similar ayah elsewhere in the Quran.`,
-    answer: target.text,
+    answer: targetText,
     options,
     explanation:
-      `${target.surah}:${target.ayah} reads: ${target.text}\n` +
-      `The confusable text is ${other.surah}:${other.ayah}: ${other.text}`,
+      `${target.surah}:${target.ayah} reads: ${targetText}\n` +
+      `The confusable text is ${other.surah}:${other.ayah}: ${otherText}`,
     surah: target.surah,
     ayah: target.ayah,
     // No single word is "the point" here — segment_index carries a per-target

@@ -2358,4 +2358,15 @@ describe('mutashabihat exercises', () => {
     expect([...a!.options].sort()).toEqual([...b!.options].sort());
     expect(a!.answer).not.toBe(b!.answer);
   });
+
+  it('accepts random=1 and still returns mutashabihat items', async () => {
+    const h = H();
+    seedMutashabihat(h);
+    const { status, body } = await h.json<{ data: { kind: string }[] }>(
+      '/api/grammar/exercises?kind=mutashabihat&limit=1&random=1'
+    );
+    expect(status).toBe(200);
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].kind).toBe('mutashabihat');
+  });
 });

@@ -19,6 +19,7 @@ import { TashkilDrill } from '@/components/grammar/TashkilDrill';
 import { ElidedSubjectDrill } from '@/components/grammar/ElidedSubjectDrill';
 import { GovernorDrill } from '@/components/grammar/GovernorDrill';
 import { IrabParseDrill } from '@/components/grammar/IrabParseDrill';
+import { MutashabihatDrill } from '@/components/grammar/MutashabihatDrill';
 import { LetterPad } from '@/components/ui/LetterPad';
 
 type SessionItemType =
@@ -33,7 +34,8 @@ type SessionItemType =
   | 'root_lesson'
   | 'root_type'
   | 'governor'
-  | 'irab_parse';
+  | 'irab_parse'
+  | 'mutashabihat';
 type Grade = 'again' | 'hard' | 'good' | 'easy';
 type Reflection = 'recall' | 'particles' | 'meaning' | 'production';
 
@@ -96,6 +98,7 @@ const TYPE_LABEL: Record<SessionItemType, string> = {
   root_type: 'Type the root',
   governor: 'Name the ʿāmil',
   irab_parse: 'Parse an ayah',
+  mutashabihat: 'Near-identical ayahs',
 };
 
 const REFLECTIONS: { id: Reflection; label: string }[] = [
@@ -569,6 +572,22 @@ export function MixedSessionRunner() {
           >
             Check
           </Button>
+        </Card>
+      )}
+
+      {current.type === 'mutashabihat' && (
+        <Card>
+          <p className="text-xs uppercase tracking-label text-gold-400">
+            {TYPE_LABEL.mutashabihat}
+          </p>
+          <h2 className="mt-1.5 text-xl font-semibold">{current.label}</h2>
+          <div className="mt-4">
+            <MutashabihatDrill
+              onDone={() =>
+                recordAndAdvance({ itemId: current.id, seconds: current.estimatedSeconds })
+              }
+            />
+          </div>
         </Card>
       )}
 
