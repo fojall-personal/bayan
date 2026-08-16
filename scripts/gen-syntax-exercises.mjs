@@ -34,6 +34,11 @@
  * 7.3% of Obj candidates. Whether each rejection is a parser error or a real grammatical
  * exception is exactly what this script cannot decide, which is why it drops them both.
  *
+ * Elided subjects have no morphology row, so the second source there is the head verb's
+ * person/gender/number plus the written STEM pronouns that carry the same PNG. Apply only
+ * the elided_subject INSERT lines to an existing bank — a full emit DELETEs the other
+ * syntax kinds and will shrink them if PER_BUCKET is below what already shipped.
+ *
  * A learner therefore never sees an item whose answer rests on the parser being right, and
  * `scripts/ingest-treebank.mjs` refuses to load a release where the concurrence has
  * dropped. Two independent sources, both of which must say the same thing.
@@ -84,7 +89,26 @@ const caseByLoc = new Map();
 const formFreq = new Map();
 const formByLoc = new Map();
 const lemmaByLoc = new Map();
+const posByLoc = new Map();
+const pngByLoc = new Map();
 const LOCATION = /^\((\d+):(\d+):(\d+):(\d+)\)$/;
+/** Fused PNG, same parse as ingest-morphology.mjs (3FS, 2MP, 1P). */
+const PNG_RE = /\|([123])(M|F)?(S|D|P)\|?/;
+const pngKey = (person, gender, number) =>
+  person && number ? (gender ? `${person}${gender}${number}` : `${person}${number}`) : null;
+const foldElided = (token) =>
+  token
+    .replace(/[()*]/g, '')
+    .normalize('NFC')
+    .replace(/[ً-ْٰۖ-ۭـ]/g, '')
+    .replace(/[آأإٱ]/g, 'ا')
+    .replace(/ؤ/g, 'و')
+    .replace(/ئ/g, 'ي')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/\s+/g, ' ')
+    .trim();
+const attestedPronFolds = new Map();
 for (const line of corpusRaw.split('\n')) {
   if (!line || line.startsWith('#')) continue;
   const p = line.replace(/\r$/, '').split('\t');
@@ -96,8 +120,21 @@ for (const line of corpusRaw.split('\n')) {
   if (kase) caseByLoc.set(loc, kase);
   const lemma = p[3].match(/LEM:([^|]+)/)?.[1]?.trim() ?? null;
   if (lemma) lemmaByLoc.set(loc, lemma);
+  const pos = p[3].match(/POS:([A-Z]+)/)?.[1] ?? p[2] ?? null;
+  if (pos) posByLoc.set(loc, pos);
+  const pgn = p[3].match(PNG_RE);
+  const png = pgn ? pngKey(pgn[1], pgn[2] ?? null, pgn[3]) : null;
+  if (png) pngByLoc.set(loc, png);
   formByLoc.set(loc, p[1]);
   formFreq.set(p[1], (formFreq.get(p[1]) ?? 0) + 1);
+  if (pos === 'PRON' && p[3].includes('STEM') && png) {
+    const words = ayahWords.get(`${+m[1]}:${+m[2]}`);
+    const form = words?.[Number(m[3]) - 1];
+    if (form) {
+      if (!attestedPronFolds.has(png)) attestedPronFolds.set(png, new Set());
+      attestedPronFolds.get(png).add(foldElided(form));
+    }
+  }
 }
 
 /**
@@ -123,6 +160,7 @@ const C = {
   sentence: cx('sentence_id'), token: cx('token_id'), head: cx('ref_token_id'),
   surah: cx('chapter_id'), ayah: cx('verse_id'), word: cx('word_id'), seg: cx('tok_id'),
   rel: cx('rel_label'), derived: cx('derived_nouns'), pos: cx('pos'),
+  uthmani: cx('uthmani_token'),
 };
 const tokens = tbLines.slice(1).map((l) => l.split('\t'));
 const blank = (v) => !v || v === '_' || v === '-';
@@ -452,6 +490,97 @@ const DETACHED_OBJECT_PRONOUN = '<iy~aA';
     `fronting          ${String(emitted).padStart(5)} emitted — dropped: ` +
       `${dropped.order} not fronted, ${dropped.headPos} head not a verb, ` +
       `${dropped.case} uncorroborated, ${dropped.length} ayah too long, ` +
+      `${dropped.foils} too few distractors`
+  );
+}
+
+// ── Elided subject — حذف الفاعل ────────────────────────────────────────────
+//
+// Implied tokens have word_id 0 and no morphology row, so the case filter
+// cannot be the second source. The head verb's person/gender/number is
+// hand-verified. Written STEM pronouns in the same corpus attest which
+// surface forms carry that PNG. An item exists only where the treebank's
+// reconstructed token (folded) is among those attested forms.
+//
+// Measured on this release: 6,104 implied Subj tokens; 6,040 corroborated;
+// 59 dropped where the reconstruction disagrees with the verb (38 of those
+// are a 3FS verb reconstructed as أَنْتَ). The closed option set is the
+// pronouns this table actually reconstructs — never an authored list.
+{
+  const impliedSubj = tokens.filter((t) => Number(t[C.word]) < 1 && t[C.rel] === 'Subj');
+  const closed = [
+    ...new Set(
+      impliedSubj.map((t) => (t[C.uthmani] || '').replace(/[()*]/g, '').trim()).filter(Boolean)
+    ),
+  ];
+  let candidates = 0;
+  let emitted = 0;
+  const dropped = { head: 0, headPos: 0, png: 0, empty: 0, case: 0, foils: 0 };
+  for (const t of impliedSubj) {
+    candidates += 1;
+    const h = headOf(t);
+    if (!h || Number(h[C.word]) < 1) {
+      dropped.head += 1;
+      continue;
+    }
+    const hLoc = locOf(h);
+    if (posByLoc.get(hLoc) !== 'V') {
+      dropped.headPos += 1;
+      continue;
+    }
+    const png = pngByLoc.get(hLoc);
+    if (!png) {
+      dropped.png += 1;
+      continue;
+    }
+    const answer = (t[C.uthmani] || '').replace(/[()*]/g, '').trim();
+    if (!answer) {
+      dropped.empty += 1;
+      continue;
+    }
+    if (!attestedPronFolds.get(png)?.has(foldElided(answer))) {
+      dropped.case += 1;
+      continue;
+    }
+    const words = ayahWords.get(ayahOf(h));
+    const verb = words?.[Number(h[C.word]) - 1];
+    if (!verb) continue;
+
+    const key = `elided_subject|${ayahOf(t)}|${t[C.token]}`;
+    if (seen.has(key)) continue;
+    const foils = closed.filter((p) => foldElided(p) !== foldElided(answer));
+    if (foils.length < 3) {
+      dropped.foils += 1;
+      continue;
+    }
+    const picks = seededShuffle(foils, `el${ayahOf(t)}${t[C.token]}`).slice(0, 3);
+    seen.add(key);
+    emitted += 1;
+    exercises.push({
+      id: `elided_subject-${t[C.surah]}-${t[C.ayah]}-${t[C.token]}`,
+      kind: 'elided_subject',
+      level: levelFor(hLoc),
+      wordArabic: verb,
+      prompt:
+        `${verb} has an unwritten subject (فاعل محذوف). Which pronoun is ` +
+        `present at ${t[C.surah]}:${t[C.ayah]} but not written?`,
+      answer,
+      options: seededShuffle([answer, ...picks], `elo${ayahOf(t)}${t[C.token]}`),
+      explanation:
+        `The treebank reconstructs ${answer} as the elided فاعل of ${verb} at ` +
+        `${t[C.surah]}:${t[C.ayah]}. The morphology tags that verb ${png}, and ` +
+        `written ${png} pronouns in the same corpus include this form. Both ` +
+        `had to agree for this question to exist.`,
+      surah: Number(t[C.surah]),
+      ayah: Number(t[C.ayah]),
+      word: Number(h[C.word]),
+    });
+  }
+  log(
+    `elided_subject    ${String(emitted).padStart(5)} emitted — ` +
+      `${candidates} candidates, dropped: ${dropped.head} no verb head, ` +
+      `${dropped.headPos} head not a verb, ${dropped.png} head has no PNG, ` +
+      `${dropped.empty} empty token, ${dropped.case} uncorroborated, ` +
       `${dropped.foils} too few distractors`
   );
 }

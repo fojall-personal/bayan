@@ -1478,13 +1478,14 @@ describe('lesson results explain the mistakes', () => {
   });
 });
 
-describe('the exercise bank exposes all twenty-three kinds', () => {
+describe('the exercise bank exposes all generated kinds', () => {
   const KINDS = [
     'verb_form', 'case_ending', 'root_id', 'pos_id', 'aspect', 'word_meaning',
     'find_word', 'definiteness', 'negation', 'mood', 'voice', 'subject_agreement',
     'word_role', 'relative_pronoun', 'demonstrative', 'conditional', 'sentence_type',
     // From the treebank's syntax layer.
     'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting', 'jinas', 'simile',
+    'elided_subject',
   ];
 
   it('accepts every kind the generator emits', async () => {

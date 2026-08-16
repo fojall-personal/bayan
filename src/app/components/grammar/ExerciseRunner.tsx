@@ -2,7 +2,7 @@
 
 // Runs the corpus-derived grammar exercise bank.
 //
-// 38,995 items across 25 kinds and 5 levels, all generated from the morphology
+// 39,991 items across 27 kinds and 5 levels, all generated from the morphology
 // corpus. Every one carries the surah:ayah it came from, which is shown after
 // answering — the citation is the point. An exercise you can trace is one you can
 // disprove, which is exactly what the five hand-written grammar errors were not.

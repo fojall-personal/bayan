@@ -6,7 +6,7 @@
 
 The GitHub repo and this folder are `bayan`. Cloudflare D1, Pages, R2, and Access still use the live ids `languagebuilder`, `languagebuilder-frontend`, and `languagebuilder-assets`. Do not rename those in wrangler or CI.
 
-**Status:** All Phase 0, 1, and 2 modules built and deployed. Now working on Phase 3 advanced features.
+**Status:** Phases 0–2 shipped. Tutor is corpus lookup. Remaining work is in `PLAN.md` (Current state — 2026-08-15): a human read of the lessons.
 
 ---
 
@@ -14,7 +14,7 @@ The GitHub repo and this folder are `bayan`. Cloudflare D1, Pages, R2, and Acces
 
 ```
 bayan/
-├── PLAN.md                 # Master project plan with 12-module roadmap
+├── PLAN.md                 # July 2026 research + current-state section (2026-08-15)
 ├── AGENTS.md              # This file — agent instructions
 ├── modules/               # Design documentation for each module
 │   ├── 00-project-scaffolding.md
@@ -240,7 +240,7 @@ rule or say in the code why it does not apply.
 - Balagha has no lessons. It has three derived exercise kinds — fronting, jinās, tashbīh —
   and the Rhetoric tab says so. Metaphor and metonymy are not derivable and no available
   source annotates them
-- 38,995 exercises across 25 kinds; `gen-content-manifest.mjs --check` holds every count
+- 39,991 exercises across 27 kinds; `gen-content-manifest.mjs --check` holds every count
   quoted in prose to what is actually in the database
 
 ---
@@ -405,7 +405,7 @@ GET    /api/certificate/export
 GET    /api/grammar/deepdive/:category
 GET    /api/grammar/elided                          (one implied-فاعل item, live from quran_syntax)
 POST   /api/grammar/exercise
-GET    /api/grammar/exercises                       (38,995-item graded bank; ?level=1-5 &kind=)
+GET    /api/grammar/exercises                       (39,991-item graded bank; ?level=1-5 &kind=)
 GET    /api/grammar/governor
 GET    /api/grammar/irab-parse
 POST   /api/grammar/irab-parse
@@ -608,7 +608,7 @@ cd workers && npx wrangler d1 migrations apply languagebuilder --local
 
 ## References
 
-- **PLAN.md** — Full project roadmap
+- **PLAN.md** — July 2026 research; current remaining work is the 2026-08-15 section at the top
 - **modules/** — Detailed design documentation per module
 - **Quran.com API** — https://api.quran.com/
 - **Tanzil.net** — https://tanzil.net/

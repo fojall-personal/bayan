@@ -427,7 +427,8 @@ grammarRoutes.get('/exercises', async (c) => {
       // Two near-identical ayahs, one word apart — auto-detected by edit distance.
       // See scripts/find-mutashabihat.mjs and gen-mutashabihat-exercises.mjs.
       'mutashabihat',
-      // Implied فاعل — served live from quran_syntax, not the CSV generator.
+      // Implied فاعل — generated where the treebank token concurs with the
+      // head verb's hand-verified PNG. See scripts/gen-syntax-exercises.mjs.
       'elided_subject',
       // Token ʿāmil — live from quran_syntax + morphology (same emit rule as F1).
       'governor',
@@ -440,26 +441,6 @@ grammarRoutes.get('/exercises', async (c) => {
   }
 
   try {
-    if (kind === 'elided_subject') {
-      const items = await sampleElidedSubject(db, limit);
-      return c.json({
-        data: items.map((item) => ({
-          id: item.id,
-          kind: item.kind,
-          level: 1,
-          word: item.word,
-          prompt: item.prompt,
-          answer: item.answer,
-          options: item.options,
-          explanation: item.explanation,
-          source: item.source,
-          root: null,
-          ayahText: item.ayahText,
-        })),
-        attribution: TREEBANK_ATTRIBUTION,
-      });
-    }
-
     if (kind === 'governor') {
       const items = await sampleGovernor(db, limit);
       return c.json({
