@@ -1,5 +1,8 @@
 # Improvement Plan — 2026-08-08
 
+> **CLOSED.** 30 of 30 shipped. Do not execute this file. Live architecture is
+> `AGENTS.md` (2026-08-16). The branch name below is historical.
+
 ## For the executing agent
 Before anything else, confirm you are on branch agent-improvements-2026-08-08
 (git checkout it if not - never work on main). Work ONE unchecked task at a

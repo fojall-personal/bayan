@@ -54,7 +54,7 @@ What works today, honestly:
 | Backend | Hono, bundled as `_worker.js` inside the Pages output — one origin |
 | Database | Cloudflare D1, with `wrangler d1 migrations` |
 | Storage | Cloudflare R2 |
-| Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
+| Auth | Cloudflare Access JWT on the live site. Shared bearer is local/dev only |
 | Tests | Vitest (388 test blocks) + ESLint + `tsc`, all gated in CI |
 | CI/CD | GitHub Actions → Cloudflare Pages |
 | Cost | $0/month — a hard constraint, see plan §5 |

@@ -1,5 +1,8 @@
 # Corpus and content — 2026-07-26
 
+> Dated record. Live architecture: `AGENTS.md`. Translation is Saheeh
+> International. Scheduler is FSRS-6. Lesson count is 424.
+
 Written after a pass that started from two cosmetic complaints and ended in the
 data layer. Kept because both root causes are the kind that look like polish and
 are not.

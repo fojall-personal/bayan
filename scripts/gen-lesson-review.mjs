@@ -26,8 +26,8 @@
  * shaping, at a size where diacritics are legible. A markdown viewer will show the
  * characters; it will not show whether ٱلصَّلَوٰةَ looks right.
  *
- * The 60 generated lessons are summarised rather than listed in full. Reading 60
- * instances of one template is not 60 judgements, it is one — so the template is shown
+ * The generated root lessons are summarised rather than listed in full. Reading
+ * hundreds of instances of one template is one judgement — so the template is shown
  * once, filled with a real lesson, and the rest are tabulated.
  */
 
@@ -38,9 +38,13 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(root, 'docs/lesson-review.html');
 
-const authored = JSON.parse(
+const literacy = JSON.parse(
+  await readFile(join(root, 'content/literacy/lessons.json'), 'utf-8')
+);
+const grammarAuthored = JSON.parse(
   await readFile(join(root, 'content/grammar/lessons.json'), 'utf-8')
 );
+const authored = [...literacy, ...grammarAuthored];
 const generated = JSON.parse(
   await readFile(join(root, 'content/grammar/root-lessons.json'), 'utf-8')
 ).lessons;
