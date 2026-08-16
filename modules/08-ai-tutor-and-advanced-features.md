@@ -10,7 +10,8 @@
 >
 > Known to describe things that did not ship:
 > - audio recording of your own recitation — never built; no microphone capture exists
-> - a model-backed tutor — the tutor answers from corpus lookups and makes no model call
+> - a model-backed tutor — Look up (`/tutor`) answers from corpus lookups and makes no model call
+> - the on-screen name "AI Tutor" — the nav tile and page title are Look up (2026-08-16)
 
 
 ## Overview

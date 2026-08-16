@@ -10,6 +10,7 @@
 >
 > Known to describe things that did not ship:
 > - a /dashboard page — deleted; Today is the entry point
+> - a nav item labelled AI Tutor — the live label is Look up
 
 
 > **SUPERSEDED — historical spec.** The colours, type and tokens below describe

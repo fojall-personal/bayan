@@ -11,6 +11,7 @@
 > Known to describe things that did not ship:
 > - audio recording of your own recitation — never built; no microphone capture exists
 > - daily streaks — no streak counter shipped; /progress shows a weekly activity calendar
+> - an AI Tutor operate surface — the live page is Look up (`/tutor`)
 
 
 ## 1. Landing Page (Decide/Learn Surface)

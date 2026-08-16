@@ -1,7 +1,7 @@
 # Bayan — Content Structure & Learning Path Audit
 
 **Date:** 2026-08-05  
-**Status:** Complete — 4 Critical, 4 High-Priority, 4 Medium-Priority issues found  
+**Status:** Dated snapshot. Live counts: 424 lessons, 41,709 exercises, five bands. See `AGENTS.md`.  
 **Auditor:** Hermes subagent (deleg_58c5b66b)
 
 ---

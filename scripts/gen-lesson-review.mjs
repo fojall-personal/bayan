@@ -253,7 +253,7 @@ const html = `<!DOCTYPE html>
   will show the learner nothing after they get it wrong.</p>
 </div>
 
-<h1 style="margin-top:2.5rem">The ten authored lessons</h1>
+<h1 style="margin-top:2.5rem">The authored literacy and grammar lessons</h1>
 <p class="meta">Written by hand. These are the ones worth your attention — the prose is
    not derived from anything, so nothing but a reader can verify it.</p>
 ${authored.map(authoredLesson).join('')}
