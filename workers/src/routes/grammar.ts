@@ -485,7 +485,7 @@ grammarRoutes.get('/exercises', async (c) => {
               surah_id, ayah_id, root
        FROM grammar_exercise_bank
        ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-       ORDER BY level ASC, id ASC
+       ORDER BY ${c.req.query('random') === '1' ? 'RANDOM()' : 'level ASC, id ASC'}
        LIMIT ?`,
       [...params, limit]
     );

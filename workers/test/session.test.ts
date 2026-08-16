@@ -31,7 +31,8 @@ interface SessionItem {
     | 'root_lesson'
     | 'root_type'
     | 'governor'
-    | 'irab_parse';
+    | 'irab_parse'
+    | 'mutashabihat';
   label: string;
   estimatedSeconds: number;
   payload: Record<string, unknown>;
@@ -108,6 +109,30 @@ describe('GET /api/session/plan', () => {
     expect(types).not.toContain('root_lesson');
     expect(types).not.toContain('governor');
     expect(types).not.toContain('irab_parse');
+    expect(types).not.toContain('mutashabihat');
+  });
+
+  it('includes mutashabihat when the bank has a pair, except in Foundation', async () => {
+    H()
+      .db.prepare(
+        `INSERT INTO grammar_exercise_bank
+           (id, kind, level, word_arabic, prompt, answer, options, explanation,
+            surah_id, ayah_id, word_index, segment_index)
+         VALUES ('mutashabihat-27-81-30-53', 'mutashabihat', 5, 'وَمَآ',
+                 'Which of these is the real text of 27:81?',
+                 'وَمَآ أَنتَ بِهَٰدِى ٱلْعُمْىِ',
+                 '["a","b"]', 'e', 27, 81, 1, 1)`
+      )
+      .run();
+
+    setBand('foundation');
+    const foundation = await H().json<{ data: SessionPlan }>('/api/session/plan');
+    expect(foundation.body.data.items.map((i) => i.type)).not.toContain('mutashabihat');
+
+    H().db.prepare(`DELETE FROM user_sessions`).run();
+    setBand('alfiyya');
+    const alfiyya = await H().json<{ data: SessionPlan }>('/api/session/plan');
+    expect(alfiyya.body.data.items.filter((i) => i.type === 'mutashabihat')).toHaveLength(1);
   });
 
   it('includes one root_lesson in ajurrumiyya when a next-root lesson exists', async () => {
