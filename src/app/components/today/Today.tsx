@@ -49,6 +49,12 @@ interface NextLesson {
   estimated_minutes?: number;
 }
 
+interface BookLesson {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 
 /** One ayah from GET /api/progress/reading-queue. */
 interface ReadingQueueItem {
@@ -78,6 +84,7 @@ export function Today() {
   const [reading, setReading] = useState<ReadingQueueItem[]>([]);
   const [freeflow, setFreeflow] = useState<FreeflowRun | null>(null);
   const [lesson, setLesson] = useState<NextLesson | null>(null);
+  const [bookLesson, setBookLesson] = useState<BookLesson | null>(null);
   const [band, setBand] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +104,9 @@ export function Today() {
       apiFetch<{ data: { runs: FreeflowRun[] } }>(
         '/api/progress/freeflow?minWords=20'
       ),
-      apiFetch<{ data: { band: string } }>('/api/progress/band'),
+      apiFetch<{
+        data: { band: string; books?: Record<string, BookLesson[]> };
+      }>('/api/progress/band'),
     ]);
     if (cov.status === 'fulfilled') setCoverage(cov.value.data);
     else setError(apiErrorMessage(cov.reason));
@@ -105,7 +114,12 @@ export function Today() {
     if (next.status === 'fulfilled') setLesson(next.value.data?.lesson ?? null);
     if (queue.status === 'fulfilled') setReading(queue.value.data?.items ?? []);
     if (flow.status === 'fulfilled') setFreeflow(flow.value.data?.runs?.[0] ?? null);
-    if (bandRes.status === 'fulfilled') setBand(bandRes.value.data?.band ?? null);
+    if (bandRes.status === 'fulfilled') {
+      const payload = bandRes.value.data;
+      setBand(payload.band);
+      const sheet = payload.books?.[payload.band] ?? [];
+      setBookLesson(sheet.find((l) => !l.completed) ?? null);
+    }
     setLoading(false);
   }, []);
 
@@ -216,6 +230,20 @@ export function Today() {
             <Button className="w-full">Start session</Button>
           </Link>
         </Card>
+      ) : bookLesson ? (
+        <Card className="border-gold-500/40">
+          <p className="text-xs uppercase tracking-label text-gold-400">Next</p>
+          <h2 className="mt-1.5 text-xl font-semibold">
+            {bookLesson.title.split(' — ')[0].replace(/\s*\([^)]*\)\s*$/, '')}
+          </h2>
+          <p className="mt-1 text-sm text-ground-300">{bookLesson.title}</p>
+          <Link
+            href={`/learning?lesson=${encodeURIComponent(bookLesson.id)}`}
+            className="mt-4 block"
+          >
+            <Button className="w-full">Start this dars</Button>
+          </Link>
+        </Card>
       ) : nextRoot ? (
         <Card className="border-gold-500/40">
           <p className="text-xs uppercase tracking-label text-gold-400">Next</p>
@@ -265,19 +293,32 @@ export function Today() {
               </Card>
             </Link>
           )}
-          {/* Always present. Rendering this only when the API returns a next
-              lesson made the lesson path unreachable once every lesson was done,
-              or whenever that call failed — and "Learn" is no longer in the nav. */}
-          <Link href="/learning" className="block">
-            <Card interactive>
-              <p className="font-semibold">{lesson ? lesson.title : 'Grammar lessons'}</p>
-              <p className="mt-0.5 text-sm text-ground-300">
-                {lesson
-                  ? `Level ${lesson.level}${lesson.estimated_minutes ? ` · ${lesson.estimated_minutes} min` : ''}`
-                  : 'The authored path — eleven lessons, each gated on the one before'}
-              </p>
-            </Card>
-          </Link>
+          {bookLesson && nextRoot && (
+            <Link href={`/root?r=${encodeURIComponent(nextRoot.root)}`} className="block">
+              <Card interactive>
+                <p className="font-semibold">Learn one new root</p>
+                <p className="mt-0.5 text-sm text-ground-300">
+                  <span className="text-arabic text-gold-400" dir="rtl" lang="ar">
+                    {rootArabic(nextRoot.root)}
+                  </span>
+                  {' '}
+                  — {nextRoot.occurrences.toLocaleString()} times in the Quran
+                </p>
+              </Card>
+            </Link>
+          )}
+          {!bookLesson && (
+            <Link href="/learning" className="block">
+              <Card interactive>
+                <p className="font-semibold">{lesson ? lesson.title : 'Grammar lessons'}</p>
+                <p className="mt-0.5 text-sm text-ground-300">
+                  {lesson
+                    ? `Level ${lesson.level}${lesson.estimated_minutes ? ` · ${lesson.estimated_minutes} min` : ''}`
+                    : 'The authored path — each dars gated on the one before'}
+                </p>
+              </Card>
+            </Link>
+          )}
           <Link href="/grammar" className="block">
             <Card interactive>
               <p className="font-semibold">Practise grammar</p>

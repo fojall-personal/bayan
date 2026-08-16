@@ -366,6 +366,56 @@ describe('POST /api/learning/lessons/:id/submit skipped', () => {
   });
 });
 
+describe('GET /api/progress/band/skip-quiz', () => {
+  it('puts the three nawāsikh items on the Qaṭr check', async () => {
+    H().db.prepare(`UPDATE users SET current_band = 'qatr', band_source = 'manual' WHERE id = ?`).run(
+      TEST_USER
+    );
+    const { status, body } = await H().json<{
+      data: { band: string; items: { id: string }[] };
+    }>('/api/progress/band/skip-quiz');
+    expect(status).toBe(200);
+    const ids = body.data.items.map((i) => i.id);
+    expect(ids).toEqual(
+      expect.arrayContaining(['nawasikh-kana', 'nawasikh-inna', 'nawasikh-innama'])
+    );
+  });
+});
+
+describe('POST /api/progress/band/advance skip-quiz Qaṭr nawāsikh', () => {
+  it('advances Qaṭr at 3/3 nawāsikh and refuses at 2/3', async () => {
+    H().db.prepare(`UPDATE users SET current_band = 'qatr', band_source = 'manual' WHERE id = ?`).run(
+      TEST_USER
+    );
+    const miss = await H().json('/api/progress/band/advance', {
+      method: 'POST',
+      body: JSON.stringify({
+        evidence: 'skip-quiz',
+        answers: [
+          { id: 'nawasikh-kana', given: 0 },
+          { id: 'nawasikh-inna', given: 0 },
+          { id: 'nawasikh-innama', given: 1 },
+        ],
+      }),
+    });
+    expect(miss.status).toBe(409);
+
+    const ok = await H().json<{ data: { band: string } }>('/api/progress/band/advance', {
+      method: 'POST',
+      body: JSON.stringify({
+        evidence: 'skip-quiz',
+        answers: [
+          { id: 'nawasikh-kana', given: 0 },
+          { id: 'nawasikh-inna', given: 0 },
+          { id: 'nawasikh-innama', given: 0 },
+        ],
+      }),
+    });
+    expect(ok.status).toBe(200);
+    expect(ok.body.data.band).toBe('alfiyya');
+  });
+});
+
 describe('POST /api/progress/band/advance skip-quiz', () => {
   it('advances foundation at 70% and refuses at 65%', async () => {
     const failAnswers = [

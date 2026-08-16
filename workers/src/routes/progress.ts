@@ -1006,6 +1006,52 @@ const SCRIPT_CHECK: Array<{
   { id: 'script-8', prompt: 'Which letter is this?', display: 'ي', options: ['ى (alif maqsura)', 'ي (ya)', 'ب (ba)', 'ن (nun)'], correct: 1 },
 ];
 
+/** Authored Qaṭr skip items. Arabic is Tanzil 2:213, 2:20, 4:171. */
+const NAWASIKH_CHECK: Array<{
+  id: string;
+  prompt: string;
+  display: string;
+  options: string[];
+  correct: number;
+}> = [
+  {
+    id: 'nawasikh-kana',
+    prompt: 'What does كَانَ do to the khabar of a nominal sentence?',
+    display: 'كَانَ ٱلنَّاسُ أُمَّةً وَٰحِدَةً',
+    options: [
+      'Puts it in the accusative',
+      'Puts it in the genitive',
+      'Deletes it',
+      'Leaves both words unchanged',
+    ],
+    correct: 0,
+  },
+  {
+    id: 'nawasikh-inna',
+    prompt: 'What does إِنَّ do to the ism of a nominal sentence?',
+    display: 'إِنَّ ٱللَّهَ عَلَىٰ كُلِّ شَىْءٍ قَدِيرٌ',
+    options: [
+      'Puts it in the accusative',
+      'Puts it in the genitive',
+      'Makes it jussive',
+      'Removes the case ending',
+    ],
+    correct: 0,
+  },
+  {
+    id: 'nawasikh-innama',
+    prompt: 'In this clause, why is ٱللَّهُ nominative after إِنَّمَا?',
+    display: 'إِنَّمَا ٱللَّهُ إِلَٰهٌ وَٰحِدٌ',
+    options: [
+      'مَا prevents إِنَّ from governing',
+      'إِنَّمَا always takes the genitive',
+      'ٱللَّهُ is the khabar of كَانَ',
+      'The ism of إِنَّ is always nominative',
+    ],
+    correct: 0,
+  },
+];
+
 async function topPairKnown(db: Database, userId: string, n: number): Promise<number> {
   if (n <= 0) return 0;
   const row = await db.get<{ n: number }>(
@@ -1325,18 +1371,26 @@ progressRoutes.get('/band/skip-quiz', async (c) => {
       `SELECT id, prompt, options, word_arabic FROM grammar_exercise_bank
         WHERE kind IN (${kinds.map(() => '?').join(',')})
         ORDER BY RANDOM()
-        LIMIT 20`,
-      kinds
+        LIMIT ?`,
+      [...kinds, band === 'qatr' ? 17 : 20]
     );
+    const bankItems = rows.map((r) => ({
+      id: r.id,
+      prompt: r.prompt,
+      display: r.word_arabic,
+      options: JSON.parse(r.options || '[]') as string[],
+    }));
+    const items =
+      band === 'qatr'
+        ? [
+            ...NAWASIKH_CHECK.map(({ correct: _c, ...rest }) => rest),
+            ...bankItems,
+          ]
+        : bankItems;
     return c.json({
       data: {
         band,
-        items: rows.map((r) => ({
-          id: r.id,
-          prompt: r.prompt,
-          display: r.word_arabic,
-          options: JSON.parse(r.options || '[]') as string[],
-        })),
+        items,
       },
     });
   } catch (error) {
@@ -1381,17 +1435,42 @@ progressRoutes.post('/band/advance', async (c) => {
           if (idx === item.correct) correct += 1;
         }
       } else {
+        if (band === 'qatr') {
+          total = NAWASIKH_CHECK.length;
+          for (const item of NAWASIKH_CHECK) {
+            const given = answers.find(
+              (a: { id?: string }) => a && typeof a === 'object' && a.id === item.id
+            ) as { given?: unknown } | undefined;
+            const value = given?.given;
+            const idx =
+              typeof value === 'number'
+                ? value
+                : typeof value === 'string' && /^\d+$/.test(value)
+                  ? Number(value)
+                  : item.options.indexOf(String(value ?? ''));
+            if (idx === item.correct) correct += 1;
+          }
+        }
+        const authoredIds = new Set(NAWASIKH_CHECK.map((i) => i.id));
         for (const raw of answers) {
           if (!raw || typeof raw !== 'object') continue;
           const a = raw as { id?: string; given?: unknown };
-          if (!a.id) continue;
-          const row = await db.get<{ answer: string }>(
-            `SELECT answer FROM grammar_exercise_bank WHERE id = ?`,
+          if (!a.id || authoredIds.has(a.id)) continue;
+          const row = await db.get<{ answer: string; options: string }>(
+            `SELECT answer, options FROM grammar_exercise_bank WHERE id = ?`,
             [a.id]
           );
           if (!row) continue;
           total += 1;
-          if (String(a.given ?? '') === String(row.answer)) correct += 1;
+          const options = JSON.parse(row.options || '[]') as string[];
+          const given = a.given;
+          const value =
+            typeof given === 'number'
+              ? options[given]
+              : typeof given === 'string' && /^\d+$/.test(given)
+                ? options[Number(given)]
+                : given;
+          if (String(value ?? '') === String(row.answer)) correct += 1;
         }
       }
       const score = total === 0 ? 0 : Math.round((correct / total) * 100);
