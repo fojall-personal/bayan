@@ -156,11 +156,10 @@ export function TutorChat() {
   // a learner who has finished nothing has no measured weakness, and inventing one
   // would be the same fabrication as inferring known roots from a placement score.
   const genericPrompts = [
-    'Explain madd types',
-    'Help with grammar',
-    'Generate practice questions',
-    'Tips for memorization',
-    'Tajweed rules explanation',
+    '2:255',
+    'root ktb',
+    'madd',
+    'qalqalah',
   ];
 
   return (
@@ -168,10 +167,10 @@ export function TutorChat() {
       <div className="flex-1 overflow-y-auto space-y-4 mb-4 px-2">
         {messages.length === 0 && (
           <div className="py-8 text-center text-ground-300">
-            <p className="mb-2 text-lg">Ask about anything you are working on</p>
+            <p className="mb-2 text-lg">Look up a word, a root, or a location</p>
             <p className="text-sm text-ground-400">
-              Grammar, tajweed or memorisation. Answers come from the corpus, and it
-              says so when a word is not annotated rather than inventing one.
+              Named tajweed rules work too. The reply cites the corpus, and it
+              says so when a word is unannotated.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {genericPrompts.map((s) => (
@@ -331,7 +330,7 @@ export function TutorChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Ask about grammar, tajweed or memorisation"
+          placeholder="A word, a root, 2:255, or a tajweed rule"
           aria-label="Message the tutor"
           className="flex-1"
         />
