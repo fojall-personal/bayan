@@ -1,17 +1,17 @@
-# Language Builder — DESIGN.md
+# Bayan — DESIGN.md
 
 > **Palette section superseded.** The 12-tell anti-slop audit below is live
 > guidance and `globals.css` cites it. The COLOUR values are from the pre-rebrand
 > palette and no longer apply — take colours from `src/app/styles/globals.css`.
 
 
-> Design token specification for Language Builder.
+> Design token specification for Bayan.
 > Consumed by: all design and engineering agents working on this product.
 > Last updated: 2026-07-24.
 
 ## Philosophy
 
-Language Builder is a Quranic Arabic learning app for self-hosted use. The design must serve **serious study**, not engagement. Every visual choice should make the user feel focused, not distracted.
+Bayan is a Quranic Arabic learning app for self-hosted use. The design must serve **serious study**, not engagement. Every visual choice should make the user feel focused, not distracted.
 
 Core principles:
 - **Clarity over decoration.** No gradients, no glassmorphism, no icon-toppers.

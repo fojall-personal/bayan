@@ -1,4 +1,4 @@
-// Shared types for Language Builder
+// Shared types for Bayan
 // Synced between Workers (backend) and Next.js (frontend)
 
 export interface UserProfile {

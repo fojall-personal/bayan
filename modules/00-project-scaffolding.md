@@ -46,7 +46,7 @@ None — this is the first module.
 ## Architecture
 
 ```
-languagebuilder/
+bayan/
 ├── workers/                 # Cloudflare Workers (backend)
 │   ├── src/
 │   │   ├── index.ts         # Main worker entry, all routes
@@ -366,7 +366,7 @@ export default app;
 ### `app/package.json` — Frontend Dependencies
 ```json
 {
-  "name": "languagebuilder-app",
+  "name": "bayan-app",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -428,7 +428,7 @@ import './globals.css';
 import { Toaster } from 'sonner';
 
 export const metadata = {
-  title: 'Language Builder — Arabic Comprehension & Quran Learning',
+  title: 'Bayan — Arabic Comprehension & Quran Learning',
   description: 'Learn Classical Arabic, master Quran grammar, and track your memorization',
 };
 
@@ -438,7 +438,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-arabic-dark text-white">
         <nav className="border-b border-white/10 px-6 py-4">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <a href="/" className="text-xl font-bold text-arabic-green">Language Builder</a>
+            <a href="/" className="text-xl font-bold text-arabic-green">Bayan</a>
             <div className="flex gap-4">
               <a href="/assessment" className="text-sm text-gray-300 hover:text-white">Assessment</a>
               <a href="/learning" className="text-sm text-gray-300 hover:text-white">Learning</a>
@@ -480,7 +480,7 @@ wrangler d1 execute languagebuilder --local --file=workers/src/db/schema.sql
 wrangler d1 execute languagebuilder --binding=DB --command="SELECT 1"
 
 # 5. Set API token (single user key)
-# In Cloudflare dashboard → Workers → Language Builder → Environment Variables
+# In Cloudflare dashboard → Workers → Bayan → Environment Variables
 # Name: API_TOKEN, Value: <generate-random-64-char-string>
 
 # 6. Run worker locally

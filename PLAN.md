@@ -1,4 +1,4 @@
-# Language Builder — Web App Plan
+# Bayan — Web App Plan
 ## Arabic Comprehension, Classical Grammar & Quran Memorization
 
 
@@ -49,7 +49,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Language Builder                         │
+│                            Bayan                            │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌─────────────┐  ┌─────────────┐  ┌───────────────────┐  │
@@ -571,7 +571,7 @@ Every component from module 11 and page from module 12 must pass the anti-slop c
 ---
 
 *Last Updated: July 22, 2026*
-*Author: Language Builder Project Plan*
+*Author: Bayan Project Plan*
 *Status: Draft — Ready for Review*
 
 ---

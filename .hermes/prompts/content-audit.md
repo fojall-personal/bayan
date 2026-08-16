@@ -1,6 +1,6 @@
-# Language Builder — Content Structure & Learning Path Audit
+# Bayan — Content Structure & Learning Path Audit
 
-You are auditing the Learning Path and content structure of the Language Builder app. This is a Classical Arabic learning app focused on Quran comprehension, grammar (nahw, sarf, balagha), and memorization (hifz). The content must form a coherent progression that learners can follow from complete beginner to advanced reader.
+You are auditing the Learning Path and content structure of the Bayan app. This is a Classical Arabic learning app focused on Quran comprehension, grammar (nahw, sarf, balagha), and memorization (hifz). The content must form a coherent progression that learners can follow from complete beginner to advanced reader.
 
 ## What to check
 

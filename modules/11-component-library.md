@@ -1,4 +1,4 @@
-# Language Builder — Component Library
+# Bayan — Component Library
 
 > **Pre-implementation design spec.** Written before the code, and kept for its
 > reasoning rather than as a description of the app. Where it disagrees with the app,
@@ -96,7 +96,7 @@ export function Sidebar() {
           📚
         </div>
         <div>
-          <div className="font-bold text-lg">Language Builder</div>
+          <div className="font-bold text-lg">Bayan</div>
           <div className="text-xs text-gray-400">Arabic Learning</div>
         </div>
       </div>
