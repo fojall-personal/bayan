@@ -9,11 +9,11 @@
 >
 > Live product: `README.md` and `AGENTS.md`.
 > Corpus record: `docs/CONTENT-AND-CORPUS-2026-07-26.md`.
-> Remaining work: the section immediately below, dated 2026-08-15.
+> Remaining work: the section immediately below, dated 2026-08-16.
 
 ---
 
-## Current state — 2026-08-15
+## Current state — 2026-08-16
 
 Phases 0–2 shipped. Plan items F1–F9 shipped. Research items P1–P3 and P5
 shipped. Recitation checking (P4) was dropped: there is no microphone capture,
@@ -29,7 +29,7 @@ counter. Reviews use FSRS-6 on four grades.
 
 | Item | State |
 |------|--------|
-| **Human read of the 418 lessons** | Open as a review task. The 15 August path plan skipped this for the first cut. |
+| **Human read of the 424 lessons** | Open as a review task. The 15 August path plan skipped this for the first cut. |
 | **Self-recording / ASR** | Out by decision. Do not re-add without a new instruction. |
 
 Path leftovers closed 2026-08-16: generated `governor` bank; generated `homograph` bank (Alfiyya gate no longer deferred); Q7 teach taqdīm with the 28 attested fronting items and say so; Q8 cold iʿrāb = not mastered in hifz; nawāsikh dars is `grammar-12`; case-marker kind derived from form ending + morphology case.
@@ -63,12 +63,17 @@ with manzil in contiguous rotation.
 patterns (wazn). Pattern coverage is its own metric. A root × wazn grid
 lives on `/patterns`.
 
-**Grammar.** 418 lessons (10 authored, 408 generated). 41,709 exercises
-across 30 kinds. Parse lens names what each word does, including tokens
-the treebank reconstructs. The elided-فاعل bank is generated, not live-only.
+**Grammar.** 424 lessons (4 literacy, 12 authored grammar, 408 generated).
+41,709 exercises across 30 kinds. Parse lens names what each word does,
+including tokens the treebank reconstructs. The elided-فاعل bank is generated,
+not live-only.
 
-**Tutor.** Corpus lookup. It answers a word, a root, a location, or a named
-tajweed rule, and it refuses when the source is silent.
+**Look up.** The fifth nav tile. Route stays `/tutor`. Corpus lookup. It
+answers a word, a root, a location, or a named tajweed rule, and it refuses
+when the source is silent.
+
+**Tafsir.** Researched 2026-08-16. Stay with Saheeh International. No English
+tafsir dump without a written grant. Plan: `.hermes/plans/2026-08-16_TAFSIR-UNDER-AYAH.md`.
 
 **CI.** Nine content and schema gates. Migrations apply on every deploy.
 29 migrations. 16 routes. Live: `https://languagebuilder-frontend.pages.dev`.

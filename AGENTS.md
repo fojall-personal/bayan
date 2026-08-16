@@ -2,11 +2,39 @@
 
 ## Project Overview
 
-**Bayan** is a web application for learning Classical Arabic with a focus on Quran comprehension, grammar (nahw, sarf, balagha), and memorization (hifz). The app integrates diagnostic assessment, adaptive learning paths, spaced repetition memorization, tajweed visualization, and AI tutoring.
+**Bayan** is a web application for learning Classical Arabic with a focus on Quran comprehension, grammar (nahw, sarf, balagha), and memorization (hifz). The app integrates diagnostic assessment, a five-band curriculum spine, spaced repetition memorization, tajweed visualization, and a corpus lookup.
 
 The GitHub repo and this folder are `bayan`. Cloudflare D1, Pages, R2, and Access still use the live ids `languagebuilder`, `languagebuilder-frontend`, and `languagebuilder-assets`. Do not rename those in wrangler or CI.
 
-**Status:** Phases 0–2 shipped. Tutor is corpus lookup. Remaining work is in `PLAN.md` (Current state — 2026-08-15): a human read of the lessons.
+**Status:** Phases 0–2 shipped. Look up (`/tutor`) is corpus lookup. Remaining work is in `PLAN.md` (Current state — 2026-08-16): a human read of the lessons.
+
+---
+
+## Architecture (shipped 2026-08-16)
+
+One origin. Next.js 14 static export plus Hono as `_worker.js` on Cloudflare Pages. D1 holds the corpus and the single user. Access JWT authenticates every path. Cost stays $0.
+
+**Learner spine**
+
+- Six nav tiles: Today, Read, Memorize, Grammar, **Look up**, Progress.
+- Today shows one gold action and a band strip: Script → Ajurrūm → Qaṭr → Alfiyya → Iʿrāb.
+- `users.current_band` is the live pointer. `users.current_path` (`path1`/`path2`/`path3`) is stored and unused by session and next-lesson.
+- `users.goal` is stored at onboarding. It does not change the sitting.
+- `/session` mixes FSRS-due hifz with band-filtered drills. The Foundation loop is empty.
+- Look up is the `/tutor` route. It answers a word, a root, a location, or a named tajweed rule. It does not call a model.
+
+**Corpus**
+
+- Tanzil Uthmani text and Saheeh International translation (CC BY), SHA-pinned.
+- Quranic Arabic Corpus v0.4 morphology. Extended Quranic Treebank for syntax and elided tokens.
+- 424 lessons in `scripts/seed-lessons.sql`: 4 literacy, 12 authored grammar, 408 generated root families.
+- 41,709 exercises across 30 kinds.
+
+**Out by decision**
+
+- Self-recording / ASR.
+- Tafsir under the ayah, until a rights holder writes a redistribution grant. See `.hermes/plans/2026-08-16_TAFSIR-UNDER-AYAH.md`.
+- Workers AI as a source of Arabic.
 
 ---
 
@@ -14,7 +42,7 @@ The GitHub repo and this folder are `bayan`. Cloudflare D1, Pages, R2, and Acces
 
 ```
 bayan/
-├── PLAN.md                 # July 2026 research + current-state section (2026-08-15)
+├── PLAN.md                 # July 2026 research + current-state section (2026-08-16)
 ├── AGENTS.md              # This file — agent instructions
 ├── modules/               # Design documentation for each module
 │   ├── 00-project-scaffolding.md
@@ -65,11 +93,9 @@ bayan/
 | Backend | Hono, served as _worker.js inside the Pages output (one origin) |
 | Database | Cloudflare D1 (SQLite) |
 | Storage | Cloudflare R2 (audio, images) |
-| Cache | none bound yet — KV was listed but never used |
-| Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
-| TTS | Cloudflare Workers AI or external API |
-| STT | Cloudflare Workers AI (Whisper) or Azure |
-| Quran Data | Quran.com API + Tanzil.net |
+| Cache | none bound — KV was listed but never used |
+| Auth | Cloudflare Access JWT on every path |
+| Quran data | Tanzil (text + Saheeh) and pinned morphology / treebank / timings. No live Quran.com at read time |
 | CI/CD | GitHub Actions → Cloudflare Pages |
 
 ---
@@ -188,15 +214,15 @@ dispatches every endpoint through the real Hono app against a real SQLite databa
 from the migrations — see "Route-layer tests" below. Listed here as intent, not as fact:
 - Landing page → onboarding → Today
 - Memorization review session
-- AI tutor chat interaction
+- Look up (`/tutor`) corpus chat
 
 ---
 
 ## Content Data
 
 This section described a plan, not the build, and three of its claims were wrong: the
-translation is Saheeh International rather than Khattab, the grammar curriculum is 418
-lessons rather than 30, and the vocabulary file holds 103 words rather than 1,000. Corrected
+translation is Saheeh International rather than Khattab, the grammar curriculum is 424
+lessons rather than 30, and the vocabulary file holds 132 authored entries rather than 1,000. Corrected
 against the files, and every number below is either checked by a gate or cheap to re-derive.
 
 ### Sources, and what each licence requires
@@ -234,8 +260,8 @@ rule or say in the code why it does not apply.
   memorising, content words first, commonest-in-the-Quran first, each card citing its source
 
 ### Grammar curriculum
-- 418 lessons: 10 authored, 408 generated one-per-root from the corpus
-- Authored lessons carry `category` — `nahw` or `sarf`. Generated ones carry none, because
+- 424 lessons: 4 literacy, 12 authored grammar (`grammar-01`…`12`), 408 generated one-per-root
+- Authored grammar lessons carry `category` — `nahw`, `sarf`, or `balagha`. Generated ones carry none, because
   they teach vocabulary in a root family and are not one of the three disciplines
 - Balagha has no lessons. It has three derived exercise kinds — fronting, jinās, tashbīh —
   and the Rhetoric tab says so. Metaphor and metonymy are not derivable and no available
@@ -247,11 +273,7 @@ rule or say in the code why it does not apply.
 
 ## Authentication
 
-Single-user bearer token authentication:
-- Token stored in environment variable (`AUTH_TOKEN`)
-- No registration or login flow (self-hosted)
-- Token checked on every API request
-- No JWT, no sessions — simple header validation
+Cloudflare Access JWT on every path. The Worker checks the `Cf-Access-Jwt-Assertion` header against the Access AUD. Users are provisioned on first request. There is no in-app login form.
 
 ---
 
@@ -378,7 +400,7 @@ which catches the largest bug class this repo has had — a wrong column name.
 
 ## Lesson content
 
-Lives in `content/grammar/` (ten authored lessons plus sixty generated per-root) and is
+Lives in `content/literacy/` and `content/grammar/` (4 literacy + 12 authored grammar + 408 generated per-root) and is
 deployed by CI, which applies `scripts/seed-lessons.sql` through D1's query API before the
 Pages deploy. Regenerate the seed after any content edit; `gen-lessons-sql.mjs --check`
 fails the build otherwise. `wrangler d1 execute --file` will NOT work for this — it uses
@@ -490,9 +512,7 @@ The text ingest has run, so nothing here returns empty for want of data:
 translation, `quran_word_gloss` 77,429 word glosses, and `quran_word_morphology`
 128,219 segments.
 
-`POST /api/tutor/chat` is corpus lookups, not a model — it answers a word, a root, a
-location or a named tajweed rule, and says the corpus is silent rather than guessing.
-`POST /api/tutor/feedback` still returns a fixed string.
+The nav label for `/tutor` is **Look up**. `POST /api/tutor/chat` is corpus lookups — it answers a word, a root, a location or a named tajweed rule, and says the corpus is silent rather than guessing. There is no `POST /api/tutor/feedback` route.
 
 ---
 

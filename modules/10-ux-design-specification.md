@@ -10,6 +10,7 @@
 >
 > Known to describe things that did not ship:
 > - audio recording of your own recitation — never built; no microphone capture exists
+> - a sixth or eighth nav tile named Tutor / AI Tutor — the fifth tile is Look up (`/tutor`)
 
 
 > **SUPERSEDED — historical spec.** The colours, type and tokens below describe

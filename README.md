@@ -1,6 +1,6 @@
 # Bayan
 
-A web application for learning Classical Arabic with focus on Quran comprehension, grammar (nahw, sarf, balagha), and memorization (hifz). Integrates diagnostic assessment, adaptive learning paths, spaced repetition memorization, tajweed visualization, and AI tutoring.
+A web application for learning Classical Arabic with focus on Quran comprehension, grammar (nahw, sarf, balagha), and memorization (hifz). Integrates diagnostic assessment, a five-band curriculum spine, spaced repetition memorization, tajweed visualization, and a corpus lookup.
 
 The product, the GitHub repo, and this folder are **Bayan**. Cloudflare still uses the live ids `languagebuilder` (D1 and the Worker), `languagebuilder-frontend` (Pages), and `languagebuilder-assets` (R2). Those names stay because they are the production resources. Wrangler commands below keep those ids.
 
@@ -19,8 +19,9 @@ What works today, honestly:
 - **Placement assessment** — 18 questions across literacy, comprehension, grammar
   and memorization, about 15 minutes. Text only; there is no audio module, by
   decision.
-- **Adaptive paths** — the assessment assigns one of three curricula from your
-  weakest domain, and the result is stored rather than re-derived.
+- **Five bands** — Script → Ajurrūm → Qaṭr → Alfiyya → Iʿrāb. Placement,
+  onboarding, and calibration write `current_band`. Today’s gold card and the
+  mixed session read that band. The old `path1`/`path2`/`path3` label is unused.
 - **Learning** — lessons with graded exercises, sticky completion, best-of
   scoring, and a flashcard queue drawn from the ayahs you are memorising: content
   words only, commonest-in-the-Quran first, each card naming the ayah it came from.
@@ -33,12 +34,13 @@ What works today, honestly:
   boxed behind it so Arabic stays joined.
 - **Grammar** — three real disciplines, not three tabs over one list: nahw and sarf
   lessons, and balagha as the three devices that can actually be derived. 41,709
-  exercises whose results are recorded per kind and shown on Progress, plus 418
-  lessons: ten authored and 408 generated one-per-root from the corpus. The reader's
-  Parse lens states what each word *does* — فاعل, مفعول به, خبر, مضاف إليه — and which
-  words are implied but never written.
-- **Tutor** — corpus lookups, not a model. It answers a word, a root, a location or a
-  named tajweed rule, and refuses rather than inventing Arabic.
+  exercises whose results are recorded per kind and shown on Progress, plus 424
+  lessons: 4 literacy, 12 authored grammar, and 408 generated one-per-root from the
+  corpus. The reader's Parse lens states what each word *does* — فاعل, مفعول به,
+  خبر, مضاف إليه — and which words are implied but never written.
+- **Look up** — the fifth nav tile (`/tutor`). Corpus lookups. It answers a word,
+  a root, a location or a named tajweed rule, and refuses rather than inventing
+  Arabic.
 - **Coverage** — how much of the Quran you can read, computed from the roots you
   know. 400 roots make half of all 6,236 ayahs readable end to end.
 
@@ -337,7 +339,7 @@ application, in any Cloudflare account, would be accepted.
 
 ## 📊 Current status
 
-**Last updated: 2026-07-26**
+**Last updated: 2026-08-16**
 
 **Everything is deployed and working.** All 63 API endpoints resolve, all 16
 pages render, the database has 6,236 Quran verses and 77K morphology rows.
@@ -359,13 +361,13 @@ pages render, the database has 6,236 Quran verses and 77K morphology rows.
 | Design system | ✅ Generated from globals.css, published to claude.ai/design, drift gated |
 | Tajweed reader | ✅ Coloured Amiri script, joins intact, 10 rules all ≥4.5:1 |
 | Word glosses | ✅ 77,429 words; 96.2% agreement with 5 independent translators |
-| Tutor | ✅ Grounded in the corpus; cites sources, refuses when unannotated |
+| Look up | ✅ Nav tile for `/tutor`. Grounded in the corpus; cites sources, refuses when unannotated |
 | Home | ✅ Today — one action chosen from what is actually due |
 | Reader | ✅ One ayah, five lenses (recite, meaning, parse, memorize, ask) |
 | Translation | ✅ 6,236 verses, Saheeh International via Tanzil, SHA-pinned |
 | Coverage | ✅ Ayahs readable from known roots — 400 roots is half the Quran |
 | Arabic shaping | ✅ Measured intact across every screen; gated in CI |
-| Grammar lessons | ✅ 10, all reachable; claims checked against outside references |
+| Grammar lessons | ✅ 424 seeded (4 literacy + 12 authored + 408 roots); claims checked against outside references |
 | Auth | ✅ Per-user identity via Access JWT; shared token retired |
 
 ### Known issues (from frontend audit 2026-07-26)
@@ -393,7 +395,7 @@ microphone capture cannot be verified headlessly.
 | F5 | Diagnostic placement | ✅ and no longer a gate — skippable, with root calibration instead |
 | F6 | Tajweed track | ✅ rule reference, per-rule mastery, ten colours all ≥4.5:1 |
 | F7 | Progress | ✅ weekly activity calendar and coverage — ayahs readable from known roots. No daily streak counter: the helper that computed one had no caller and was removed |
-| F8 | Tutor | ✅ rewritten as corpus lookups; it refuses rather than inventing Arabic |
+| F8 | Look up | ✅ `/tutor` nav tile. Corpus lookups; it refuses rather than inventing Arabic |
 | F9 | Root families | ✅ 41,709 derived exercises across 30 kinds, and answers recorded — mastery per kind shows on /progress. Seven kinds shipped first. Ten more came from annotation the ingest had captured and the generator never read (definiteness, negation, mood, voice, subject agreement, word role, relative pronoun, demonstrative, conditional, sentence type). Six came from the treebank's syntax layer, each cross-checked against the hand-verified case (mubtada/khabar, fa'il, maf'ul bihi, idafa, derived nouns, fronting). Two are rhetorical devices derivable from what the corpus already records: jinās and tashbīh. Mutashabihat, elided فاعل, governor, homograph, and case-marker followed |
 
 ### Research plan P1–P5
@@ -418,7 +420,7 @@ Extended Quranic Treebank supplies the SYNTAX the morphology lacks, and three th
 followed from it. The `/grammar` deep-dive stopped being three tabs showing one thing —
 the endpoint took a category, used it for the mastery lookup and then queried
 `module = 'grammar'`, so Syntax, Morphology and Rhetoric returned byte-identical lists of
-all 418 lessons at 823 KB each. The Parse lens now states what each word DOES, not only
+all 424 lessons at 823 KB each. The Parse lens now states what each word DOES, not only
 what it is. And grammar-03 drills مبتدأ and خبر, which I had recorded here as permanently
 impossible — true of the corpus this project started from, false of the field.
 
@@ -427,7 +429,7 @@ dependency direction, paronomasia from shared roots, and simile from the compari
 Metaphor and metonymy have none and will not until a source annotates them; no available
 source does — the published Quranic rhetoric corpus covers two verses.
 
-**Next:** have a human read the lessons — 418 of them now, 1,245 exercises. That is the
+**Next:** have a human read the lessons — 424 of them now. That is the
 only remaining risk no gate can cover: every mechanical claim is checked (sun/moon
 membership, roots against the corpus, every Arabic example attested in the Quran, every
 exercise answerable and explained, no option position favoured), but whether they *teach
@@ -440,12 +442,12 @@ Endpoint triage is finished: every endpoint the app serves now has a caller, and
 ### What's working today
 
 - **Placement assessment** — 18 questions, about 15 minutes, text only, optional
-- **Adaptive paths** — Assigns curriculum from weakest domain
+- **Five bands** — Script → Ajurrūm → Qaṭr → Alfiyya → Iʿrāb
 - **Learning** — Lessons with graded exercises, flashcard queue
 - **Spaced repetition** — FSRS-6 scheduler with review UI and a due-today queue
 - **Tajweed** — Per-rule mastery, and coloured script that keeps Arabic joined
 - **Grammar** — Sentence parsing, conjugation tables, root families
-- **Tutor** — Corpus lookups over word, root, location and tajweed rule. No model
+- **Look up** — Corpus lookups over word, root, location and tajweed rule. No model
   call, and it says so when the corpus is silent rather than guessing
 - **Coverage** — How much of the Quran you can read, from the roots you know
 
