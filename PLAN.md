@@ -29,8 +29,10 @@ counter. Reviews use FSRS-6 on four grades.
 
 | Item | State |
 |------|--------|
-| **Human read of the 418 lessons** | Open. Gates check attestation, answers, and option balance. They cannot decide whether a lesson teaches well. `node scripts/gen-lesson-review.mjs` renders the set. |
+| **Human read of the 418 lessons** | Open as a review task. The 15 August path plan skipped this for the first cut. |
 | **Self-recording / ASR** | Out by decision. Do not re-add without a new instruction. |
+
+Path leftovers closed 2026-08-16: generated `governor` bank; generated `homograph` bank (Alfiyya gate no longer deferred); Q7 teach taqdīm with the 28 attested fronting items and say so; Q8 cold iʿrāb = not mastered in hifz; nawāsikh dars is `grammar-12`; case-marker kind derived from form ending + morphology case.
 
 Task 10 (generated `elided_subject` bank) shipped 2026-08-15: 750 items.
 Emit rule in `workers/src/lib/elided.ts`. 6,040 of 6,104 implied Subj
@@ -61,8 +63,8 @@ with manzil in contiguous rotation.
 patterns (wazn). Pattern coverage is its own metric. A root × wazn grid
 lives on `/patterns`.
 
-**Grammar.** 418 lessons (10 authored, 408 generated). 39,991 exercises
-across 27 kinds. Parse lens names what each word does, including tokens
+**Grammar.** 418 lessons (10 authored, 408 generated). 41,709 exercises
+across 30 kinds. Parse lens names what each word does, including tokens
 the treebank reconstructs. The elided-فاعل bank is generated, not live-only.
 
 **Tutor.** Corpus lookup. It answers a word, a root, a location, or a named

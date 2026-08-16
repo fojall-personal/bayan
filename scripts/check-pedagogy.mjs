@@ -356,6 +356,8 @@ notes.push(
     'mubtada_khabar', 'subject_word', 'object', 'idafa', 'derived_noun', 'fronting', 'jinas', 'simile',
     'elided_subject',
     'governor',
+    'homograph',
+    'case_marker',
   ]);
 
   const mapped = new Map();

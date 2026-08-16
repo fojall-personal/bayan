@@ -32,7 +32,7 @@ What works today, honestly:
   Ten rule colours, each ≥4.5:1 on the canvas, applied to the script rather than
   boxed behind it so Arabic stays joined.
 - **Grammar** — three real disciplines, not three tabs over one list: nahw and sarf
-  lessons, and balagha as the three devices that can actually be derived. 39,991
+  lessons, and balagha as the three devices that can actually be derived. 41,709
   exercises whose results are recorded per kind and shown on Progress, plus 418
   lessons: ten authored and 408 generated one-per-root from the corpus. The reader's
   Parse lens states what each word *does* — فاعل, مفعول به, خبر, مضاف إليه — and which
@@ -53,7 +53,7 @@ What works today, honestly:
 | Database | Cloudflare D1, with `wrangler d1 migrations` |
 | Storage | Cloudflare R2 |
 | Auth | Cloudflare Access JWT when configured; shared bearer token otherwise |
-| Tests | Vitest (381 test blocks) + ESLint + `tsc`, all gated in CI |
+| Tests | Vitest (388 test blocks) + ESLint + `tsc`, all gated in CI |
 | CI/CD | GitHub Actions → Cloudflare Pages |
 | Cost | $0/month — a hard constraint, see plan §5 |
 
@@ -212,7 +212,7 @@ defect:
 | `sync-pages-config.mjs --check` | a missing Pages binding — the state that once made every data route 500 |
 
 ```bash
-cd workers   && npx tsc --noEmit && npm test    # 381 vitest test blocks
+cd workers   && npx tsc --noEmit && npm test    # 388 vitest test blocks
 cd src/app   && npx tsc --noEmit && npm run lint
 ```
 
@@ -353,7 +353,7 @@ pages render, the database has 6,236 Quran verses and 77K morphology rows.
 | Syntax layer | ✅ 117,947 rows from the Extended Quranic Treebank — roles, constituents, 11,157 elided tokens; shown in the Parse lens |
 | Rhetorical devices | ✅ 95-device taxonomy pinned and gated; three devices derivable (taqdīm, jinās, tashbīh), metaphor is not |
 | Cloudflare Access | ✅ Enforcing — every path 302s to the login |
-| Grammar (corpus-derived) | ✅ 39,991 graded exercises, 131 (kind, level) buckets, 114/114 surahs; results recorded per exercise kind |
+| Grammar (corpus-derived) | ✅ 41,709 graded exercises, 144 (kind, level) buckets, 114/114 surahs; results recorded per exercise kind |
 | Memorization curriculum | ✅ 908 ordered units across all 114 surahs |
 | Content correctness | ✅ Gated in CI; 14 seeded defects all caught |
 | Design system | ✅ Generated from globals.css, published to claude.ai/design, drift gated |
@@ -394,7 +394,7 @@ microphone capture cannot be verified headlessly.
 | F6 | Tajweed track | ✅ rule reference, per-rule mastery, ten colours all ≥4.5:1 |
 | F7 | Progress | ✅ weekly activity calendar and coverage — ayahs readable from known roots. No daily streak counter: the helper that computed one had no caller and was removed |
 | F8 | Tutor | ✅ rewritten as corpus lookups; it refuses rather than inventing Arabic |
-| F9 | Root families | ✅ 39,991 derived exercises across 27 kinds, and answers recorded — mastery per kind shows on /progress. Seven kinds shipped first. Ten more came from annotation the ingest had captured and the generator never read (definiteness, negation, mood, voice, subject agreement, word role, relative pronoun, demonstrative, conditional, sentence type). Six came from the treebank's syntax layer, each cross-checked against the hand-verified case (mubtada/khabar, fa'il, maf'ul bihi, idafa, derived nouns, fronting). Two are rhetorical devices derivable from what the corpus already records: jinās and tashbīh. Mutashabihat and elided فاعل followed: near-duplicate ayahs, and implied subjects where the treebank token concurs with the head verb's PNG |
+| F9 | Root families | ✅ 41,709 derived exercises across 30 kinds, and answers recorded — mastery per kind shows on /progress. Seven kinds shipped first. Ten more came from annotation the ingest had captured and the generator never read (definiteness, negation, mood, voice, subject agreement, word role, relative pronoun, demonstrative, conditional, sentence type). Six came from the treebank's syntax layer, each cross-checked against the hand-verified case (mubtada/khabar, fa'il, maf'ul bihi, idafa, derived nouns, fronting). Two are rhetorical devices derivable from what the corpus already records: jinās and tashbīh. Mutashabihat, elided فاعل, governor, homograph, and case-marker followed |
 
 ### Research plan P1–P5
 

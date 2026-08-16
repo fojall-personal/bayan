@@ -287,6 +287,10 @@ export async function loadIrabParse(
   };
 }
 
+/**
+ * Q8 locked 2026-08-16: unfamiliar means the ayah is not in a mastered hifz
+ * span. reviewing / learning still count as cold.
+ */
 export async function pickIrabParse(
   db: Database,
   userId: string

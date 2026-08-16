@@ -430,8 +430,11 @@ grammarRoutes.get('/exercises', async (c) => {
       // Implied فاعل — generated where the treebank token concurs with the
       // head verb's hand-verified PNG. See scripts/gen-syntax-exercises.mjs.
       'elided_subject',
-      // Token ʿāmil — live from quran_syntax + morphology (same emit rule as F1).
+      // Token ʿāmil — generated where relation and case concur.
+      // See scripts/gen-governor-exercises.mjs.
       'governor',
+      // Letter/vowel that marks the case — form ending concurs with morphology case.
+      'case_marker',
     ];
     if (!allowed.includes(kind)) {
       return c.json({ error: `kind must be one of ${allowed.join(', ')}` }, 400);
@@ -441,26 +444,6 @@ grammarRoutes.get('/exercises', async (c) => {
   }
 
   try {
-    if (kind === 'governor') {
-      const items = await sampleGovernor(db, limit);
-      return c.json({
-        data: items.map((item) => ({
-          id: item.id,
-          kind: item.kind,
-          level: 1,
-          word: item.word,
-          prompt: item.prompt,
-          answer: item.answer,
-          options: item.options,
-          explanation: item.explanation,
-          source: item.source,
-          root: null,
-          ayahText: item.ayahText,
-        })),
-        attribution: TREEBANK_ATTRIBUTION,
-      });
-    }
-
     const rows = await db.query<Pick<GrammarExerciseBankRow, 'id' | 'kind' | 'level' | 'word_arabic' | 'prompt' | 'answer' | 'options' | 'explanation' | 'surah_id' | 'ayah_id' | 'root'>>(
       `SELECT id, kind, level, word_arabic, prompt, answer, options, explanation,
               surah_id, ayah_id, root

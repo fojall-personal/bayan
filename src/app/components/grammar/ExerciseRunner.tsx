@@ -2,7 +2,7 @@
 
 // Runs the corpus-derived grammar exercise bank.
 //
-// 39,991 items across 27 kinds and 5 levels, all generated from the morphology
+// 41,709 items across 30 kinds and 5 levels, all generated from the morphology
 // corpus. Every one carries the surah:ayah it came from, which is shown after
 // answering — the citation is the point. An exercise you can trace is one you can
 // disprove, which is exactly what the five hand-written grammar errors were not.
@@ -67,7 +67,7 @@ const KINDS = [
   { value: 'object', label: 'Which word is the object (مفعول به)' },
   { value: 'idafa', label: 'Which word is the مضاف إليه' },
   { value: 'derived_noun', label: 'Participle or verbal noun' },
-  { value: 'fronting', label: 'Which word is fronted (تقديم)' },
+  { value: 'fronting', label: 'Which word is fronted (تقديم) — all 28 attested' },
   // Kind 24. Paronomasia — ARDT device CA-1, and the only device of ʿilm al-badīʿ that
   // falls out of data this project already trusts, since it is a fact about roots.
   { value: 'jinas', label: 'Two words, one root (al-jinās)' },
@@ -81,6 +81,7 @@ const KINDS = [
   { value: 'mutashabihat', label: 'Which ayah is this? (near-identical verses)' },
   { value: 'elided_subject', label: 'Which pronoun is the unwritten فاعل' },
   { value: 'governor', label: 'Name the governor (عامل)' },
+  { value: 'case_marker', label: 'What marks this case (ضمة / واو / ألف)' },
 ];
 
 /**
