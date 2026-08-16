@@ -11,19 +11,21 @@
 // marking is the coverage model made visible where you actually read: "2 words to
 // learn" is a specific, finishable task, and tapping one offers its root.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Tabs } from '@/components/ui/Tabs';
 import { Select } from '@/components/ui/Select';
-import { AyahAudioButton } from '@/components/audio/AyahAudioButton';
+import { AyahAudioButton, type AyahAudioHandle } from '@/components/audio/AyahAudioButton';
+import { ayahWordClass, reciterById, TIMED_RECITERS, DEFAULT_RECITER } from '@/lib/ayah-audio';
 import { segmentVerse } from '@/lib/tajweed-render';
 import { rootToArabic as rootArabic } from '@/lib/arabic-root';
 import { apiFetch, apiPost, apiErrorMessage } from '@/lib/api';
 import { SURAHS, getSurah } from '@/lib/surahs';
 import { nextInRun } from '@/lib/freeflow-run';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 type Lens = 'recite' | 'meaning' | 'parse' | 'memorize' | 'ask';
 
@@ -104,6 +106,11 @@ const LENSES: { id: Lens; label: string }[] = [
   { id: 'ask', label: 'Ask' },
 ];
 
+/** Timings belong to a recording. The path is the same key the player uses. */
+function ayahPath(surah: number, ayah: number, reciterPath: string): string {
+  return `/api/quran/ayah/${surah}/${ayah}?reciter=${encodeURIComponent(reciterPath)}`;
+}
+
 export function AyahReader() {
   const router = useRouter();
   const params = useSearchParams();
@@ -162,6 +169,14 @@ export function AyahReader() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const audioRef = useRef<AyahAudioHandle>(null);
+  // Timed reciters only. Husary is in RECITERS for full-ayah Play elsewhere;
+  // he has no verified word alignment, so he is not a Read choice.
+  const [reciterId, setReciterId] = useLocalStorage<string>(
+    'bayan.reciter',
+    DEFAULT_RECITER.id
+  );
+  const reciter = reciterById(reciterId);
 
   /** The ayah actually on screen: the run's current position in continuous
    * mode, the URL's ayah otherwise. Everything that displays or plays "the
@@ -186,7 +201,7 @@ export function AyahReader() {
         );
         const results = await Promise.all(
           ayahNumbers.map((a) =>
-            apiFetch<{ data: Ayah }>(`/api/quran/ayah/${surah}/${a}`)
+            apiFetch<{ data: Ayah }>(ayahPath(surah, a, reciter.path))
           )
         );
         const run = results.map((r) => r.data);
@@ -194,7 +209,7 @@ export function AyahReader() {
         setRunIndex(0);
         setData(run[0] ?? null);
       } else {
-        const res = await apiFetch<{ data: Ayah }>(`/api/quran/ayah/${surah}/${ayah}`);
+        const res = await apiFetch<{ data: Ayah }>(ayahPath(surah, ayah, reciter.path));
         setRunAyahs(null);
         setData(res.data);
       }
@@ -205,7 +220,7 @@ export function AyahReader() {
     } finally {
       setLoading(false);
     }
-  }, [surah, ayah, ayahTo, continuousMode]);
+  }, [surah, ayah, ayahTo, continuousMode, reciter.path]);
 
   useEffect(() => {
     load();
@@ -272,7 +287,7 @@ export function AyahReader() {
   return (
     <div className="page-transition mx-auto max-w-3xl space-y-5">
       {/* Where you are, and how to move */}
-      <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+      <div className="grid gap-3 sm:grid-cols-[2fr_1fr_2fr]">
         <Select
           label="Surah"
           value={String(surah)}
@@ -289,6 +304,15 @@ export function AyahReader() {
           options={Array.from({ length: total }, (_, i) => ({
             value: String(i + 1),
             label: `Ayah ${i + 1}`,
+          }))}
+        />
+        <Select
+          label="Reciter"
+          value={reciter.id}
+          onChange={setReciterId}
+          options={TIMED_RECITERS.map((r) => ({
+            value: r.id,
+            label: r.name,
           }))}
         />
       </div>
@@ -312,8 +336,10 @@ export function AyahReader() {
           </div>
           <div className="flex items-center gap-1.5">
             <AyahAudioButton
+              ref={audioRef}
               surah={surah}
               ayah={currentAyah}
+              reciter={reciter}
               onPositionChange={setPositionMs}
               onEnded={continuousMode ? handleAyahEnded : undefined}
               autoPlay={continuousMode}
@@ -361,10 +387,44 @@ export function AyahReader() {
                 <span key={i}>{seg.text}</span>
               )
             )
+          ) : data.words.length > 0 && data.words.every((w) => w.arabic) ? (
+            data.words.map((w, i) => {
+              const sounding =
+                positionMs !== null &&
+                Boolean(w.timing) &&
+                positionMs >= w.timing!.startMs &&
+                positionMs < w.timing!.endMs;
+              const cls = ayahWordClass({ known: w.known, sounding });
+              const playable = !continuousMode && w.timing;
+              return (
+                <span key={w.position}>
+                  {i > 0 ? ' ' : ''}
+                  {playable ? (
+                    <button
+                      type="button"
+                      className={`m-0 cursor-pointer border-0 bg-transparent p-0 align-baseline ${cls}`}
+                      onClick={() =>
+                        audioRef.current?.playSlice(w.timing!.startMs, w.timing!.endMs)
+                      }
+                      aria-label={`Play word ${w.position}`}
+                    >
+                      {w.arabic}
+                    </button>
+                  ) : (
+                    <span className={cls}>{w.arabic}</span>
+                  )}
+                </span>
+              );
+            })
           ) : (
             data.textUthmani
           )}
         </p>
+        {lens === 'meaning' && (
+          <p className="mt-2 text-center text-xs text-ground-400">
+            Gold underline = a root you have not marked known.
+          </p>
+        )}
 
         {/* Word chips. Gold with a dotted underline means "you do not know this
             root yet" — a finishable list rather than a percentage. */}

@@ -17,15 +17,30 @@ export interface Reciter {
   name: string;
   /** Directory segment on everyayah.com. */
   path: string;
+  /** Word-level alignment exists for this exact encode. */
+  wordTimings: boolean;
 }
 
 export const RECITERS: Reciter[] = [
-  { id: 'alafasy', name: 'Mishary Alafasy', path: 'Alafasy_128kbps' },
-  { id: 'husary', name: 'Mahmoud Khalil Al-Husary', path: 'Husary_128kbps' },
-  { id: 'minshawi', name: 'Mohamed Siddiq Al-Minshawi', path: 'Minshawy_Murattal_128kbps' },
+  { id: 'alafasy', name: 'Mishary Alafasy', path: 'Alafasy_128kbps', wordTimings: true },
+  { id: 'husary', name: 'Mahmoud Khalil Al-Husary', path: 'Husary_128kbps', wordTimings: false },
+  { id: 'minshawi', name: 'Mohamed Siddiq Al-Minshawi', path: 'Minshawy_Murattal_128kbps', wordTimings: true },
 ];
 
 export const DEFAULT_RECITER = RECITERS[0];
+
+/** Reciters the Read picker may offer — highlight and tap need verified timings. */
+export const TIMED_RECITERS = RECITERS.filter((r) => r.wordTimings);
+
+/**
+ * Resolve a stored reciter id. Unknown or untimed ids become the default, so a
+ * stale localStorage value cannot request Husary timings that do not exist.
+ */
+export function reciterById(id: string | null | undefined): Reciter {
+  const found = RECITERS.find((r) => r.id === id);
+  if (found?.wordTimings) return found;
+  return DEFAULT_RECITER;
+}
 
 const pad3 = (n: number) => String(n).padStart(3, '0');
 
@@ -49,4 +64,17 @@ export function ayahAudioUrl(
     throw new RangeError(`ayah must be 1..286, got ${ayah}`);
   }
   return `https://everyayah.com/data/${reciter.path}/${pad3(surah)}${pad3(ayah)}.mp3`;
+}
+
+/** True when a word-slice playback has reached or passed its end. */
+export function wordSliceShouldStop(positionMs: number, endMs: number): boolean {
+  return positionMs >= endMs;
+}
+
+/** Classes for one word on the running ayah line (Meaning / Parse / …). */
+export function ayahWordClass(input: { known: boolean; sounding: boolean }): string {
+  const paint = input.known
+    ? 'text-ground-50'
+    : 'border-b border-dotted border-gold-500 text-gold-400';
+  return input.sounding ? `${paint} bg-leaf-500/20` : paint;
 }

@@ -13,8 +13,17 @@
 // observed in a hidden tab, where Chrome suspends media. The element's own
 // events are authoritative, so the UI cannot get out of step with it.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ayahAudioUrl, DEFAULT_RECITER, type Reciter } from '@/lib/ayah-audio';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import {
+  ayahAudioUrl,
+  DEFAULT_RECITER,
+  wordSliceShouldStop,
+  type Reciter,
+} from '@/lib/ayah-audio';
+
+export interface AyahAudioHandle {
+  playSlice: (startMs: number, endMs: number) => void;
+}
 
 interface AyahAudioButtonProps {
   surah: number;
@@ -52,17 +61,23 @@ interface AyahAudioButtonProps {
 
 type State = 'idle' | 'loading' | 'playing' | 'error';
 
-export function AyahAudioButton({
-  surah,
-  ayah,
-  reciter = DEFAULT_RECITER,
-  className = '',
-  onPositionChange,
-  onEnded,
-  autoPlay = false,
-}: AyahAudioButtonProps) {
+export const AyahAudioButton = forwardRef<AyahAudioHandle, AyahAudioButtonProps>(
+  function AyahAudioButton(
+    {
+      surah,
+      ayah,
+      reciter = DEFAULT_RECITER,
+      className = '',
+      onPositionChange,
+      onEnded,
+      autoPlay = false,
+    },
+    ref
+  ) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [state, setState] = useState<State>('idle');
+  const sliceStartMs = useRef<number | null>(null);
+  const sliceEndMs = useRef<number | null>(null);
 
   /**
    * The position/ended callbacks and the autoPlay flag, held in refs so the audio
@@ -130,8 +145,18 @@ export function AyahAudioButton({
 
     // Position reporting, driven by the frame clock so short words are not skipped.
     let frame = 0;
+    const maybeStopSlice = () => {
+      const end = sliceEndMs.current;
+      if (end == null) return;
+      if (wordSliceShouldStop(el.currentTime * 1000, end)) {
+        el.pause();
+        sliceStartMs.current = null;
+        sliceEndMs.current = null;
+      }
+    };
     const tick = () => {
       if (!el.paused && !el.ended) {
+        maybeStopSlice();
         positionCb.current?.(el.currentTime * 1000);
         frame = requestAnimationFrame(tick);
       }
@@ -153,7 +178,10 @@ export function AyahAudioButton({
     // every 250ms. rAF provides the smoothness when visible; timeupdate provides the
     // correctness when not.
     const onTimeUpdate = () => {
-      if (!el.paused && !el.ended) positionCb.current?.(el.currentTime * 1000);
+      if (!el.paused && !el.ended) {
+        maybeStopSlice();
+        positionCb.current?.(el.currentTime * 1000);
+      }
     };
 
     el.addEventListener('playing', startTicking);
@@ -196,6 +224,9 @@ export function AyahAudioButton({
     const el = audioRef.current;
     if (!el) return;
 
+    sliceStartMs.current = null;
+    sliceEndMs.current = null;
+
     if (state === 'playing') {
       el.pause();
       return;
@@ -203,6 +234,44 @@ export function AyahAudioButton({
 
     startPlayback(el);
   }, [state, startPlayback]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+    playSlice(startMs: number, endMs: number) {
+      const el = audioRef.current;
+      if (!el) return;
+      let url: string;
+      try {
+        url = ayahAudioUrl(surah, ayah, reciter);
+      } catch {
+        setState('error');
+        return;
+      }
+      if (state === 'playing' && sliceStartMs.current === startMs) {
+        el.pause();
+        sliceStartMs.current = null;
+        sliceEndMs.current = null;
+        return;
+      }
+      sliceStartMs.current = startMs;
+      sliceEndMs.current = endMs;
+      const seekAndPlay = () => {
+        el.currentTime = startMs / 1000;
+        setState('loading');
+        el.play().catch(() => setState('error'));
+      };
+      if (el.src !== url) {
+        el.src = url;
+        el.addEventListener('loadedmetadata', seekAndPlay, { once: true });
+        setState('loading');
+        return;
+      }
+      seekAndPlay();
+    },
+    }),
+    [state, surah, ayah, reciter]
+  );
 
   const text =
     state === 'playing'
@@ -226,4 +295,4 @@ export function AyahAudioButton({
       {text}
     </button>
   );
-}
+});

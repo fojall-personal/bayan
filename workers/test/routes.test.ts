@@ -475,6 +475,48 @@ describe('the ayah endpoint', () => {
     }>('/api/quran/ayah/2/3');
     expect(clash.body.data.words[0].segments[0].role).toBeNull();
   });
+
+  it('returns timings for the requested reciter, and none for an unknown one', async () => {
+    const t = H();
+    t.db
+      .prepare(
+        `INSERT INTO quran_verses (surah, ayah, text_uthmani, text_simple, translation, tajweed_tags)
+         VALUES (1, 1, 'بِسْمِ', 'بسم', null, '[]')`
+      )
+      .run();
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_gloss (surah_id, ayah_id, position, arabic, transliteration, english)
+         VALUES (1, 1, 1, 'بِسْمِ', 'bismi', 'In the name')`
+      )
+      .run();
+    t.db
+      .prepare(
+        `INSERT INTO quran_word_timing (reciter, surah_id, ayah_id, word_index, start_ms, end_ms)
+         VALUES ('Alafasy_128kbps', 1, 1, 1, 60, 610),
+                ('Minshawy_Murattal_128kbps', 1, 1, 1, 600, 930)`
+      )
+      .run();
+
+    const def = await t.json<{
+      data: { timingReciter: string | null; words: { timing: { startMs: number; endMs: number } | null }[] };
+    }>('/api/quran/ayah/1/1');
+    expect(def.status).toBe(200);
+    expect(def.body.data.timingReciter).toBe('Alafasy_128kbps');
+    expect(def.body.data.words[0].timing).toEqual({ startMs: 60, endMs: 610 });
+
+    const minshawi = await t.json<{
+      data: { timingReciter: string | null; words: { timing: { startMs: number; endMs: number } | null }[] };
+    }>('/api/quran/ayah/1/1?reciter=Minshawy_Murattal_128kbps');
+    expect(minshawi.body.data.timingReciter).toBe('Minshawy_Murattal_128kbps');
+    expect(minshawi.body.data.words[0].timing).toEqual({ startMs: 600, endMs: 930 });
+
+    const husary = await t.json<{
+      data: { timingReciter: string | null; words: { timing: { startMs: number; endMs: number } | null }[] };
+    }>('/api/quran/ayah/1/1?reciter=Husary_128kbps');
+    expect(husary.body.data.timingReciter).toBeNull();
+    expect(husary.body.data.words[0].timing).toBeNull();
+  });
 });
 
 describe('grammar mastery records what the learner answered', () => {
