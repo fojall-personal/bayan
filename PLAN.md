@@ -10,6 +10,10 @@
 > Live product: `README.md` and `AGENTS.md`.
 > Corpus record: `docs/CONTENT-AND-CORPUS-2026-07-26.md`.
 > Remaining work: the section immediately below, dated 2026-08-16.
+>
+> §§1–16 below are a July 2026 research draft. They still name Khattab, an AI
+> Tutor, SM-2, and Ibn Kathir as if those were the plan to build. Live: Saheeh
+> International, Look up (`/tutor`) as corpus lookup, FSRS-6, no tafsir ingest.
 
 ---
 

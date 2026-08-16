@@ -7,6 +7,8 @@
 > Authoritative now: `README.md` for what works and what is planned, `AGENTS.md` for the
 > live API and page lists (both generated from source and gated in CI), and
 > `docs/lesson-review.html` for the lesson content.
+>
+> Live 2026-08-16: five bands; Look up (`/tutor`); Saheeh International; 424 lessons; FSRS-6; Access JWT. See `AGENTS.md` Architecture.
 
 
 

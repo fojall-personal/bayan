@@ -841,7 +841,7 @@ ${[['Recite', 'gold-500'], ['Meaning', 'ground-800'], ['Parse', 'ground-800'],
 ${box('Recite', 'Tajweed colours on the script. Ten rules, all ≥4.5:1. Audio per ayah.')}
 ${box('Meaning', 'Word-by-word glosses, 77,429 of them, plus a full translation.')}
 ${box('Parse', 'The corpus record: root, lemma, part of speech, form, case. 128,219 segments.')}
-${box('Memorize', 'Add this ayah to the SM-2 schedule from where you are reading it.')}
+${box('Memorize', 'Add this ayah to the FSRS-6 schedule from where you are reading it.')}
 ${box('Ask', 'The tutor, scoped to THIS ayah — not a free-floating chat tab.')}
 </div>
 <p class="note">All five already exist as separate pages, each with its own surah
@@ -858,7 +858,7 @@ loop, and it is one join away from data already stored.</p>`,
 await writeFile(join(OUT, 'preview/flow-session.html'), shell(
   'The daily session', 'Product',
   `<div style="max-width:520px">
-${box('1 · Due reviews', 'Whatever SM-2 says is due — memorized ayahs, and roots you met before. Usually 4–8 minutes. Skippable when nothing is due, never invented to fill the slot.', 'ground-900')}
+${box('1 · Due reviews', 'Whatever FSRS-6 says is due — memorized ayahs, and roots you met before. Usually 4–8 minutes. Skippable when nothing is due, never invented to fill the slot.', 'ground-900')}
 ${arrow}
 ${box('2 · One new root', 'The next in frequency order. Shown with its family — the forms it actually takes in the text — and the ayahs it just opened.', 'ground-900')}
 ${arrow}
@@ -953,7 +953,7 @@ pointing at the thing to do next.</p>
 ${box('Recite', 'Tajweed colours on the script, ten rules, plus per-ayah audio. <code>GET /api/tajweed/verses/:surah</code> — already exists.')}
 ${box('Meaning', 'Word-by-word glosses. <code>quran_word_gloss</code>, 77,429 rows. Note there is NO full-translation table, so "meaning" is the gloss chain — worth saying rather than implying a translation exists.')}
 ${box('Parse', 'Root, lemma, part of speech, form, case, voice, per segment. <code>GET /api/quran/ayah/:surah/:ayah</code> returns it inline, and returns null where the corpus is silent so the UI can say "not annotated".')}
-${box('Memorize', 'Add this ayah to the SM-2 schedule from where you are reading. <code>POST /api/memorization/add</code> — already exists.')}
+${box('Memorize', 'Add this ayah to the FSRS-6 schedule from where you are reading. <code>POST /api/memorization/add</code> — already exists.')}
 ${box('Ask', 'The tutor, pre-scoped to this location. <code>POST /api/tutor/chat</code> — already exists and already classifies "2:255" as a location intent.')}
 </div>
 <p class="note"><strong>One new endpoint, not five.</strong> All of the above exists,

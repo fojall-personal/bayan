@@ -331,7 +331,7 @@ Action: Button (if applicable)
 - Progress bars + stat cards
 - Score history charts (real data only)
 
-### Operate Surface (Lessons, Flashcards, AI Tutor, Memorization Review)
+### Operate Surface (Lessons, Flashcards, Look up, Memorization Review)
 - Action affordances dominate
 - One clear next action per screen
 - Content first, exercise second
@@ -475,7 +475,7 @@ Use when the page's job is: "let me look at content and learn by interacting."
 | Memorization | `repeat` | الحفظ |
 | Tajweed | `book-marked` | التجويد |
 | Grammar | `type` | النحو |
-| AI Tutor | `bot` | المساعد |
+| Look up | `search` | البحث |
 | Settings | `settings` | الإعدادات |
 
 ### Icon Sizing Reference
