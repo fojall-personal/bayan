@@ -1,8 +1,10 @@
-# Language Builder — AGENTS.md
+# Bayan — AGENTS.md
 
 ## Project Overview
 
-**Language Builder** is a web application for learning Classical Arabic with a focus on Quran comprehension, grammar (nahw, sarf, balagha), and memorization (hifz). The app integrates diagnostic assessment, adaptive learning paths, spaced repetition memorization, tajweed visualization, and AI tutoring.
+**Bayan** is a web application for learning Classical Arabic with a focus on Quran comprehension, grammar (nahw, sarf, balagha), and memorization (hifz). The app integrates diagnostic assessment, adaptive learning paths, spaced repetition memorization, tajweed visualization, and AI tutoring.
+
+The GitHub repo and this folder are `bayan`. Cloudflare D1, Pages, R2, and Access still use the live ids `languagebuilder`, `languagebuilder-frontend`, and `languagebuilder-assets`. Do not rename those in wrangler or CI.
 
 **Status:** All Phase 0, 1, and 2 modules built and deployed. Now working on Phase 3 advanced features.
 
@@ -11,7 +13,7 @@
 ## Workspace Structure
 
 ```
-languagebuilder/
+bayan/
 ├── PLAN.md                 # Master project plan with 12-module roadmap
 ├── AGENTS.md              # This file — agent instructions
 ├── modules/               # Design documentation for each module

@@ -1,4 +1,4 @@
-# Language Builder — Content Structure & Learning Path Audit
+# Bayan — Content Structure & Learning Path Audit
 
 **Date:** 2026-08-05  
 **Status:** Complete — 4 Critical, 4 High-Priority, 4 Medium-Priority issues found  
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The Language Builder has a solid foundation with 419 total lessons (11 authored + 408 generated), 38,995 exercises, and a well-implemented FSRS spaced-repetition scheduler. However, there are critical content silos (root lessons aren't categorized), pedagogical sequencing issues (verb forms taught before case endings), and vocabulary gaps (no particles/conjunctions despite being essential for Quran comprehension). The assessment structure is robust with 4 modules, but the placement test-to-path mapping has threshold logic gaps.
+The Bayan has a solid foundation with 419 total lessons (11 authored + 408 generated), 38,995 exercises, and a well-implemented FSRS spaced-repetition scheduler. However, there are critical content silos (root lessons aren't categorized), pedagogical sequencing issues (verb forms taught before case endings), and vocabulary gaps (no particles/conjunctions despite being essential for Quran comprehension). The assessment structure is robust with 4 modules, but the placement test-to-path mapping has threshold logic gaps.
 
 ---
 

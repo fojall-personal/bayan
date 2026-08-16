@@ -1,4 +1,4 @@
-# Language Builder — Complete UI/UX Design Specification
+# Bayan — Complete UI/UX Design Specification
 
 > **Pre-implementation design spec.** Written before the code, and kept for its
 > reasoning rather than as a description of the app. Where it disagrees with the app,
@@ -693,4 +693,4 @@ module.exports = {
 
 ---
 
-This design system provides everything needed to build a polished, functional UI/UX for the Language Builder app. All components are reusable, responsive, and follow accessibility best practices.
+This design system provides everything needed to build a polished, functional UI/UX for the Bayan app. All components are reusable, responsive, and follow accessibility best practices.

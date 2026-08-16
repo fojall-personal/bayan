@@ -1,6 +1,6 @@
-# Language Builder — Architecture & UX Flow Audit
+# Bayan — Architecture & UX Flow Audit
 
-You are auditing the Language Builder app. This is a Next.js 14 (App Router) frontend served as static pages on Cloudflare Pages, with a Hono-based Cloudflare Workers backend that exposes REST APIs and serves as the single origin. The database is Cloudflare D1 (SQLite). Auth is a shared bearer token.
+You are auditing the Bayan app. This is a Next.js 14 (App Router) frontend served as static pages on Cloudflare Pages, with a Hono-based Cloudflare Workers backend that exposes REST APIs and serves as the single origin. The database is Cloudflare D1 (SQLite). Auth is a shared bearer token.
 
 ## What to check
 

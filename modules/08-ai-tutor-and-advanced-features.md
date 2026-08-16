@@ -209,7 +209,7 @@ async function loadTutorContext(db: Database, userId: string) {
 // Generate tutor response (simplified — would use external AI API in production)
 async function generateTutorResponse(message: string, context: any, history: any[]): Promise<string> {
   // System prompt with context
-  const systemPrompt = `You are a helpful Arabic language tutor for the Language Builder app.
+  const systemPrompt = `You are a helpful Arabic language tutor for the Bayan app.
 User's level: ${context.assessment?.level || 'beginner'}
 Learning path: ${context.currentPath}
 Weak areas: ${context.weakAreas.join(', ')}

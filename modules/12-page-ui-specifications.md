@@ -1,4 +1,4 @@
-# Language Builder — Page UI Specifications
+# Bayan — Page UI Specifications
 
 > **Pre-implementation design spec.** Written before the code, and kept for its
 > reasoning rather than as a description of the app. Where it disagrees with the app,

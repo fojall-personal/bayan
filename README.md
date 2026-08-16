@@ -1,6 +1,8 @@
-# Language Builder
+# Bayan
 
 A web application for learning Classical Arabic with focus on Quran comprehension, grammar (nahw, sarf, balagha), and memorization (hifz). Integrates diagnostic assessment, adaptive learning paths, spaced repetition memorization, tajweed visualization, and AI tutoring.
+
+The product, the GitHub repo, and this folder are **Bayan**. Cloudflare still uses the live ids `languagebuilder` (D1 and the Worker), `languagebuilder-frontend` (Pages), and `languagebuilder-assets` (R2). Those names stay because they are the production resources. Wrangler commands below keep those ids.
 
 ## 🎯 Vision
 
@@ -58,7 +60,7 @@ What works today, honestly:
 ## 📦 Project Structure
 
 ```
-languagebuilder/
+bayan/
 ├── content/           # Static content data (vocabulary, lessons, assessment, tajweed)
 │   ├── vocabulary/    # Core Quranic words
 │   ├── grammar/       # Grammar curriculum

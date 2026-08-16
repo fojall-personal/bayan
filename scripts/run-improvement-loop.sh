@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 export PATH="$HOME/.nvm/versions/node/v24.19.0/bin:$PATH"
-REPO="$HOME/workspace/languagebuilder"
+REPO="$HOME/workspace/bayan"
 BRANCH=agent-improvements-2026-08-08
 PLAN="$REPO/IMPROVEMENT_PLAN.md"
 LOG_DIR="$REPO/.agent-loop-logs"
