@@ -112,14 +112,13 @@ here so this plan doesn't redo already-shipped work:
 | 7 | `user_known_pattern` migration + endpoints | 6 (wazn) | ✅ done |
 | 8 | Wazn dimension in `/api/progress/coverage` | 6 (wazn) | ✅ done |
 | 9 | Root × wazn grid UI | 6 (wazn) | ✅ done |
-| 10 | Elided-subject exercise kind | 8 (governor) | ⛔ blocked — `data/quranic-treebank-eqtb.csv` missing on disk, not re-acquired; see Task 10's own notes |
+| 10 | Elided-subject exercise kind | 8 (governor) | ✅ done 2026-08-15 — CSV recovered (pinned SHA), emit only where reconstructed token folds to a written STEM pronoun of the head verb's PNG; 750 bank items |
 | 11 | Per-track retention target + workload preview | 7 (hifz) | ✅ done |
 | 12 | Cold-start / warm-context review flag | 7 (hifz) | ✅ done — also fixed a real bug: `isWarmStart` was parsing SQLite's naive `datetime('now')` string as local time instead of UTC |
 | 13 | Sabaq/sabqi/manzil tier classification + manzil rotation | 7 (hifz) | ✅ done — manzil selection verified with an actual 7-day clock-freeze simulation, not a hand trace |
 | 14 | Daily-loop session composer | Daily loop | ✅ done — `/session` route; live browser walkthrough not possible this pass (browser tool's CDP connection was unresponsive), verified via clean build + compiled-bundle content checks instead |
 
-**Plan complete.** Every task shipped except item 10 (honestly blocked on missing external
-data) and struck item 9 (ASR, out of scope by instruction).
+**Plan complete.** All 14 tasks shipped. Item 9 (ASR) remains struck.
 
 Struck: **item 9, ASR recitation grading — out of scope, do not build.**
 

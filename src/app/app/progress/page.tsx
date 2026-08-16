@@ -29,7 +29,7 @@ interface MasteryEntry {
 /**
  * Human labels for all 25 exercise kinds selectable in the filter.
  *
- * The filter offers 25 kinds; the bank currently holds rows for 17 of them; this map
+ * The filter offers every kind the runner lists; this map
  * must cover every kind the filter can select, so raw database enums never leak into
  * the UI. Three additional "Lesson exercises" labels cover module-driven attempts that
  * record their module instead of a bank kind.

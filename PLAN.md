@@ -2,19 +2,86 @@
 ## Arabic Comprehension, Classical Grammar & Quran Memorization
 
 
-> **SUPERSEDED — kept for its research, not its plan.**
+> **Sections 1–16 are the July 2026 research draft.** Keep them for the
+> competitor table, the assessment method, and the content sources. Do not
+> execute them as a roadmap. They described a product that did not yet exist,
+> and they marked modules complete while the app could not reach its own API.
 >
-> The roadmap, feature list and module checkboxes below are historical. They
-> marked eleven modules complete while six endpoints returned 500 and the
-> frontend could not reach the backend at all.
->
-> Current documents: `README.md`, `AGENTS.md` and
-> `docs/CONTENT-AND-CORPUS-2026-07-26.md`. The three that used to be listed here —
-> the v2 plan, the code audit and the local-session handoff — are removed; their
-> findings are closed and recorded in those two.
->
-> Sections 1 (research summary), 3 (assessment methodology) and 7 (content
-> sources) are still useful; the rest is not.
+> Live product: `README.md` and `AGENTS.md`.
+> Corpus record: `docs/CONTENT-AND-CORPUS-2026-07-26.md`.
+> Remaining work: the section immediately below, dated 2026-08-15.
+
+---
+
+## Current state — 2026-08-15
+
+Phases 0–2 shipped. Plan items F1–F9 shipped. Research items P1–P3 and P5
+shipped. Recitation checking (P4) was dropped: there is no microphone capture,
+and the hosted speech models are too weak on Quranic recitation.
+
+The product name is Bayan. Cloudflare still uses the live ids
+`languagebuilder`, `languagebuilder-frontend`, and `languagebuilder-assets`.
+The site and the API share one Pages origin. Access JWT authenticates every
+path. Today is the entry point. `/dashboard` is gone. There is no streak
+counter. Reviews use FSRS-6 on four grades.
+
+### Remaining work
+
+| Item | State |
+|------|--------|
+| **Human read of the 418 lessons** | Open. Gates check attestation, answers, and option balance. They cannot decide whether a lesson teaches well. `node scripts/gen-lesson-review.mjs` renders the set. |
+| **Self-recording / ASR** | Out by decision. Do not re-add without a new instruction. |
+
+Task 10 (generated `elided_subject` bank) shipped 2026-08-15: 750 items.
+Emit rule in `workers/src/lib/elided.ts`. 6,040 of 6,104 implied Subj
+corroborated; 59 dropped. Session still uses the live `/api/grammar/elided`
+sampler.
+
+The 2026-07-25 remaining slices 4–8 (accessibility, mobile, backend, copy,
+docs) are closed. That list is not the backlog.
+
+### What shipped after the original plan
+
+**Path.** Five bands on Today: Script → Ajurrūm → Qaṭr → Alfiyya → Iʿrāb.
+Placement, onboarding, and calibration write the same `user_band` row. Chips
+launch the book's authored lessons. Gold opens the next dars.
+
+**Session.** `/session` is a mixed sitting that FSRS schedules: due hifz
+(typed recall), vocabulary, function words, tashkīl, elided فاعل, ʿāmil,
+cold parse, mutashabihat, freeflow.
+
+**Read.** Five lenses, two reciters, tap-to-hear, continuous playback, a
+freeflow band above the 98% coverage threshold.
+
+**Hifz.** 908 ordered units. Grade from measured recall. Per-track retention
+with a workload preview. Cold-start vs warm-context. Sabaq / sabqi / manzil,
+with manzil in contiguous rotation.
+
+**Coverage.** Known roots, known function words (lemma, pos), and known
+patterns (wazn). Pattern coverage is its own metric. A root × wazn grid
+lives on `/patterns`.
+
+**Grammar.** 418 lessons (10 authored, 408 generated). 39,991 exercises
+across 27 kinds. Parse lens names what each word does, including tokens
+the treebank reconstructs. The elided-فاعل bank is generated, not live-only.
+
+**Tutor.** Corpus lookup. It answers a word, a root, a location, or a named
+tajweed rule, and it refuses when the source is silent.
+
+**CI.** Nine content and schema gates. Migrations apply on every deploy.
+29 migrations. 16 routes. Live: `https://languagebuilder-frontend.pages.dev`.
+
+### Closed July 25 claims (do not re-open)
+
+- Learning page content does not render
+- Memorization flow untested
+- Auth is a shared bearer token only
+- Scheduler is SM-2
+- Database has 22 migrations
+- UI/UX audit slices 4–8 are still waiting
+
+The 2026-08-08 improvement plan is 30 of 30. The 2026-08-11 remaining-slices
+plan is 14 of 14.
 
 ---
 
@@ -570,133 +637,4 @@ Every component from module 11 and page from module 12 must pass the anti-slop c
 
 ---
 
-*Last Updated: July 22, 2026*
-*Author: Bayan Project Plan*
-*Status: Draft — Ready for Review*
-
----
-
-## 7. Development Progress
-
-### Phase 0: Design Foundation ✅ Complete
-- [x] Module 09: Design System
-- [x] Module 11: Component Library
-- [x] Module 00: Project Scaffolding
-
-### Phase 1: MVP Feature Modules
-- [x] Module 01: Database Schema & Data Layer (content seed)
-- [x] Module 02: Assessment Engine (scoring + path assignment)
-- [x] Module 03: Learning Engine (lesson delivery, flashcards, spaced repetition)
-- [x] Module 04: Memorization Tracker (SM-2 spaced repetition, review sessions, surah progress)
-- [x] Module 05: Progress Dashboard & Onboarding (dashboard, streak, onboarding flow, score history)
-
-### Phase 2: Enhancement
-- [x] Module 06: Tajweed Visualization (color-coded text, makharij, mastery tracking)
-- [x] Module 07: Grammar Deep-Dive (sentence parser, conjugation tables, nahw/sarf/balagha, grammar checking)
-- [x] Module 08: AI Tutor & Advanced Features (tutor chat, suggested exercises, audio testing, certificate export)
-
-### Phase 2 COMPLETE: All 3 modules done
-- [ ] Module 03: Learning Engine
-- [ ] Module 04: Memorization Tracker
-- [ ] Module 05: Progress Dashboard & Onboarding
-
-
-
-### Phase 3: Advanced Features (In Progress)
-- [x] Module 08: AI Tutor & Advanced Features — Chat interface, adaptive questions, certificate export
-
-## UI/UX Audit Progress (Completed Slices 1-3)
-
-### Slice 1: React Rendering Verification ✅
-- **Status:** Complete
-- **Issues Found & Fixed:**
-  - Tailwind CSS not generating utility classes (7.6KB instead of 40KB)
-  - Root cause: `tailwind.config.ts` had incorrect content paths (`./src/app/...` instead of `./app/...`)
-  - Fixed content paths and rebuilt app
-  - globals.css corrupted with repeated `}` characters — restored from git
-  - All pages now render correctly with proper styling
-- **Verification:** CSS file now 40KB+ with all Tailwind utilities
-
-### Slice 2: Visual Design Compliance ✅
-- **Status:** Complete
-- **Verified:**
-  - Color tokens (primary, secondary, neutrals) used correctly across all components
-  - Arabic text styling (line-height 2.0, RTL direction, Arabic fonts)
-  - Responsive breakpoints working (mobile/tablet/desktop)
-  - Component consistency (buttons, cards, inputs, badges)
-  - Spacing and layout consistency
-  - Accessibility (focus states, color contrast, semantic HTML)
-- **Issues Fixed:**
-  - GoalSelection page missing responsive grid classes (now `md:grid-cols-2 gap-3`)
-
-### Slice 3: User Flow Testing ✅
-- **Status:** Complete
-- **Tested & Verified:**
-  - Onboarding flow (goal selection → assessment)
-  - Assessment flow (all 4 modules: Literacy, Comprehension, Grammar, Memorization)
-  - Question navigation and answer selection working
-  - Assessment completion with learning path assignment
-- **Issues Found:**
-  - Learning page content not rendering (lesson list and content not displaying)
-  - Memorization flow not fully tested due to Slice 3 completion
-- **Next:** Continue with Slice 4-8 (Accessibility, Mobile, Backend Integration, Content, Documentation)
-
-### Remaining Slices (4-8)
-- ⏳ Slice 4: Accessibility & Usability
-- ⏳ Slice 5: Mobile & Responsive Testing
-- ⏳ Slice 6: Backend Integration Verification
-- ⏳ Slice 7: Content & Copy Audit
-- ⏳ Slice 8: Documentation & Handoff
-
-*Last updated: July 25, 2026*
-
-
-## Deployment Status
-- Workers deployed: ✅ https://languagebuilder.fojall.workers.dev
-- Frontend deployed: ✅ https://languagebuilder-frontend.pages.dev
-- Database migrations: ✅ All 22 queries executed
-- Authentication: ✅ Bearer token configured
-- CI/CD Pipeline: ✅ GitHub Actions → Cloudflare Pages auto-deploy
-- Auto-deploy verified: ✅ Multiple successful deployments
-
-
-## UI/UX Improvements (Completed)
-- Fixed navigation with proper styling and responsive design
-- Added inline CSS for static export compatibility
-- Created clean, modern interface with dark theme
-- Mobile-first design approach
-- Tailwind CSS properly configured (40KB with all utilities)
-- globals.css restored and corrupted CSS fixed
-- Responsive grid layout implemented
-- Nav component created for proper layout
-
-## UI/UX Audit Progress (In Progress)
-- ✅ **Slice 1: React Rendering Verification** — Fixed Tailwind CSS, restored globals.css, verified all pages render correctly
-- ✅ **Slice 2: Visual Design Compliance** — Verified color tokens, Arabic RTL, responsive design
-- ✅ **Slice 3: User Flow Testing** — Verified onboarding flow, assessment flow (4 modules complete), learning page has content rendering issue
-- ⏳ **Slice 4: Accessibility & Performance** — Not started
-- ⏳ **Slice 5: Mobile & Responsive** — Not started
-- ⏳ **Slice 6: Backend Integration** — Not started
-- ⏳ **Slice 7: Content & Copy** — Not started
-- ⏳ **Slice 8: Documentation & Handoff** — Not started
-
-### Known Issues
-- ⚠️ **Learning Page Content Not Rendering** — Lesson list and content not displaying (high priority)
-- ⚠️ **Memorization Flow Not Fully Tested** — Page loads but detailed testing not completed
-
-
-## Critical Fixes Applied
-1. **Tailwind CSS Bug** — `tailwind.config.ts` content paths were wrong (`./src/app/...` → `./app/...`), causing 7.6KB CSS instead of 40KB
-2. **globals.css Corruption** — Repeated `}` characters broke CSS parser, causing raw JS rendering
-3. **Frontend Token Mismatch** — All components using `dev-token` vs backend `dev-token-change-in-production`
-4. **Missing Nav Component** — layout.tsx referenced `@/components/layout/Nav` which didn't exist
-5. **Responsive Grid Missing** — GoalSelection page used `grid gap-3` without responsive classes
-6. **Cloudflare API Token Updated** — New token configured in .env file
-7. **Account ID Added** — Configured for deployment
-8. **CI/CD Pipeline** — `.github/workflows/deploy.yml` configured, auto-deploys on push to main
-9. **Git History Cleaned** — Removed actual API token from commit history
-
-## Environment Variables
-- `CLOUDFLARE_API_TOKEN` — Cloudflare API token for deployment (updated)
-- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare account ID for Workers/D1 (configured)
-- `AUTH_TOKEN` — API bearer token for authentication
+*Original draft: 2026-07-22. Current-state section: 2026-08-15.*
