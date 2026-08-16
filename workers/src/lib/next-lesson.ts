@@ -7,7 +7,7 @@
 
 import type { Database } from './db';
 import type { LessonProgressRow, LessonsRow } from '../db/schema';
-import { isBand, lessonAllowedForBand, type Band } from './band';
+import { BOOK_LESSON_IDS, isBand, lessonAllowedForBand, type Band } from './band';
 
 export const AUTHORED_LESSON_SQL = `
 SELECT * FROM lessons
@@ -39,6 +39,28 @@ export async function selectNextAuthoredLesson(
     const prereqs = JSON.parse(lesson.prerequisites || '[]') as string[];
     if (!prereqs.every((p) => completedIds.has(p))) continue;
     return lesson;
+  }
+  return null;
+}
+
+/** Next unfinished dars on this book's sheet, not the full authored stack. */
+export async function selectNextBookLesson(
+  db: Database,
+  userId: string,
+  band: Band | null
+): Promise<LessonsRow | null> {
+  if (!band) return null;
+  const ids = BOOK_LESSON_IDS[band];
+  if (ids.length === 0) return null;
+  const completed = await db.query<Pick<LessonProgressRow, 'lesson_id'>>(
+    `SELECT lesson_id FROM lesson_progress WHERE user_id = ? AND completed = 1`,
+    [userId]
+  );
+  const done = new Set(completed.map((l) => l.lesson_id));
+  for (const id of ids) {
+    if (done.has(id)) continue;
+    const lesson = await db.get<LessonsRow>(`SELECT * FROM lessons WHERE id = ?`, [id]);
+    if (lesson) return lesson;
   }
   return null;
 }

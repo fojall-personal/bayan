@@ -130,6 +130,37 @@ describe('GET /api/session/plan', () => {
     expect(body.data.items.some((i) => i.type === 'lesson')).toBe(false);
   });
 
+  it('leads a Qaṭr sitting with the book dars, then the particle, then the root', async () => {
+    setBand('qatr');
+    const db = H().db;
+    db.prepare(
+      `INSERT INTO lessons (id, title, module, level, content, exercises, prerequisites, estimated_minutes)
+       VALUES ('grammar-04', 'Present', 'grammar', 2, '{}', '[]', '[]', 10)`
+    ).run();
+    db.prepare(
+      `INSERT INTO quran_word_morphology
+         (surah_id, ayah_id, word_index, segment_index, form, tag, pos, lemma, root)
+       VALUES (1, 1, 1, 1, 'min', 'P', 'P', 'min', NULL)`
+    ).run();
+    db.prepare(
+      `INSERT INTO quran_word_morphology
+         (surah_id, ayah_id, word_index, segment_index, form, tag, pos, root)
+       VALUES (1, 2, 1, 1, 'qAla', 'V', 'V', 'qwl')`
+    ).run();
+    db.prepare(
+      `INSERT INTO lessons (id, title, module, level, content, exercises, prerequisites, estimated_minutes)
+       VALUES ('root-qwl', 'The root qwl', 'grammar', 1, '{}', '[]', '[]', 10)`
+    ).run();
+    const { body } = await H().json<{ data: SessionPlan }>('/api/session/plan');
+    const types = body.data.items.map((i) => i.type);
+    expect(types.indexOf('lesson')).toBeGreaterThanOrEqual(0);
+    expect(types.indexOf('function_word')).toBeGreaterThan(types.indexOf('lesson'));
+    expect(types.indexOf('root_lesson')).toBeGreaterThan(types.indexOf('function_word'));
+    expect(body.data.items.find((i) => i.type === 'lesson')?.payload.lessonId).toBe(
+      'grammar-04'
+    );
+  });
+
   it('persists a loop-only plan so complete can find it', async () => {
     setBand('alfiyya');
     await H().json<{ data: SessionPlan }>('/api/session/plan');
@@ -176,7 +207,7 @@ describe('GET /api/session/plan', () => {
     H()
       .db.prepare(
         `INSERT INTO lessons (id, title, module, level, content, exercises, prerequisites, estimated_minutes)
-         VALUES ('grammar-test-01', 'Test Lesson', 'grammar', 1, '{}', '[]', '[]', 10)`
+         VALUES ('grammar-01', 'Articles', 'grammar', 1, '{}', '[]', '[]', 10)`
       )
       .run();
 
@@ -184,7 +215,7 @@ describe('GET /api/session/plan', () => {
     expect(status).toBe(200);
     expect(body.data.summary.lesson).toBe(1);
     const lesson = body.data.items.find((i) => i.type === 'lesson');
-    expect(lesson?.payload.lessonId).toBe('grammar-test-01');
+    expect(lesson?.payload.lessonId).toBe('grammar-01');
   });
 
   it('reuses today\'s open session instead of inserting another', async () => {
@@ -237,7 +268,9 @@ describe('GET /api/session/plan', () => {
       }),
     });
     const second = await H().json<{ data: SessionPlan }>('/api/session/plan');
-    expect(second.body.data.items[0].type).toBe('function_word');
+    const rest = second.body.data.items.filter((i) => i.type !== 'hifz');
+    expect(second.body.data.items[0].type).toBe('hifz');
+    expect(rest[0].type).toBe('function_word');
   });
 });
 

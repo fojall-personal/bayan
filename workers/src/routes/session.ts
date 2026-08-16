@@ -21,7 +21,7 @@ import { isGrade, schedule, REQUEST_RETENTION, type Grade } from '../lib/space-r
 import { hifzRetentionFor, precedingSpanWarmStart } from './memorization';
 import { ensureBand } from '../lib/band-write';
 import { PAIR_TARGET, type Band } from '../lib/band';
-import { selectNextAuthoredLesson } from '../lib/next-lesson';
+import { selectNextBookLesson } from '../lib/next-lesson';
 
 export const sessionRoutes = new Hono<AppEnv>();
 
@@ -206,7 +206,7 @@ async function fetchNextLesson(
   userId: string,
   band: Band | null
 ): Promise<SessionItem | null> {
-  const next = await selectNextAuthoredLesson(db, userId, band);
+  const next = await selectNextBookLesson(db, userId, band);
   if (!next) return null;
 
   return {
@@ -344,25 +344,26 @@ function mixItems(
   band: Band | null
 ): SessionItem[] {
   const dueHifz = band === 'foundation' ? [] : hifz;
-  let ordered: SessionItem[] = [...dueHifz, ...loop, ...vocab];
-  if (lesson) ordered.push(lesson);
+  let rest: SessionItem[] = [...loop, ...vocab];
 
   if (prefer === 'particles') {
-    ordered = [
-      ...ordered.filter((i) => i.type === 'function_word'),
-      ...ordered.filter((i) => i.type !== 'function_word'),
+    rest = [
+      ...rest.filter((i) => i.type === 'function_word'),
+      ...rest.filter((i) => i.type !== 'function_word'),
     ];
   } else if (prefer === 'meaning') {
-    ordered = [
-      ...ordered.filter((i) => i.type === 'intensive' || i.type === 'vocabulary'),
-      ...ordered.filter((i) => i.type !== 'intensive' && i.type !== 'vocabulary'),
+    rest = [
+      ...rest.filter((i) => i.type === 'intensive' || i.type === 'vocabulary'),
+      ...rest.filter((i) => i.type !== 'intensive' && i.type !== 'vocabulary'),
     ];
   } else if (prefer === 'production') {
-    ordered = [
-      ...ordered.filter((i) => i.type === 'production' || i.type === 'elided'),
-      ...ordered.filter((i) => i.type !== 'production' && i.type !== 'elided'),
+    rest = [
+      ...rest.filter((i) => i.type === 'production' || i.type === 'elided'),
+      ...rest.filter((i) => i.type !== 'production' && i.type !== 'elided'),
     ];
   }
+
+  const ordered: SessionItem[] = [...dueHifz, ...(lesson ? [lesson] : []), ...rest];
 
   const selected: SessionItem[] = [];
   let used = 0;
